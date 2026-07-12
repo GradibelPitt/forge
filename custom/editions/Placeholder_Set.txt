@@ -40,3 +40,4 @@ Type=Custom_Set
 32 R 灵魂之火 @Custom
 33 R 镀银魔像 @Custom
 34 M 矿坑老板雷斯卡 @Custom
+35 R 灵魂弹幕 @Custom
