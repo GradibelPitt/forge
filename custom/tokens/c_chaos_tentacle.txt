@@ -1,0 +1,5 @@
+Name:混乱触须
+ManaCost:no cost
+Colors:colorless
+Types:Artifact
+Oracle:
