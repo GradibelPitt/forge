@@ -13,7 +13,7 @@ VALID_API_TYPES = {
     "abandon", "activateability", "addorremovecounter", "addphase", "addturn", "advancecrank", "alterattribute", 
     "amass", "animate", "animateall", "attach", "ascend", "assemblecontraption", "assigngroup", "balance", 
     "becomemonarch", "becomesblocked", "bidlife", "block", "bond", "branch", "camouflage", "changecombatants", 
-    "changespeed", "changetargets", "changetext", "changex", "changezone", "changezoneall", "chaosensues", 
+    "changespeed", "changetargets", "changetext", "changex", "changezone", "changezoneall", "carddiscover", "chaosensues",
     "charm", "choosecard", "choosecolor", "choosedirection", "chooseevenodd", "choosenumber", "chooseplayer", 
     "choosesector", "choosesource", "choosetype", "claimtheprize", "clash", "classlevelup", "cleanup", 
     "cloak", "clone", "companionchoose", "connive", "copypermanent", "copyspellability", "controlspell", 

@@ -1,5 +1,6 @@
 package forge.game.ability.effects;
 
+import com.google.common.collect.Iterables;
 import forge.game.card.Card;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -44,5 +45,18 @@ public class CardDiscoverEffectTest {
     public void returnsNoOptionsForEmptyPoolOrNonPositiveLimit() {
         Assert.assertTrue(CardDiscoverEffect.selectUniqueOptions(Collections.emptyList(), 3, new Random(1)).isEmpty());
         Assert.assertTrue(CardDiscoverEffect.selectUniqueOptions(Collections.singletonList(named(1, "Patches")), 0, new Random(1)).isEmpty());
+    }
+
+    @Test
+    public void remembersTheMovedCardOnlyWhenRequested() {
+        final Card source = named(1, "Cursed Catacombs");
+        final Card discovered = named(2, "Discovered Card");
+
+        CardDiscoverEffect.rememberChosen(source, true, discovered);
+        Assert.assertTrue(Iterables.contains(source.getRemembered(), discovered));
+
+        source.clearRemembered();
+        CardDiscoverEffect.rememberChosen(source, false, discovered);
+        Assert.assertFalse(Iterables.contains(source.getRemembered(), discovered));
     }
 }

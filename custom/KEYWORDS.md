@@ -59,7 +59,7 @@
 
 - **Status:** 已迁移到 `D:\Forge\forge-latest` 并通过 Forge Game 针对性测试；新版桌面 JAR 已构建，尚未记录其安装或客户端对局实测。
 - **Player-facing behavior:** 从指定候选池使用 Forge 现有过滤器筛选，按内部牌名去重并随机展示最多三个选项；玩家选择一张置入手牌。没有候选则不展示。
-- **DSL design:** 独立 AbilityFactory API `DB$ CardDiscover`，配合 `Defined$`、`Source$`、`SourceController$`、`ValidCards$`、`OptionCount$` 和 `Destination$`。最终参数必须在实现测试中验证，不能因本段设计而跳过解析验证。
+- **DSL design:** 独立 AbilityFactory API `DB$ CardDiscover`，配合 `Defined$`、`Source$`、`SourceController$`、`ValidCards$`、`OptionCount$` 和 `Destination$`。`RememberChosen$ True` 会记录实际移入目标区域的所选牌，供同一能力链的延迟触发器精确引用；省略时不会改变既有记忆状态。最终参数必须在实现测试中验证，不能因本段设计而跳过解析验证。
 - **Java implementation:** `forge-game/.../ability/ApiType.java` 注册，`ability/effects/CardDiscoverEffect.java` 实现；不修改 Forge 已有 MTG `DiscoverEffect`。
 - **Tests:** `forge-game/src/test/java/forge/game/ability/effects/CardDiscoverEffectTest.java`；`tests/test_airborne_bandit.py`。
 - **Edge cases:** 条件必须复用 `ValidCards$`/`Card.isValid`；同名不同版本不重复；不足三个显示实际数量；数据库来源创建新牌，牌库来源移动实际对象且不洗牌。
