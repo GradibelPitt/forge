@@ -14,10 +14,12 @@ T:Mode$ AbilityCast | ValidCard$ Card.Self | ValidActivatingPlayer$ You | ValidS
 SVar:CreateChaosTentacle:DB$ Token | TokenScript$ c_chaos_tentacle | TokenOwner$ You
 A:AB$ GainControl | Cost$ T | ValidTgts$ Creature.nonArtifact | TgtPrompt$ Select target nonartifact creature | Exhaust$ True | SpellDescription$ Gain control of target nonartifact creature. (Activate each exhaust ability only once.)
 A:AB$ Goad | Cost$ T | Defined$ Valid Creature.OppCtrl+nonArtifact | Exhaust$ True | SpellDescription$ Goad all nonartifact creatures your opponents control. (Activate each exhaust ability only once.)
-A:AB$ Repeat | Cost$ T | RepeatSubAbility$ RandomSpell | MaxRepeat$ Z | Exhaust$ True | SpellDescription$ Conjure and cast X random instant or sorcery spells without paying their mana costs, where X is the number of instant and sorcery cards in your graveyard. (Activate each exhaust ability only once.)
-SVar:RandomSpell:DB$ NameCard | AtRandom$ True | ValidCards$ Instant,Sorcery | SubAbility$ ConjureRandomSpell
-SVar:ConjureRandomSpell:DB$ MakeCard | Name$ ChosenName | Conjure$ True | Zone$ None | RememberMade$ True | SubAbility$ CastConjuredSpell
-SVar:CastConjuredSpell:DB$ Play | Defined$ Remembered | ValidSA$ Spell | ZoneRegardless$ True | Controller$ You | WithoutManaCost$ True | Optional$ False | SubAbility$ ClearRandomSpell
-SVar:ClearRandomSpell:DB$ Cleanup | ClearRemembered$ True | ClearNamedCard$ True
+A:AB$ Token | Cost$ T | TokenAmount$ 6 | TokenScript$ c_chaos_tentacle | TokenOwner$ You | Exhaust$ True | SpellDescription$ Create six Chaos Tentacle artifact tokens. (Activate each exhaust ability only once.)
+# Archived reusable spellstorm variant. Attach `SubAbility$ ArchivedChaosSpellstorm` to a future ability to restore it.
+SVar:ArchivedChaosSpellstorm:DB$ Repeat | RepeatSubAbility$ ArchivedRandomSpell | MaxRepeat$ Z
+SVar:ArchivedRandomSpell:DB$ NameCard | AtRandom$ True | ValidCards$ Instant,Sorcery | SubAbility$ ArchivedConjureRandomSpell
+SVar:ArchivedConjureRandomSpell:DB$ MakeCard | Name$ ChosenName | Conjure$ True | Zone$ None | RememberMade$ True | SubAbility$ ArchivedCastConjuredSpell
+SVar:ArchivedCastConjuredSpell:DB$ Play | Defined$ Remembered | ValidSA$ Spell | ZoneRegardless$ True | Controller$ You | WithoutManaCost$ True | Optional$ False | SubAbility$ ArchivedClearRandomSpell
+SVar:ArchivedClearRandomSpell:DB$ Cleanup | ClearRemembered$ True | ClearNamedCard$ True
 SVar:Z:Count$ValidGraveyard Instant.YouOwn,Sorcery.YouOwn
-Oracle:Menace\nHaste\nThis spell costs {1} less to cast for each noncreature spell you have cast this game.\nWhenever you activate an exhaust ability of CARDNAME, create a Chaos Tentacle artifact token.\nExhaust — {T}: Gain control of target nonartifact creature.\nExhaust — {T}: Goad all nonartifact creatures your opponents control.\nExhaust — {T}: Conjure and cast X random instant or sorcery spells without paying their mana costs, where X is the number of instant and sorcery cards in your graveyard.
+Oracle:Fear\nHaste\nThis spell costs {1} less to cast for each noncreature spell you have cast this game.\nWhenever you activate an exhaust ability of CARDNAME, create a Chaos Tentacle artifact token.\nExhaust — {T}: Gain control of target nonartifact creature.\nExhaust — {T}: Goad all nonartifact creatures your opponents control.\nExhaust — {T}: Create six Chaos Tentacle artifact tokens.

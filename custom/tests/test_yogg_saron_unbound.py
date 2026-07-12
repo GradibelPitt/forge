@@ -74,24 +74,37 @@ class YoggSaronUnboundContractTest(unittest.TestCase):
         )
         self.assertNotIn("RepeatCards$ Creature.OppCtrl", text)
 
-    def test_third_exhaust_conjures_and_casts_x_random_spells(self):
+    def test_third_exhaust_creates_six_chaos_tentacles(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn(
-            "A:AB$ Repeat | Cost$ T | RepeatSubAbility$ RandomSpell | MaxRepeat$ Z | Exhaust$ True",
+            "A:AB$ Token | Cost$ T | TokenAmount$ 6 | TokenScript$ c_chaos_tentacle | TokenOwner$ You | Exhaust$ True",
+            text,
+        )
+        self.assertNotIn("A:AB$ Repeat | Cost$ T | RepeatSubAbility$ RandomSpell", text)
+
+    def test_previous_random_spell_chain_is_kept_as_an_unwired_reusable_template(self):
+        text = CARD.read_text(encoding="utf-8")
+
+        self.assertIn(
+            "SVar:ArchivedChaosSpellstorm:DB$ Repeat | RepeatSubAbility$ ArchivedRandomSpell | MaxRepeat$ Z",
             text,
         )
         self.assertIn("SVar:Z:Count$ValidGraveyard Instant.YouOwn,Sorcery.YouOwn", text)
         self.assertIn(
-            "SVar:RandomSpell:DB$ NameCard | AtRandom$ True | ValidCards$ Instant,Sorcery | SubAbility$ ConjureRandomSpell",
+            "SVar:ArchivedRandomSpell:DB$ NameCard | AtRandom$ True | ValidCards$ Instant,Sorcery | SubAbility$ ArchivedConjureRandomSpell",
             text,
         )
         self.assertIn(
-            "SVar:ConjureRandomSpell:DB$ MakeCard | Name$ ChosenName | Conjure$ True | Zone$ None | RememberMade$ True | SubAbility$ CastConjuredSpell",
+            "SVar:ArchivedConjureRandomSpell:DB$ MakeCard | Name$ ChosenName | Conjure$ True | Zone$ None | RememberMade$ True | SubAbility$ ArchivedCastConjuredSpell",
             text,
         )
         self.assertIn(
-            "SVar:CastConjuredSpell:DB$ Play | Defined$ Remembered | ValidSA$ Spell | ZoneRegardless$ True | Controller$ You | WithoutManaCost$ True | Optional$ False | SubAbility$ ClearRandomSpell",
+            "SVar:ArchivedCastConjuredSpell:DB$ Play | Defined$ Remembered | ValidSA$ Spell | ZoneRegardless$ True | Controller$ You | WithoutManaCost$ True | Optional$ False | SubAbility$ ArchivedClearRandomSpell",
+            text,
+        )
+        self.assertIn(
+            "SVar:ArchivedClearRandomSpell:DB$ Cleanup | ClearRemembered$ True | ClearNamedCard$ True",
             text,
         )
 
@@ -99,6 +112,7 @@ class YoggSaronUnboundContractTest(unittest.TestCase):
         self.assertIn("36 M 脱困古神尤格萨隆 @Custom", EDITION.read_text(encoding="utf-8"))
         self.assertTrue(ART_BACKUP.is_file())
         self.assertTrue(ART.is_file())
+        self.assertIn("Oracle:Fear\\nHaste", CARD.read_text(encoding="utf-8"))
         expected = (
             "脱困古神尤格萨隆|脱困古神尤格萨隆|传奇生物～古神|"
             "恐惧\\n敏捷\\n"
@@ -106,7 +120,7 @@ class YoggSaronUnboundContractTest(unittest.TestCase):
             "当你启动脱困古神尤格萨隆的竭绝异能时，造一个混乱触须神器衍生物。\\n"
             "竭绝—{T}：获得目标非神器生物的操控权。\\n"
             "竭绝—{T}：煽惑所有由对手操控的非神器生物。\\n"
-            "竭绝—{T}：随机释放X个法术，X等同于你坟墓场中瞬间和法术牌的数量。"
+            "竭绝—{T}：派出六个混乱触须神器衍生物。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
