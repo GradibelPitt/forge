@@ -1,0 +1,5 @@
+Name:维希度斯的窟穴
+ManaCost:no cost
+Types:Land
+A:AB$ Draw | Cost$ T Discard<1/Card> | NumCards$ 2 | Defined$ You | SpellDescription$ Draw two cards.
+Oracle:{T}, Discard a card: Draw two cards.

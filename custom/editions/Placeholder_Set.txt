@@ -42,3 +42,4 @@ Type=Custom_Set
 34 M 矿坑老板雷斯卡 @Custom
 35 R 灵魂弹幕 @Custom
 36 M 脱困古神尤格萨隆 @Custom
+37 R 维希度斯的窟穴 @Custom
