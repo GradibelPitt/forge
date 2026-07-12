@@ -1,5 +1,7 @@
 # Forge DIY Verification Status
 
+- 2026-07-12 新增 `古尔丹之手`：`{4}{U}{U}` 法术，使用 Forge 已有 `Draw` 与 `Madness:0` DSL 实现“抓三张牌。\n疯魔{0}”。新增 `test_hand_of_guldan.py` 的 4 项契约测试通过，单卡 lint 无错误，DIY 全量 94 项测试通过。用户原图已备份为 `tools/card-artwork/1920px-Hand_of_Gul'dan_full.jpg`；标准裁切图 `PH01/古尔丹之手.artcrop.jpg` 为 1920×1401 RGB JPEG，源/缓存 SHA-256 均为 `851F2D4661816BE6DCD291FB0BD7D04E79EB8A04C7C684249A055602B47FDA08`。脚本源/部署 SHA-256 均为 `07C3C23FC8C1CB719B05D502210B0C3B433BFC2D8438A76CCE29EF614E6E9054`。客户端中文资源已追加名称、类别与规则文字；需重启 Forge 或重新加载资源后完成客户端实测。
+
 - 2026-07-12 新增 `虚触侍从`：`{R}` 1/3 生物～人类／术士。复用官方 `Embermaw Hellion` 的 `DamageDone` 替代效应语法；在战场上时，任何牌手将要受到的伤害均增加 1 点。原画备份为 `tools/card-artwork/Voidtouched_Attendant_full.jpg`，裁图 `PH01/虚触侍从.artcrop.jpg` 为 640×467 RGB JPEG。新增契约测试 3 项、单卡 lint 与 DIY 全量 86 项测试通过；脚本与图片源/部署 SHA-256 分别为 `98DAD78D1B0CC98802BABFA37C544CF5F64ECFB4ABF2C68237B0641B5318A257`、`4748E140A2D95F547FE0BFDC20BF818AA4A84B8E59E93EF502D4E5F2BCEEE97D`，均一致。PH01 #28 使用 `@Custom`；需重启 Forge 或重新加载资源后完成客户端伤害递增与动态牌框复测。
 
 - 2026-07-11 新增 `异教低阶牧师`：`{U}{B}` 3/2 生物～人类／牧师。脚本费用使用 Forge 普通多色格式 `ManaCost:U B`，而非代表蓝／黑混血费用的紧凑写法 `UB`。使用 Forge 现有 `RaiseCost` 静止异能，使对手施放的瞬间和法术咒语增加 `{1}` 来施放；能力没有 `Duration$` 或 `Unique$`，因此仅随来源在战场存在并可由多个副本叠加。原画备份为 `tools/card-artwork/Cult_Neophyte_full.jpg`，裁图 `PH01/异教低阶牧师.artcrop.jpg` 为 566×413 RGB JPEG。目标测试 3 项、单卡 lint 与 DIY 全量 83 项通过；脚本与图片源/部署 SHA-256 分别为 `671CBEC7900CD8B92E8F7F11E2EF952E04C66782D303B94BEB62C16B7E5A3163`、`A827E99067D314FC83E9D57C7A2CE2863277B3763B42322A46C2CDA5A1D280B3`，均一致。PH01 #27 使用 `@Custom`；需重启 Forge 或重新加载资源后完成客户端牌框与实际费用叠加复测。

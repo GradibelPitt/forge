@@ -34,3 +34,4 @@ Type=Custom_Set
 26 R 前沿哨所 @Custom
 27 R 异教低阶牧师 @Custom
 28 R 虚触侍从 @Custom
+29 R 古尔丹之手 @Custom

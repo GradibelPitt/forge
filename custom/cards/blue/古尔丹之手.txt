@@ -1,0 +1,6 @@
+Name:古尔丹之手
+ManaCost:4 U U
+Types:Sorcery
+K:Madness:0
+A:SP$ Draw | Defined$ You | NumCards$ 3 | SpellDescription$ 抓三张牌。
+Oracle:抓三张牌。\n疯魔{0}
