@@ -1,0 +1,7 @@
+Name:灵魂之火
+ManaCost:0
+Colors:red black
+Types:Sorcery
+A:SP$ DealDamage | ValidTgts$ Any | NumDmg$ 2 | SubAbility$ DBDiscard | SpellDescription$ 灵魂之火对任意目标造成2点伤害，然后随机从你手中弃掉一张牌。
+SVar:DBDiscard:DB$ Discard | Defined$ You | Mode$ Random | NumCards$ 1
+Oracle:灵魂之火是红黑双色。\n灵魂之火对任意目标造成2点伤害，然后随机从你手中弃掉一张牌。

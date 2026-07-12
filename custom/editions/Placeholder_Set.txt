@@ -37,3 +37,4 @@ Type=Custom_Set
 29 R 古尔丹之手 @Custom
 30 R 咒怨之墓 @Custom
 31 R 栉龙 @Custom
+32 R 灵魂之火 @Custom
