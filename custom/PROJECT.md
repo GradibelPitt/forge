@@ -57,6 +57,40 @@
 6. 审查差异和状态表述；源文件正确后再运行 `tools/install_to_forge.ps1`。
 7. 将“自动测试”“已部署”“客户端实测”分别记录，不互相替代。
 
+## Git 保存与发布策略
+
+### 普通卡牌和数据层改动
+
+以下改动验证完成后必须及时创建本地 Git commit，防止工作丢失，但默认不逐项 push：
+
+- 卡牌或 Token 脚本；
+- 卡图、Token 图片和图片流程；
+- `cardnames-zh-CN.txt` 等显示文本；
+- 只复用 Forge 现有 DSL、无需修改 Java 的卡牌效果；
+- 项目文档和测试数据。
+
+当完成一批卡牌、准备让双方联机、需要朋友同步或用户明确要求时，再把这些本地提交批量 push。准备联机时必须同时更新运行仓库的受管文件和 `BUILD-ID`。
+
+### 引擎层改动
+
+以下改动不得只保存在本地，也不得等待后续卡牌批次：
+
+- Forge Java 引擎源码；
+- 新增或修改 Ability API；
+- 规则执行、触发、替代效应、战斗、费用、牌手状态等核心路径；
+- 需要 Java 注册、解析或执行的新 keyword；
+- 会造成两台客户端运行语义不同的任何改动。
+
+完成相应 Java 测试和必要回归测试后，立即执行：
+
+1. 重建 `forge-gui-desktop` 聚合 JAR，并确认新类/方法已进入最终 JAR；
+2. commit 并 push 到 `https://github.com/GradibelPitt/forge` 的 `diy` 分支；
+3. 更新 `https://github.com/GradibelPitt/forge-diy-runtime` 的 `app/`、关键哈希清单和 `BUILD-ID`；
+4. push 运行仓库，并做一次公开无凭据 clone/更新验证；
+5. 告知联机双方先运行一键启动脚本，确认显示相同 `BUILD-ID` 后再对战。
+
+普通卡牌改动可以批量发布；引擎改动必须第一时间发布。这两种节奏不得混淆。
+
 ## Constraints and open work
 
 - 不得发明 Forge DSL 参数、关键词写法或过滤表达式。

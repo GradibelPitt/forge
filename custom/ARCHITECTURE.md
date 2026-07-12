@@ -14,6 +14,8 @@
 | Forge 源码 | `D:\Forge\forge-latest\` | Maven 构建产物 | Java 引擎的权威来源；上游基线为 `ebf9001` |
 | 中文卡牌资源 | 尚待创建的 `translations/cardnames-zh-CN.txt` | Forge `res/languages/cardnames-zh-CN.txt` | 当前仅有设计，未实现自动合并 |
 | 桌面 JAR | Java 源码与 Maven 配置 | `forge-gui-desktop\target\forge-gui-desktop-2.0.14-SNAPSHOT-jar-with-dependencies.jar` | 构建产物，不直接手改源逻辑 |
+| DIY 源码远端 | `D:\Forge\forge-latest\` | `https://github.com/GradibelPitt/forge` 的 `diy` 分支 | 引擎层更新验证后立即 push |
+| 玩家运行仓库 | 构建后的 JAR、`forge-gui/res` 与 `custom` 受管内容 | `https://github.com/GradibelPitt/forge-diy-runtime` | 一键脚本 clone/update；卡牌可批量发布，引擎更新必须同步发布 |
 
 ## DIY card and edition sources
 
@@ -82,5 +84,6 @@ Forge 仓库内存在两份简体中文卡牌资源：
 cards / editions / tokens ──install_to_forge.ps1──> %APPDATA%\Forge\custom
 cards/pictures ─────────────install_to_forge.ps1──> %LOCALAPPDATA%\Forge\Cache\pics\cards
 Forge Java source ──────────Maven package─────────> forge-gui-desktop aggregate JAR
+aggregate JAR + res + DIY managed files ──commit/push──> forge-diy-runtime/app
 translations (planned) ─────idempotent merge──────> Forge zh-CN language resources
 ```
