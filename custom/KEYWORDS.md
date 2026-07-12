@@ -1,5 +1,12 @@
 # Forge DIY Keywords and Engine APIs
 
+## ColorChoice（有色费用择一减免）
+
+- **Status:** 已实现，供 `ReduceCost` 静态异能使用。
+- **DSL:** `ColorChoice$ U B`。对每一个 `Amount`，操控者从费用中仍存在的指定有色法术力符号中选择一个，将其减少；不会同时减少多个颜色，也不会减少无色费用。
+- **Java implementation:** `forge-game/.../cost/CostAdjustment.java`。
+- **Tests:** `forge-game/src/test/java/forge/game/cost/CostAdjustmentColorChoiceTest.java`。
+
 本文件记录自定义关键词及类似关键词的引擎 API。卡牌清单见 [CARDS.md](CARDS.md)，设计理由见 [docs/DESIGN.md](docs/DESIGN.md)。
 
 ## Superreach

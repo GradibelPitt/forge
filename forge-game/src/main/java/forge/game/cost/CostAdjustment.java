@@ -3,6 +3,8 @@ package forge.game.cost;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import forge.card.CardStateName;
+import forge.card.ColorSet;
+import forge.card.MagicColor;
 import forge.card.mana.ManaAtom;
 import forge.card.mana.ManaCost;
 import forge.card.mana.ManaCostShard;
@@ -479,7 +481,19 @@ public class CostAdjustment {
             value = sa.getActivatingPlayer().getController().chooseNumberForCostReduction(sa, 0, value);
         }
 
-        if (staticAbility.hasParam("Color")) {
+        if (staticAbility.hasParam("ColorChoice")) {
+            final ColorSet choices = ColorSet.fromNames(staticAbility.getParam("ColorChoice").split(" "));
+            for (int i = 0; i < value; i++) {
+                final ColorSet available = getColorReductionChoices(manaCost, choices);
+                if (available.isColorless()) {
+                    break;
+                }
+                final byte chosenColor = sa.getActivatingPlayer().getController().chooseColor(
+                        "Choose a colored mana symbol to reduce", sa, available);
+                reduceChosenColor(manaCost, available, chosenColor);
+            }
+            return 0;
+        } else if (staticAbility.hasParam("Color")) {
             final String color = staticAbility.getParam("Color");
             int sumGeneric = 0;
             // might be problematic for weird hybrid combinations
@@ -506,6 +520,26 @@ public class CostAdjustment {
         }
         return 0;
     }    
+
+    static ColorSet getColorReductionChoices(final ManaCostBeingPaid manaCost, final ColorSet choices) {
+        byte available = 0;
+        for (final byte color : MagicColor.WUBRG) {
+            if (choices.hasAnyColor(color)
+                    && manaCost.getUnpaidShards(ManaCostShard.parseNonGeneric(MagicColor.toShortString(color))) > 0) {
+                available |= color;
+            }
+        }
+        return ColorSet.fromMask(available);
+    }
+
+    static boolean reduceChosenColor(final ManaCostBeingPaid manaCost, final ColorSet choices, final byte chosenColor) {
+        final ManaCostShard shard = ManaCostShard.parseNonGeneric(MagicColor.toShortString(chosenColor));
+        if (!choices.hasAnyColor(chosenColor) || manaCost.getUnpaidShards(shard) == 0) {
+            return false;
+        }
+        manaCost.decreaseShard(shard, 1);
+        return true;
+    }
 
     private static boolean checkRequirement(final SpellAbility sa, final StaticAbility st) {
         if (!st.checkConditions()) {

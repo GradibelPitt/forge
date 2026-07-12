@@ -3,8 +3,8 @@ ManaCost:6 B B U U
 Types:Legendary Creature Zombie
 PT:6/3
 K:Haste
-S:Mode$ ReduceCost | ValidCard$ Card.Self | Type$ Spell | Amount$ X | Color$ U B | EffectZone$ All | Description$ This spell costs {U}{B} less to cast for each creature card in your graveyard.
+S:Mode$ ReduceCost | ValidCard$ Card.Self | Type$ Spell | Amount$ X | ColorChoice$ U B | EffectZone$ All | Description$ For each creature card in your graveyard, choose {U} or {B}; this spell costs that much less to cast.
 SVar:X:Count$ValidGraveyard Creature.YouOwn
 T:Mode$ ChangesZone | Origin$ Any | Destination$ Graveyard | ValidCard$ Card.Self | Execute$ TrigGainControl | TriggerDescription$ 当矿坑老板雷斯卡从任何区域进入坟墓场时，获得目标非地永久物的操控权。
 SVar:TrigGainControl:DB$ GainControl | ValidTgts$ Permanent.nonLand | TgtPrompt$ Select target nonland permanent
-Oracle:敏捷\n你坟墓场中的每张生物牌都使此咒语的施放费用减少{U}{B}。\n当矿坑老板雷斯卡从任何区域进入坟墓场时，获得目标非地永久物的操控权。
+Oracle:敏捷\n你坟墓场中的每张生物牌可以为此咒语支付{U}或{B}。\n当矿坑老板雷斯卡从任何区域进入坟墓场时，获得目标非地永久物的操控权。
