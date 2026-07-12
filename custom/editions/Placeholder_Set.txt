@@ -41,3 +41,4 @@ Type=Custom_Set
 33 R 镀银魔像 @Custom
 34 M 矿坑老板雷斯卡 @Custom
 35 R 灵魂弹幕 @Custom
+36 M 脱困古神尤格萨隆 @Custom
