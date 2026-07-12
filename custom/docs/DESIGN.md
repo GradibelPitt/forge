@@ -14,6 +14,10 @@
 - 只有现有脚本系统无法准确表达且用户明确要求时，才扩展 Java。
 - 引擎新增能力必须有独立边界、测试和不会破坏同名官方机制的内部名称。
 
+## Spell categories
+
+法术派系／类别复用 Forge 原生卡牌子类别，不新增平行字段或 Java 关键字。脚本采用 `Types:Sorcery Shadow` 或 `Types:Instant Shadow` 一类写法；`Shadow` 与官方的 `Arcane`、`Lesson`、`Trap` 一样进入 `CardType` 的 subtype 集合，可由现有类型与有效性筛选路径识别。中文类别栏显示为“法术～暗影”或“瞬间～暗影”。
+
 ## Deck construction overrides
 
 `IgnoreDeckLimits` 只覆盖非指挥官主牌组的最低数量与同名数量限制，保留卡池、禁牌、自定义卡设置等其他合法性检查。`DeckMinimum:N` 用于声明包含该牌时的最低主牌数量；两者均为构筑政策，不应通过对局内脚本模拟。

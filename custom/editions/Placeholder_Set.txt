@@ -43,3 +43,4 @@ Type=Custom_Set
 35 R 灵魂弹幕 @Custom
 36 M 脱困古神尤格萨隆 @Custom
 37 R 维希度斯的窟穴 @Custom
+38 C 心灵震爆 @Custom
