@@ -1,0 +1,5 @@
+Name:test_解除构筑限制
+ManaCost:0
+Types:Artifact
+K:IgnoreDeckLimits
+Oracle:If your main deck contains this card, your main deck may contain any number of cards and any number of cards with the same name. Your main deck must still contain this card.

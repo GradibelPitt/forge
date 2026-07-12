@@ -29,7 +29,14 @@ public class BranchEffect extends SpellAbilityEffect {
             sub = sa.getAdditionalAbility("FalseSubAbility");
         }
         if (sub != null) {
+            inheritReplacingObjects(sa, sub);
             AbilityUtils.resolve(sub);
+        }
+    }
+
+    static void inheritReplacingObjects(final SpellAbility parent, final SpellAbility selectedBranch) {
+        if (!parent.getReplacingObjects().isEmpty()) {
+            selectedBranch.setReplacingObjects(parent.getReplacingObjects());
         }
     }
 }

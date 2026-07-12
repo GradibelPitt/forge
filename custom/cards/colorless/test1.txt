@@ -1,0 +1,5 @@
+Name:test1
+ManaCost:1
+Types:Artifact
+K:A deck can have any number of cards named CARDNAME.
+Oracle:A deck can have any number of cards named test1.

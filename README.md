@@ -4,6 +4,10 @@ Join the **Forge community** on [Discord](https://discord.gg/HcPJNyD66a)!
 
 [![Test build](https://github.com/Card-Forge/forge/actions/workflows/test-build.yaml/badge.svg)](https://github.com/Card-Forge/forge/actions/workflows/test-build.yaml)
 
+## Local Custom Development
+
+This checkout also contains the local custom-card project under [custom/](custom/README.md). Read [AGENTS.md](AGENTS.md) before modifying custom cards or related engine behavior.
+
 ---
 
 ## ✨ Introduction

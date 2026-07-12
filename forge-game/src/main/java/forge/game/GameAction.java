@@ -36,6 +36,7 @@ import forge.game.event.*;
 import forge.game.extrahands.BackupPlanService;
 import forge.game.keyword.Keyword;
 import forge.game.keyword.KeywordInterface;
+import forge.game.keyword.Boarding;
 import forge.game.mulligan.MulliganService;
 import forge.game.player.*;
 import forge.game.replacement.ReplacementEffect;
@@ -2773,6 +2774,7 @@ public class GameAction {
         preventMap.clear();
 
         damageMap.triggerDamageDoneOnce(isCombat, game);
+        Boarding.processDamageBatch(game, damageMap);
         damageMap.clear();
 
         counterTable.replaceCounterEffect(game, cause);

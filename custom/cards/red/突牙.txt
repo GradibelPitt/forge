@@ -1,0 +1,8 @@
+Name:突牙
+ManaCost:2 R R
+Types:Legendary Creature Beast
+PT:3/3
+K:DeckLimit:1:Your deck can have no more than one card named CARDNAME.
+K:Haste
+K:Boarding:3
+Oracle:Your deck can have no more than one card named 突牙.\nHaste\nBoarding — Once three or more different friendly characters have been dealt damage this turn, put 突牙 from your hand or library onto the battlefield under your control. (You and damageable objects you control are friendly characters. This action doesn't use the stack.)

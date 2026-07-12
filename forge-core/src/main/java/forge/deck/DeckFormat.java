@@ -131,6 +131,8 @@ public enum DeckFormat {
     private final Predicate<CardRules> cardPoolFilter;
     private final Predicate<PaperCard> paperCardPoolFilter;
     private final static String ADVPROCLAMATION = "Advantageous Proclamation";
+    private final static String IGNORE_DECK_LIMITS = "IgnoreDeckLimits";
+    private final static String DECK_MINIMUM = "DeckMinimum:";
     // private final static String SOVREALM = "Sovereign's Realm";
 
     DeckFormat(Range<Integer> mainRange0, Range<Integer> sideRange0, int maxCardCopies0, Predicate<CardRules> cardPoolFilter0, Predicate<PaperCard> paperCardPoolFilter0) {
@@ -260,14 +262,17 @@ public enum DeckFormat {
 
         int deckSize = deck.getMain().countAll();
 
-        int min = getMainRange().getMinimum();
+        final boolean ignoreDeckLimits = !hasCommander() && hasDeckLimitOverride(deck.getMain());
+        int min = effectiveMainDeckMinimum(getMainRange().getMinimum(), ignoreDeckLimits,
+                hasCommander() ? null : deck.getMain());
         int max = getMainRange().getMaximum();
         // boolean noBasicLands = false;
 
         // Adjust minimum base on number of Advantageous Proclamation or similar cards
         CardPool conspiracies = deck.get(DeckSection.Conspiracy);
         if (conspiracies != null) {
-            min -= (5 * conspiracies.countByName(ADVPROCLAMATION));
+            min = adjustMinimumForConspiracies(min, ignoreDeckLimits,
+                    conspiracies.countByName(ADVPROCLAMATION));
             // Commented out to remove warnings from the code.
             // noBasicLands = conspiracies.countByName(SOVREALM) > 0;
         }
@@ -365,7 +370,7 @@ public enum DeckFormat {
             return TextUtil.concatWithSpace("should have at least", String.valueOf(min), "cards");
         }
 
-        if (deckSize > max) {
+        if (!ignoreDeckLimits && deckSize > max) {
             return TextUtil.concatWithSpace("should have no more than", String.valueOf(max), "cards");
         }
 
@@ -417,6 +422,10 @@ public enum DeckFormat {
                 if (simpleCard == null) {
                     return TextUtil.concatWithSpace("contains the nonexisting card", cp.getKey());
                 }
+            }
+
+            if (!shouldEnforceCardCopyLimits(ignoreDeckLimits)) {
+                continue;
             }
 
             if (canHaveAnyNumberOf(simpleCard)) {
@@ -473,6 +482,51 @@ public enum DeckFormat {
         return iCard.getRules().getType().isBasicLand()
             || Iterables.contains(iCard.getRules().getMainPart().getKeywords(),
                 "A deck can have any number of cards named CARDNAME.");
+    }
+
+    static boolean hasDeckLimitOverride(final CardPool mainDeck) {
+        if (mainDeck == null) {
+            return false;
+        }
+        for (final Entry<PaperCard, Integer> entry : mainDeck) {
+            if (Iterables.contains(entry.getKey().getRules().getMainPart().getKeywords(), IGNORE_DECK_LIMITS)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static int effectiveMainDeckMinimum(final int normalMinimum, final boolean ignoreDeckLimits,
+                                        final CardPool mainDeck) {
+        if (ignoreDeckLimits) {
+            return 1;
+        }
+        int requestedMinimum = 0;
+        if (mainDeck != null) {
+            for (final Entry<PaperCard, Integer> entry : mainDeck) {
+                for (final String keyword : entry.getKey().getRules().getMainPart().getKeywords()) {
+                    if (!keyword.startsWith(DECK_MINIMUM)) {
+                        continue;
+                    }
+                    try {
+                        requestedMinimum = Math.max(requestedMinimum,
+                                Integer.parseInt(keyword.substring(DECK_MINIMUM.length())));
+                    } catch (NumberFormatException ignored) {
+                        // Malformed custom-card keywords do not change deck validation.
+                    }
+                }
+            }
+        }
+        return requestedMinimum > 0 ? requestedMinimum : normalMinimum;
+    }
+
+    static int adjustMinimumForConspiracies(final int minimum, final boolean ignoreDeckLimits,
+                                             final int advantageousProclamations) {
+        return ignoreDeckLimits ? minimum : minimum - (5 * advantageousProclamations);
+    }
+
+    static boolean shouldEnforceCardCopyLimits(final boolean ignoreDeckLimits) {
+        return !ignoreDeckLimits;
     }
 
     public static Integer canHaveSpecificNumberInDeck(final IPaperCard card) {

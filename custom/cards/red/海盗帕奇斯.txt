@@ -1,0 +1,12 @@
+Name:海盗帕奇斯
+ManaCost:R
+Types:Legendary Creature Pirate Demon
+PT:1/1
+K:DeckLimit:1:Your deck can have no more than one card named CARDNAME.
+K:Haste
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Pirate.YouCtrl | TriggerZones$ Hand,Library | Execute$ TrigBoard | TriggerDescription$ Boarding — Whenever a Pirate enters under your control, put all cards named CARDNAME from your hand and library onto the battlefield under your control.
+SVar:TrigBoard:DB$ Branch | BranchConditionSVar$ RemainingPatches | BranchConditionSVarCompare$ GE1 | TrueSubAbility$ PullHand
+SVar:RemainingPatches:Count$ValidHand,Library Card.named海盗帕奇斯+YouOwn
+SVar:PullHand:DB$ ChangeZoneAll | Origin$ Hand | Destination$ Battlefield | ChangeType$ Card.named海盗帕奇斯+YouOwn | SubAbility$ PullLibrary
+SVar:PullLibrary:DB$ ChangeZoneAll | Origin$ Library | Destination$ Battlefield | ChangeType$ Card.named海盗帕奇斯+YouOwn
+Oracle:Your deck can have no more than one card named 海盗帕奇斯.\nHaste\nBoarding — Whenever a Pirate enters under your control, put all cards named 海盗帕奇斯 from your hand and library onto the battlefield under your control. This ability functions while 海盗帕奇斯 is in your hand or library.

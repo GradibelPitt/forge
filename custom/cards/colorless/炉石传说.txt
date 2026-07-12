@@ -1,0 +1,16 @@
+Name:炉石传说
+ManaCost:0
+Types:Artifact
+K:DeckMinimum:31
+K:DeckLimit:1:Your deck can have no more than one card named CARDNAME.
+T:Mode$ NewGame | TriggerZones$ Hand,Library | ResolveBeforeFirstTurn$ True | Execute$ TrigMoveToLibrary | Static$ True | TriggerDescription$ At the beginning of the game, reveal CARDNAME, set each player's life total to 30, each player gets an emblem with "At the beginning of your upkeep, put a mana counter on this emblem, then add X mana in any combination of colors, where X is the number of mana counters on this emblem. Until end of turn, you don't lose this mana as steps and phases end.", then exile CARDNAME.
+SVar:TrigMoveToLibrary:DB$ ChangeZone | Defined$ Self | Origin$ Hand | Destination$ Library | SubAbility$ TrigReveal
+SVar:TrigReveal:DB$ Reveal | RevealDefined$ Self | SubAbility$ TrigSetLife
+SVar:TrigSetLife:DB$ SetLife | Defined$ Player | LifeAmount$ 30 | SubAbility$ TrigCreateEmblems
+SVar:TrigCreateEmblems:DB$ RepeatEach | RepeatPlayers$ Player | RepeatSubAbility$ TrigCreateEmblem | SubAbility$ TrigExile
+SVar:TrigCreateEmblem:DB$ Effect | Name$ Emblem — 炉石传说 | EffectOwner$ Player.IsRemembered | Triggers$ HearthstoneUpkeep | StaticAbilities$ HearthstoneRules | Duration$ Permanent | Unique$ True
+SVar:HearthstoneRules:Mode$ Continuous | EffectZone$ Command | Affected$ Player | SetMaxHandSize$ 10 | AddKeyword$ FatigueOnEmptyDraw | Description$ Each player's maximum hand size is 10. If a player would draw a card from an empty library, that player takes fatigue instead of losing the game.
+SVar:HearthstoneUpkeep:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Command | Execute$ HearthstoneChooseBasic | TriggerDescription$ At the beginning of your upkeep, put a mana counter on CARDNAME, then add X mana in any combination of colors, where X is the number of mana counters on CARDNAME. Until end of turn, you don't lose this mana as steps and phases end.
+SVar:HearthstoneChooseBasic:DB$ MakeCard | Conjure$ True | Spellbook$ Plains,Island,Swamp,Mountain,Forest | Zone$ Hand
+SVar:TrigExile:DB$ ChangeZone | Defined$ Self | Origin$ Library | Destination$ Exile
+Oracle:将对战规则改变为炉石传说！\n对战开始时：展示并放逐炉石传说。双方最大手牌数量为10。牌手从空牌库抓牌时不会输掉游戏，改为受到疲劳伤害；每位牌手的疲劳伤害从1开始并在每次空抽后递增。

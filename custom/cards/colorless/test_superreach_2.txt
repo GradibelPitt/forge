@@ -1,0 +1,16 @@
+Name:Test Superreach 2
+ManaCost:0
+Types:Creature
+PT:20/20
+K:Flying
+K:Fear
+K:Menace
+K:Shadow
+K:Landwalk:Land
+K:Horsemanship
+K:Skulk
+S:Mode$ CantBlockBy | ValidAttacker$ Creature.Self | Description$ CARDNAME can't be blocked.
+S:Mode$ CantBlockBy | ValidAttacker$ Creature.Self | ValidBlocker$ Creature.nonArtifact | Description$ CARDNAME can't be blocked except by artifact creatures.
+S:Mode$ CantBlockBy | ValidAttacker$ Creature.Self | ValidBlocker$ Creature.powerLT20 | Description$ Creatures with power less than 20 can't block CARDNAME.
+S:Mode$ CantBlockBy | ValidAttacker$ Creature.Self | ValidBlocker$ Creature.powerGT1 | Description$ Creatures with power greater than 1 can't block CARDNAME.
+Oracle:Flying, fear, menace, shadow, landwalk, horsemanship, skulk\nCARDNAME can't be blocked.\nCARDNAME can't be blocked except by artifact creatures.\nCreatures with power less than 20 can't block CARDNAME.\nCreatures with power greater than 1 can't block CARDNAME.

@@ -73,6 +73,7 @@ import java.util.stream.Collectors;
  * @version $Id$
  */
 public class Player extends GameEntity implements Comparable<Player> {
+    public static final String FATIGUE_ON_EMPTY_DRAW_KEYWORD = "FatigueOnEmptyDraw";
     public static final List<ZoneType> ALL_ZONES = Collections.unmodifiableList(Arrays.asList(ZoneType.Battlefield,
             ZoneType.Library, ZoneType.Graveyard, ZoneType.Hand, ZoneType.Exile, ZoneType.Command, ZoneType.Ante,
             ZoneType.Sideboard, ZoneType.PlanarDeck, ZoneType.SchemeDeck, ZoneType.AttractionDeck, ZoneType.ContraptionDeck,
@@ -86,6 +87,7 @@ public class Player extends GameEntity implements Comparable<Player> {
     private int lifeGainedThisTurn;
     private int lifeGainedTimesThisTurn;
     private int lifeGainedByTeamThisTurn;
+    private final FriendlyDamageTracker friendlyDamageTracker = new FriendlyDamageTracker();
     private int maxHandSize = 7;
     private int startingHandSize = 7;
     private boolean unlimitedHandSize = false;
@@ -174,6 +176,7 @@ public class Player extends GameEntity implements Comparable<Player> {
     private final Game game;
 
     private boolean triedToDrawFromEmptyLibrary = false;
+    private int fatigueCount = 0;
     private CardCollection lostOwnership = new CardCollection();
     private CardCollection gainedOwnership = new CardCollection();
 
@@ -1266,10 +1269,29 @@ public class Player extends GameEntity implements Comparable<Player> {
                 game.getTriggerHandler().runTrigger(TriggerType.Drawn, runParams, false);
             }
         }
-        else { // Lose by milling is always on. Give AI many cards it cannot play if you want it not to undertake actions
-            triedToDrawFromEmptyLibrary = true;
+        else {
+            if (hasKeyword(FATIGUE_ON_EMPTY_DRAW_KEYWORD)) {
+                takeFatigue();
+            } else { // Lose by milling is always on. Give AI many cards it cannot play if you want it not to undertake actions
+                triedToDrawFromEmptyLibrary = true;
+            }
         }
         return drawn;
+    }
+
+    /**
+     * Applies the next fatigue instance for this player. The counter is scoped to
+     * the player and game, and deliberately never decreases.
+     *
+     * @return the life actually lost after prevention and replacement effects
+     */
+    public final int takeFatigue() {
+        fatigueCount++;
+        return loseLife(fatigueCount, false, false);
+    }
+
+    public final int getFatigueCount() {
+        return fatigueCount;
     }
 
     public final void resetNumDrawnThisDrawStep() {
@@ -2506,6 +2528,7 @@ public class Player extends GameEntity implements Comparable<Player> {
         attractionsVisitedThisTurn = 0;
 
         damageReceivedThisTurn.clear();
+        friendlyDamageTracker.clear();
         planeswalkedToThisTurn.clear();
 
         elementalBendThisTurn.clear();
@@ -2517,6 +2540,14 @@ public class Player extends GameEntity implements Comparable<Player> {
             clearAttackedMyTurn();
             this.lastTurnNr = game.getPhaseHandler().getTurn();
         }
+    }
+
+    public boolean recordFriendlyCharacterDamaged(final int entityId) {
+        return friendlyDamageTracker.record(entityId);
+    }
+
+    public int getFriendlyCharactersDamagedThisTurnCount() {
+        return friendlyDamageTracker.size();
     }
 
     public boolean canCastSorcery() {

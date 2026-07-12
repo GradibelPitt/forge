@@ -1,0 +1,7 @@
+Name:空中悍匪
+ManaCost:R
+Types:Creature Pirate
+PT:1/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDiscover | TriggerDescription$ When CARDNAME enters, discover a Pirate creature card.
+SVar:TrigDiscover:DB$ CardDiscover | Defined$ You | Source$ CardDatabase | ValidCards$ Creature.Pirate | OptionCount$ 3 | Destination$ Hand
+Oracle:When 空中悍匪 enters, discover a Pirate creature card. (Choose one of up to three different randomly offered cards that match, and put it into your hand.)

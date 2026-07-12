@@ -519,7 +519,7 @@ public class TriggerHandler {
         //wrapperAbility.setDescription(wrapperAbility.getStackDescription());
         //wrapperAbility.setDescription(wrapperAbility.toUnsuppressedString());
 
-        if (regtrig.isStatic()) {
+        if (!shouldUseStack(regtrig)) {
             if (wrapperAbility.getActivatingPlayer().getController().playTrigger(host, wrapperAbility, isMandatory)) {
                 final Map<AbilityKey, Object> staticParams = AbilityKey.mapFromCard(host);
                 staticParams.put(AbilityKey.SpellAbility, sa);
@@ -541,6 +541,11 @@ public class TriggerHandler {
         if (regtrig.hasParam("OneOff") && host.isImmutable() || removeBoon) {
             host.getController().getZone(ZoneType.Command).remove(host);
         }
+    }
+
+    static boolean shouldUseStack(final Trigger trigger) {
+        return !trigger.isStatic()
+                || trigger.getMode() == TriggerType.NewGame && !trigger.hasParam("ResolveBeforeFirstTurn");
     }
 
     private void adjustUndoStack(Trigger regtrig, Map<AbilityKey, Object> runParams) {

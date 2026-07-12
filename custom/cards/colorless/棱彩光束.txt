@@ -1,0 +1,6 @@
+Name:棱彩光束
+ManaCost:7
+Types:Instant
+A:SP$ DamageAll | ValidTgts$ Opponent | NumDmg$ 3 | ValidPlayers$ Targeted | ValidCards$ Creature.TargetedPlayerCtrl,Planeswalker.TargetedPlayerCtrl | ReduceCost$ X | ValidDescription$ target opponent and each creature and planeswalker they control. | SpellDescription$ CARDNAME deals 3 damage to target opponent and each creature and planeswalker they control. This spell costs {1} less to cast for each creature and planeswalker that opponent controls.
+SVar:X:Count$Valid Creature.TargetedPlayerCtrl,Planeswalker.TargetedPlayerCtrl
+Oracle:对目标对手以及他操控的每个生物和鹏洛客各造成3点伤害。目标对手每操控一个生物或鹏洛客，本牌的法术力费用减少1

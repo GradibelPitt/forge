@@ -1,0 +1,16 @@
+Name:test4
+ManaCost:0
+Types:Artifact
+K:A deck can have any number of cards named CARDNAME.
+
+# Effect 1: Auto-draw from library when no other cards are in library
+T:Mode$ ChangesZone | Origin$ Library | Destination$ Any | TriggerZones$ Library | CheckSVar$ OtherCardsInLib | SVarCompare$ EQ0 | Execute$ TrigDrawSelf | TriggerDescription$ Whenever a card leaves your library, if there are no other cards in your library, put CARDNAME into your hand.
+SVar:TrigDrawSelf:DB$ ChangeZone | Defined$ Self | Origin$ Library | Destination$ Hand
+SVar:OtherCardsInLib:Count$ValidLibrary Card.notnamedtest4+YouOwn
+
+# Effect 2: Win game on ETB if hand and library have no other cards
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | CheckSVar$ NoOtherCards | SVarCompare$ EQ0 | Execute$ TrigWin | TriggerDescription$ When CARDNAME enters the battlefield, if you have no other cards in hand and library, you win the game.
+SVar:TrigWin:DB$ WinsGame | Defined$ You
+SVar:NoOtherCards:Count$ValidHand Card.notnamedtest4+YouOwn/Plus.Count$ValidLibrary Card.notnamedtest4+YouOwn
+
+Oracle:A deck can have any number of cards named test4.\nWhenever a card leaves your library, if there are no other cards in your library and test4 is in your library, put test4 into your hand.\nWhen test4 enters the battlefield, if you have no other cards in hand and library, you win the game.

@@ -1,0 +1,17 @@
+Name:Gigantic Spright
+ManaCost:U R
+Types:Legendary Artifact Creature Elemental Construct
+PT:2/2
+K:Kicker:tapXType<2/Creature.cmcEQ2/creatures with mana value 2>
+T:Mode$ SpellCast | ValidCard$ Card.Self+kicked | Execute$ DBResetMaterials | TriggerZones$ Stack | Static$ True
+SVar:DBResetMaterials:DB$ Cleanup | ClearRemembered$ True | SubAbility$ DBRememberMaterials
+SVar:DBRememberMaterials:DB$ Pump | RememberObjects$ TriggeredSpellAbility>TappedCards
+K:ETBReplacement:Other:DBMaterialBranch:Mandatory::Card.Self+kicked
+SVar:DBMaterialBranch:DB$ Branch | BranchConditionSVar$ SpecialMaterialCount | BranchConditionSVarCompare$ GE1 | TrueSubAbility$ DBPutBonusMaterial | FalseSubAbility$ DBPutBaseMaterial
+SVar:DBPutBaseMaterial:DB$ PutCounter | ETB$ True | Defined$ Self | CounterType$ COMPONENT | CounterNum$ 1
+SVar:SpecialMaterialCount:Count$Valid Artifact.Creature+IsRemembered,Enchantment.Creature+IsRemembered,Creature.Legendary+IsRemembered
+SVar:DBPutBonusMaterial:DB$ PutCounter | ETB$ True | Defined$ Self | CounterType$ COMPONENT | CounterNum$ 2 | SubAbility$ DBGainHaste
+SVar:DBGainHaste:DB$ Animate | Defined$ Self | Keywords$ Haste | Duration$ EndOfTurn
+A:AB$ ChangeZone | Cost$ T SubCounter<1/COMPONENT> | Origin$ Library | Destination$ Battlefield | ChangeType$ Creature.basePowerEQ2+baseToughnessEQ2 | ChangeNum$ 1 | Shuffle$ True | SpellDescription$ Search your library for a creature card with power and toughness each 2, put it onto the battlefield, then shuffle.
+DeckHas:Ability$Counters
+Oracle:You may tap two untapped creatures you control with mana value 2 as an additional cost to cast this spell.\nIf you paid this additional cost, Gigantic Spright enters with a material counter on it. If an artifact creature, enchantment creature, or legendary creature was tapped this way, it enters with two material counters on it instead and gains haste until end of turn.\n{T}, Remove a material counter from Gigantic Spright: Search your library for a creature card with power and toughness each 2, put it onto the battlefield, then shuffle.

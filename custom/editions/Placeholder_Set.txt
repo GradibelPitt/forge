@@ -1,0 +1,36 @@
+[metadata]
+Code=PH01
+Name=Placeholder Set
+Date=2026-07-10
+Type=Custom_Set
+
+[cards]
+1 C Forge Test Goblin
+2 C test1
+3 C test2
+4 C test3
+5 C test4
+6 C test5
+7 C 马克扎尔的小鬼
+8 M 破链灾星霍格 @Custom
+8a M 破链灾星霍格
+9 C test_解除构筑限制
+10 M 海盗帕奇斯
+11 M 突牙
+12 C Test Superreach 1
+13 C Test Superreach 2
+14 M 炉石传说
+15 C 空中悍匪
+16 C 空降歹徒 @Custom
+17 M Gigantic Spright @Custom
+18 R 战斗号角 @Custom
+19 C 尼鲁巴蛛网领主
+20 C 农夫 @Custom
+21 R 决战 @Custom
+22 R 援军光环 @Custom
+23 R 十字军光环 @Custom
+24 C 水晶学 @Custom
+25 R 棱彩光束 @Custom
+26 R 前沿哨所 @Custom
+27 R 异教低阶牧师 @Custom
+28 R 虚触侍从 @Custom

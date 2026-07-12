@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="615" height="365" viewBox="0 0 615 365">
+  <defs>
+    <linearGradient id="goldMain" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f7df7c" stop-opacity="0.90"/>
+      <stop offset="0.5" stop-color="#c89d31" stop-opacity="0.84"/>
+      <stop offset="1" stop-color="#f0d56b" stop-opacity="0.90"/>
+    </linearGradient>
+    <linearGradient id="goldFine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#b8871e" stop-opacity="0.82"/>
+      <stop offset="0.5" stop-color="#f0d56d" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#b8871e" stop-opacity="0.82"/>
+    </linearGradient>
+    <filter id="softShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="2" stdDeviation="1.8"
+                    flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Main rules-text frame: border only, inside fully transparent -->
+  <path fill="url(#goldMain)" fill-rule="evenodd" filter="url(#softShadow)"
+        d="M21,60 H594 V337 H338
+           C333,337 329,340 326,345
+           C320,354 294,354 288,345
+           C285,340 281,337 276,337
+           H21 Z
+
+           M27,67 H588 V331
+           H337
+           C331,331 326,335 322,341
+           C318,347 296,347 292,341
+           C288,335 283,331 277,331
+           H27 Z"/>
+
+  <path d="M21,60 H594 V337 H338
+           C333,337 329,340 326,345
+           C320,354 294,354 288,345
+           C285,340 281,337 276,337
+           H21 Z"
+        fill="none" stroke="#10110d" stroke-width="4" stroke-linejoin="round"/>
+
+  <path d="M27,67 H588 V331
+           H337
+           C331,331 326,335 322,341
+           C318,347 296,347 292,341
+           C288,335 283,331 277,331
+           H27 Z"
+        fill="none" stroke="url(#goldFine)" stroke-width="3"/>
+
+  <!-- Type line frame: border only, inside fully transparent -->
+  <path fill="url(#goldMain)" fill-rule="evenodd" filter="url(#softShadow)"
+        d="M35,10
+           H579
+           C587,10 593,15 597,23
+           L604,42
+           C606,49 603,57 597,63
+           L587,72
+           H29
+           L18,64
+           C11,58 8,50 10,41
+           L15,25
+           C18,16 25,10 35,10 Z
+
+           M37,17 H575
+           C581,17 586,21 589,27
+           L595,42
+           C597,47 594,53 590,57
+           L582,65 H33
+           L25,59
+           C20,55 17,49 18,43
+           L22,29
+           C24,22 29,17 37,17 Z"/>
+
+  <path d="M35,10
+           H579
+           C587,10 593,15 597,23
+           L604,42
+           C606,49 603,57 597,63
+           L587,72
+           H29
+           L18,64
+           C11,58 8,50 10,41
+           L15,25
+           C18,16 25,10 35,10 Z"
+        fill="none" stroke="#10110d" stroke-width="4" stroke-linejoin="round"/>
+
+  <path d="M37,17 H575
+           C581,17 586,21 589,27
+           L595,42
+           C597,47 594,53 590,57
+           L582,65 H33
+           L25,59
+           C20,55 17,49 18,43
+           L22,29
+           C24,22 29,17 37,17 Z"
+        fill="none" stroke="url(#goldFine)" stroke-width="3"/>
+
+  <!-- Bottom medallion -->
+  <path fill="url(#goldMain)" fill-rule="evenodd"
+        d="M273,338
+           C278,328 291,322 307,322
+           C323,322 336,328 341,338
+           L334,356
+           H280 Z
+
+           M281,339
+           C286,332 296,328 307,328
+           C318,328 328,332 333,339
+           L328,350
+           H286 Z"/>
+  <path d="M273,338
+           C278,328 291,322 307,322
+           C323,322 336,328 341,338
+           L334,356
+           H280 Z"
+        fill="none" stroke="#10110d" stroke-width="4" stroke-linejoin="round"/>
+  <ellipse cx="307" cy="345" rx="28" ry="15"
+           fill="none" stroke="url(#goldFine)" stroke-width="2.5"/>
+</svg>

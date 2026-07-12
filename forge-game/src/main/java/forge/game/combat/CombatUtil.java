@@ -518,8 +518,12 @@ public class CombatUtil {
             return true;
         }
 
+        final boolean canUseSuperreach = defendingPlayer != null
+                && defendingPlayer.getCreaturesInPlay().stream()
+                        .anyMatch(blocker -> superreachApplies(attacker, blocker));
+
         if (combat != null) {
-            if (StaticAbilityCantAttackBlock.getMinMaxBlocker(attacker, defendingPlayer).getRight() == combat.getBlockers(attacker).size()) {
+            if (!canUseSuperreach && StaticAbilityCantAttackBlock.getMinMaxBlocker(attacker, defendingPlayer).getRight() == combat.getBlockers(attacker).size()) {
                 return false;
             }
 
@@ -912,7 +916,8 @@ public class CombatUtil {
         if (!canBlock(blocker, combat)) {
             return false;
         }
-        if (!canBeBlocked(attacker, combat, blocker.getController())) {
+        final boolean canUseSuperreach = superreachApplies(attacker, blocker);
+        if (!canUseSuperreach && !canBeBlocked(attacker, combat, blocker.getController())) {
             return false;
         }
         if (combat != null && combat.isBlocking(blocker, attacker)) { // Can't block if already blocking the attacker
@@ -986,12 +991,27 @@ public class CombatUtil {
      * @return a boolean.
      */
     public static boolean canBlock(final Card attacker, final Card blocker, final boolean nextTurn) {
+        return canBlock(attacker, blocker, nextTurn, superreachApplies(attacker, blocker));
+    }
+
+    private static boolean canBlock(final Card attacker, final Card blocker, final boolean nextTurn,
+            final boolean canUseSuperreach) {
         if (attacker == null || blocker == null || !blocker.isCreature()) {
             return false;
         }
 
         if (!canBlock(blocker, nextTurn)) {
             return false;
+        }
+
+        // Shadow on the blocker is its own restriction, not the attacker's.
+        if (canUseSuperreach && blocker.hasKeyword(Keyword.SHADOW)
+                && !attacker.hasKeyword(Keyword.SHADOW)) {
+            return false;
+        }
+
+        if (canUseSuperreach) {
+            return true;
         }
 
         // rare case:
@@ -1015,6 +1035,12 @@ public class CombatUtil {
         }
 
         return true;
+    }
+
+    static boolean superreachApplies(final Card attacker, final Card blocker) {
+        return attacker != null && blocker != null
+                && blocker.hasKeyword(Keyword.SUPERREACH)
+                && !attacker.hasKeyword(Keyword.IGNORE_SUPERREACH);
     }
 
     public static boolean canAttackerBeBlockedWithAmount(Card attacker, int amount, Combat combat) {

@@ -1,0 +1,5 @@
+Name:水晶学
+ManaCost:U
+Types:Sorcery
+A:SP$ ChangeZone | Origin$ Library | Destination$ Hand | ChangeType$ Creature.powerEQ1 | ChangeTypeDesc$ creature cards with power 1 | ChangeNum$ 2 | AtRandom$ True | ShuffleNonMandatory$ True | SpellDescription$ Choose up to two creature cards with power 1 at random from your library, put them into your hand, then shuffle.
+Oracle:从你的牌库中随机选择至多两张力量为1的生物牌，将它们置于你手上，然后洗牌。

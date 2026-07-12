@@ -1,0 +1,19 @@
+{
+  "id": "patches-the-pirate-full-art",
+  "kind": "full_art",
+  "template": "borderless",
+  "language": "zh-CN",
+  "artwork": "D:/Forge/forge-latest/custom/tools/cardconjurer-artwork/Patches_the_Pirate_original.jpg",
+  "name": "海盗帕奇斯",
+  "manaCost": "{R}",
+  "typeLine": "传奇生物～海盗",
+  "rulesText": "你的起始套牌中不能含有多于一张名为海盗帕奇斯的牌。\n敏捷 \n每当一个海盗在你操控下进战场时，登船（此异能可以在你的手牌或牌库中时触发，将你手牌和牌堆中所有与本牌同名的牌置入战场。）。",
+  "rulesFontSize": 0.023,
+  "rulesLineWidth": 25,
+  "rulesAlign": "left",
+  "power": "1",
+  "toughness": "1",
+  "artist": "James Ryman",
+  "frame": "red",
+  "output": "patches-the-pirate-full-art.png"
+}

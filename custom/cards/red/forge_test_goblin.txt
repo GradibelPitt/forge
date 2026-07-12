@@ -1,0 +1,8 @@
+Name:Forge Test Goblin
+ManaCost:1 R
+Types:Creature Goblin Warrior
+PT:2/1
+K:Haste
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDraw | TriggerDescription$ When CARDNAME enters, draw a card.
+SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1
+Oracle:Haste\nWhen Forge Test Goblin enters, draw a card.

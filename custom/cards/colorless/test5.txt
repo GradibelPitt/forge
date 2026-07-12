@@ -1,0 +1,6 @@
+Name:test5
+ManaCost:0
+Types:Artifact
+K:StartInHand
+A:AB$ Mana | Cost$ T | Produced$ Combo Any | Amount$ 100 | SpellDescription$ Add 100 mana in any combination of colors.
+Oracle:{T}: Add 100 mana in any combination of colors.\nStartInHand (You begin the game with this card in your opening hand.)

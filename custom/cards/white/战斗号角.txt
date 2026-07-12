@@ -1,0 +1,5 @@
+Name:战斗号角
+ManaCost:1 W U G
+Types:Sorcery
+A:SP$ ChangeZone | Origin$ Library | Destination$ Battlefield | ChangeType$ Creature.cmcLE2 | ChangeNum$ 3 | ShuffleNonMandatory$ True | SpellDescription$ 从你的牌堆中搜寻至多三个法术力消耗小于等于2的生物，将它们以任意顺序放进战场，然后洗牌
+Oracle:从你的牌堆中搜寻至多三个法术力消耗小于等于2的生物，将它们以任意顺序放进战场，然后洗牌

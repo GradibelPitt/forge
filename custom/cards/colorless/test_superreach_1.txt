@@ -1,0 +1,5 @@
+Name:Test Superreach 1
+ManaCost:0
+Types:Creature
+PT:10/10
+K:Superreach

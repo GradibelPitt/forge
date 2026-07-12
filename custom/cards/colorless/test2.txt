@@ -1,0 +1,8 @@
+Name:test2
+ManaCost:0
+Types:Artifact
+K:A deck can have any number of cards named CARDNAME.
+T:Mode$ ChangesZone | ValidCard$ Card.wasCastFromYourHandByYou+Self | Destination$ Battlefield | Execute$ TrigHand | TriggerDescription$ When CARDNAME enters, if you cast it from your hand, put all cards named test2 from your hand and library onto the battlefield.
+SVar:TrigHand:DB$ ChangeZoneAll | Origin$ Hand | Destination$ Battlefield | ChangeType$ Card.namedtest2 | SubAbility$ TrigLibrary
+SVar:TrigLibrary:DB$ ChangeZoneAll | Origin$ Library | Destination$ Battlefield | ChangeType$ Card.namedtest2 | Shuffle$ True
+Oracle:A deck can have any number of cards named test2.\nWhen test2 enters, if you cast it from your hand, put all cards named test2 from your hand and library onto the battlefield.

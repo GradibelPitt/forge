@@ -1,0 +1,7 @@
+Name:十字军光环
+ManaCost:2 W R
+Types:Enchantment
+S:Mode$ Continuous | Affected$ Creature.YouCtrl | AddTrigger$ CrusaderAttack | AddSVar$ AE | Description$ Creatures you control have "Whenever this creature attacks, it gets +2/+1 permanently."
+SVar:CrusaderAttack:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigPump | TriggerDescription$ Whenever this creature attacks, it gets +2/+1 permanently.
+SVar:TrigPump:DB$ Pump | Defined$ TriggeredAttackerLKICopy | NumAtt$ +2 | NumDef$ +1 | Duration$ Permanent
+Oracle:你操控的生物具有“每当该生物攻击时，它永久获得+2/+1。”

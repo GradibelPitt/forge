@@ -1,0 +1,7 @@
+Name:歹徒
+ManaCost:no cost
+Colors:colorless
+Types:Creature
+PT:3/3
+K:Haste
+Oracle:敏捷

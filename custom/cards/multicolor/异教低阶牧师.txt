@@ -1,0 +1,6 @@
+Name:异教低阶牧师
+ManaCost:U B
+Types:Creature Human Cleric
+PT:3/2
+S:Mode$ RaiseCost | ValidCard$ Instant,Sorcery | Activator$ Opponent | Type$ Spell | Amount$ 1 | Description$ Instant and sorcery spells your opponents cast cost {1} more to cast.
+Oracle:对手施放的瞬间和法术咒语增加{1}来施放。

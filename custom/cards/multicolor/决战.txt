@@ -1,0 +1,6 @@
+Name:决战
+ManaCost:W R
+Types:Instant
+A:SP$ RepeatEach | RepeatPlayers$ Player | RepeatSubAbility$ DBToken | SpellDescription$ Each player creates three 3/3 colorless creature tokens named Outlaw with haste.
+SVar:DBToken:DB$ Token | TokenScript$ c_3_3_outlaw_haste | TokenAmount$ 3 | TokenOwner$ Player.IsRemembered
+Oracle:每位牌手各派出三个名为“歹徒”的3/3无色生物衍生物，且它们具有敏捷异能。

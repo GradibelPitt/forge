@@ -1,0 +1,6 @@
+Name:test3
+ManaCost:0
+Types:Legendary Artifact
+K:A deck can have any number of cards named CARDNAME.
+S:Mode$ IgnoreLegendRule | ValidCard$ Permanent.YouCtrl | EffectZone$ All | Description$ The "legend rule" doesn't apply to permanents you control.
+Oracle:A deck can have any number of cards named test3.\nThe "legend rule" doesn't apply to permanents you control.
