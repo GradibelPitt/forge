@@ -36,3 +36,4 @@ Type=Custom_Set
 28 R 虚触侍从 @Custom
 29 R 古尔丹之手 @Custom
 30 R 咒怨之墓 @Custom
+31 R 栉龙 @Custom
