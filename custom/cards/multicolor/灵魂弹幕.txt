@@ -2,6 +2,5 @@ Name:灵魂弹幕
 ManaCost:3 B R
 Types:Sorcery
 K:Madness:0
-A:SP$ Repeat | ValidTgts$ Any | RepeatSubAbility$ DBDamage | MaxRepeat$ 6 | SpellDescription$ 灵魂弹幕对任意目标造成1点伤害，重复6次。
-SVar:DBDamage:DB$ DealDamage | Defined$ Targeted | NumDmg$ 1
-Oracle:灵魂弹幕对任意目标造成1点伤害，重复6次。\n疯魔{0}
+A:SP$ DealDamage | ValidTgts$ Any | TgtPrompt$ Select any number of targets to distribute damage to | NumDmg$ 6 | TargetMin$ 0 | TargetMax$ 6 | DividedAsYouChoose$ 6 | SpellDescription$ 灵魂弹幕造成6点伤害，由你任意分配。
+Oracle:灵魂弹幕造成6点伤害，由你任意分配。\n疯魔{0}
