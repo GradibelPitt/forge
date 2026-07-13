@@ -1,10 +1,10 @@
 Name:矿坑老板雷斯卡
-ManaCost:6 B B U U
+ManaCost:6 UB UB UB UB
 Types:Legendary Creature Zombie
 PT:6/3
 K:Haste
-S:Mode$ ReduceCost | ValidCard$ Card.Self | Type$ Spell | Amount$ X | ColorChoice$ U B | EffectZone$ All | Description$ For each creature card in your graveyard, choose {U} or {B}; this spell costs that much less to cast.
+S:Mode$ ReduceCost | ValidCard$ Card.Self | Type$ Spell | Amount$ X | ColorChoice$ U B | EffectZone$ All | Description$ For each creature card in your graveyard, choose blue or black; this spell costs {U} or {B} less to cast.
 SVar:X:Count$ValidGraveyard Creature.YouOwn
 T:Mode$ ChangesZone | Origin$ Any | Destination$ Graveyard | ValidCard$ Card.Self | Execute$ TrigGainControl | TriggerDescription$ 当矿坑老板雷斯卡从任何区域进入坟墓场时，获得目标非地永久物的操控权。
 SVar:TrigGainControl:DB$ GainControl | ValidTgts$ Permanent.nonLand | TgtPrompt$ Select target nonland permanent
-Oracle:敏捷\n你坟墓场中的每张生物牌可以为此咒语支付{U}或{B}。\n当矿坑老板雷斯卡从任何区域进入坟墓场时，获得目标非地永久物的操控权。
+Oracle:敏捷\n坟墓场中的每张生物牌都使此咒语减少{U}或{B}。\n当矿坑老板雷斯卡从任何区域进入坟墓场时，获得目标非地永久物的操控权。

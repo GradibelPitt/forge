@@ -15,7 +15,7 @@ class ReskaThePitBossContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:矿坑老板雷斯卡", text)
-        self.assertIn("ManaCost:6 B B U U", text)
+        self.assertIn("ManaCost:6 UB UB UB UB", text)
         self.assertIn("Types:Legendary Creature Zombie", text)
         self.assertIn("PT:6/3", text)
         self.assertIn("K:Haste", text)
@@ -49,7 +49,7 @@ class ReskaThePitBossContractTest(unittest.TestCase):
         self.assertTrue(ART.is_file())
 
     def test_zh_cn_display_text_matches_the_requested_description(self):
-        expected = "矿坑老板雷斯卡|矿坑老板雷斯卡|传奇生物～僵尸|敏捷\\n你坟墓场中的每张生物牌可以为此咒语支付{U}或{B}。\\n当矿坑老板雷斯卡从任何区域进入坟墓场时，获得目标非地永久物的操控权。"
+        expected = "矿坑老板雷斯卡|矿坑老板雷斯卡|传奇生物～僵尸|敏捷\\n坟墓场中的每张生物牌都使此咒语减少{U}或{B}。\\n当矿坑老板雷斯卡从任何区域进入坟墓场时，获得目标非地永久物的操控权。"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
 

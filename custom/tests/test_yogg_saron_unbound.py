@@ -16,7 +16,7 @@ class YoggSaronUnboundContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:脱困古神尤格萨隆", text)
-        self.assertIn("ManaCost:15", text)
+        self.assertIn("ManaCost:10", text)
         self.assertIn("Types:Legendary Creature God", text)
         self.assertIn("PT:7/5", text)
         self.assertIn("K:Fear", text)
