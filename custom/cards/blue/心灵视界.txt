@@ -1,0 +1,11 @@
+Name:心灵视界
+ManaCost:U
+Types:Sorcery
+A:SP$ RevealHand | ValidTgts$ Opponent | Look$ True | RememberRevealed$ True | SubAbility$ DBChooseCard | SpellDescription$ Look at target opponent's hand, then choose a card from it. Conjure a duplicate of the card with the chosen name into your hand. It perpetually gains "This spell costs {1} less to cast."
+SVar:DBChooseCard:DB$ ChooseCard | ChoiceZone$ Hand | Choices$ Card.IsRemembered | ChoiceTitle$ Choose a card from that opponent's hand | Mandatory$ True | SubAbility$ DBConjure
+SVar:DBConjure:DB$ MakeCard | Conjure$ True | DefinedName$ ChosenCard | Zone$ Hand | RememberMade$ True | SubAbility$ DBAnimate
+SVar:DBAnimate:DB$ Animate | Defined$ Remembered | staticAbilities$ ReduceCost | Duration$ Perpetual | SubAbility$ DBCleanup | StackDescription$ None
+SVar:ReduceCost:Mode$ ReduceCost | ValidCard$ Card.Self | Type$ Spell | Amount$ 1 | EffectZone$ All | Description$ This spell costs {1} less to cast.
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True | ClearChosenCard$ True
+AI:RemoveDeck:Random
+Oracle:Look at target opponent's hand, then choose a card from it. Conjure a duplicate of the card with the chosen name into your hand. It perpetually gains "This spell costs {1} less to cast."

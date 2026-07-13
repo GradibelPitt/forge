@@ -44,3 +44,4 @@ Type=Custom_Set
 36 M 脱困古神尤格萨隆 @Custom
 37 R 维希度斯的窟穴 @Custom
 38 C 心灵震爆 @Custom
+39 C 心灵视界 @Custom
