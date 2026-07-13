@@ -11,23 +11,23 @@ ZH_CN = ROOT.parent / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 
 class SoulfireContractTest(unittest.TestCase):
-    def test_card_is_a_zero_cost_red_black_sorcery(self):
+    def test_card_uses_black_and_red_phyrexian_mana(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:灵魂之火", text)
-        self.assertIn("ManaCost:0", text)
+        self.assertIn("ManaCost:BP RP", text)
         self.assertIn("Colors:red black", text)
         self.assertIn("Types:Sorcery", text)
 
-    def test_card_deals_two_damage_to_any_target_then_discards_randomly(self):
+    def test_card_deals_three_damage_to_any_target_then_discards_one_card(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn(
-            "A:SP$ DealDamage | ValidTgts$ Any | NumDmg$ 2 | SubAbility$ DBDiscard",
+            "A:SP$ DealDamage | ValidTgts$ Any | NumDmg$ 3 | SubAbility$ DBDiscard",
             text,
         )
         self.assertIn(
-            "SVar:DBDiscard:DB$ Discard | Defined$ You | Mode$ Random | NumCards$ 1",
+            "SVar:DBDiscard:DB$ Discard | Defined$ You | NumCards$ 1",
             text,
         )
 
@@ -37,7 +37,7 @@ class SoulfireContractTest(unittest.TestCase):
         self.assertTrue(ART.is_file())
 
     def test_zh_cn_display_text_matches_the_requested_description(self):
-        expected = "灵魂之火|灵魂之火|法术|灵魂之火是红黑双色。\\n灵魂之火对任意目标造成2点伤害，然后随机从你手中弃掉一张牌。"
+        expected = "灵魂之火|灵魂之火|法术|灵魂之火对任一目标造成3点伤害，弃一张牌。"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
 
