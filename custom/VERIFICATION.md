@@ -20,7 +20,7 @@
 
 - 2026-07-12 新增 `镀银魔像`：`{3}` 3/3 神器生物～魔像，使用 Forge 既有 `Madness:0` 关键词实现疯魔 `{0}`。`test_silverware_golem.py` 3 项契约测试、单卡 lint 与 DIY 全量 110 项测试通过。用户原图备份为 `tools/card-artwork/Silverware_Golem_full.jpg`；标准裁切图 `PH01/镀银魔像.artcrop.jpg` 为 564×411 RGB JPEG，源/缓存 SHA-256 均为 `B96F84979384EECCACCA0CC1851CFAA8258EFB0B1681957262002BB483AD3932`。脚本源/部署 SHA-256 均为 `F90BBB82BA9DC4B3DDBA73F2328AE5B366D1E4F957B71E047430DC9CBC471053`。PH01 #33 使用 `@Custom`，中文资源已追加；需重启 Forge 或重新加载资源后完成疯魔与动态牌框的客户端实测。
 
-- 2026-07-12 更新 `灵魂之火`：费用改为 Forge 原生的 `{B/P}{R/P}`（每个符号可用对应颜色法术力或 2 点生命支付），效果改为对任一目标造成 3 点伤害，然后弃一张牌（非随机）。按 TDD 先更新 `test_soulfire.py` 并确认其因旧脚本失败，再完成脚本及简体中文显示文本修改。4 项目标契约测试、单卡 lint 与 DIY 全量 136 项测试通过；`tools/install_to_forge.ps1` 已同步到 `%APPDATA%\Forge\custom`，脚本源/部署 SHA-256 均为 `D8CA190B884C0D0EF814CBD77D44A80C9A47211EB1AABBF428B502845D6A749A`。仍需重启 Forge 或重新加载资源后完成费用符号、生命支付、目标伤害和弃牌的客户端实测。
+- 2026-07-12 更新 `灵魂之火`：费用使用 Forge 原生的单一 `{B/R/P}` 符号，图案为半黑半红；可用黑、红或 2 点生命支付。效果为对任一目标造成 3 点伤害，然后弃一张牌（非随机）。按 TDD 先更新 `test_soulfire.py` 并确认其因旧脚本失败，再完成脚本及简体中文显示文本修改。4 项目标契约测试、单卡 lint 与 DIY 全量 136 项测试通过；`tools/install_to_forge.ps1` 已同步到 `%APPDATA%\Forge\custom`，脚本源/部署 SHA-256 均为 `80BFF88A37FB2BB0D5453126337079611FA6F55B7AA7FC2FCA0635EBF24BA874`。仍需重启 Forge 或重新加载资源后完成费用符号、生命支付、目标伤害和弃牌的客户端实测。
 
 - 2026-07-12 新增 `栉龙`：`{U/B}` 1/2 生物～恐龙。进战场时以 Forge 既有 `Draw | RememberDrawn$ True` 抓一张牌并记住该牌；死去时只弃掉仍在手牌中的已记住牌，随后清理记忆；疯魔为 `{0}`。`test_compsognathus.py` 4 项契约测试、单卡 lint 与 DIY 全量 103 项测试通过。用户原图备份为 `tools/card-artwork/163557.png`；标准裁切图 `PH01/栉龙.artcrop.jpg` 为 376×274 RGB JPEG，源/缓存 SHA-256 均为 `08E6DAC5754EA9809BFB82713B0DDD20D939AFC9676A7D33AD6A21B647F059B3`。脚本源/部署 SHA-256 均为 `5E76636C01B82C019905E45724E2F0EACE4F2AE103A7D5A1980D01977FB49E82`。PH01 #31 使用 `@Custom`，中文资源已追加；需重启 Forge 或重新加载资源后完成进场抓牌、死亡弃牌和动态牌框的客户端实测。
 

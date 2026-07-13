@@ -11,11 +11,11 @@ ZH_CN = ROOT.parent / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 
 class SoulfireContractTest(unittest.TestCase):
-    def test_card_uses_black_and_red_phyrexian_mana(self):
+    def test_card_uses_a_single_black_red_phyrexian_mana_symbol(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:灵魂之火", text)
-        self.assertIn("ManaCost:BP RP", text)
+        self.assertIn("ManaCost:BRP", text)
         self.assertIn("Colors:red black", text)
         self.assertIn("Types:Sorcery", text)
 
