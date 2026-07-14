@@ -16,6 +16,15 @@ SARGERAS_EMBLEM_SOURCE = (
     / "codex-clipboard-4fb6642e-ca49-494b-a47a-ed3fc940178b.png"
 )
 SARGERAS_EMBLEM_ART = ROOT / "tokens" / "pictures" / "emblem_twisting_nether.png"
+SARGERAS_FORTIFICATION_SOURCE = (
+    ROOT
+    / "tools"
+    / "card-artwork"
+    / "codex-clipboard-a1fafe2f-f09f-4cd3-a3df-6bae3e2c7949.png"
+)
+SARGERAS_FORTIFICATION_ART = (
+    ROOT / "tokens" / "pictures" / "emblem_legion_fortification.png"
+)
 V07_DISPLAY_NAME = "终极V-07-TR-0N"
 V07_INTERNAL_NAME = "V07TRON Prime"
 
@@ -156,6 +165,24 @@ class TitansBatchContractTest(unittest.TestCase):
         self.assertTrue(SARGERAS_EMBLEM_SOURCE.is_file(), SARGERAS_EMBLEM_SOURCE)
         self.assertTrue(SARGERAS_EMBLEM_ART.is_file(), SARGERAS_EMBLEM_ART)
         self.assertEqual(digest(SARGERAS_EMBLEM_SOURCE), digest(SARGERAS_EMBLEM_ART))
+
+    def test_sargeras_legion_fortification_emblem_uses_supplied_full_image(self):
+        script = titan_script("灭世者萨格拉斯").read_text(encoding="utf-8")
+
+        self.assertIn(
+            "A:AB$ Effect | Cost$ U T | Name$ Emblem — Legion Fortification | "
+            "Image$ emblem_legion_fortification | EffectOwner$ You",
+            script,
+        )
+        self.assertTrue(
+            SARGERAS_FORTIFICATION_SOURCE.is_file(), SARGERAS_FORTIFICATION_SOURCE
+        )
+        self.assertTrue(
+            SARGERAS_FORTIFICATION_ART.is_file(), SARGERAS_FORTIFICATION_ART
+        )
+        self.assertEqual(
+            digest(SARGERAS_FORTIFICATION_SOURCE), digest(SARGERAS_FORTIFICATION_ART)
+        )
 
     def test_translation_rows_cover_every_titan(self):
         text = TRANSLATIONS.read_text(encoding="utf-8")
