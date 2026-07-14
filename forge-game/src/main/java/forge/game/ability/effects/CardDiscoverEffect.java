@@ -23,8 +23,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class CardDiscoverEffect extends SpellAbilityEffect {
+    static final int MAX_DYNAMIC_CANDIDATES = 128;
+
     @Override
     protected String getStackDescription(final SpellAbility sa) {
         final PlayerCollection players = getDefinedPlayersOrTargeted(sa);
@@ -39,6 +45,7 @@ public class CardDiscoverEffect extends SpellAbilityEffect {
         final int optionCount = AbilityUtils.calculateAmount(host,
                 sa.getParamOrDefault("OptionCount", "3"), sa);
         final ZoneType destination = ZoneType.smartValueOf(sa.getParamOrDefault("Destination", "Hand"));
+        final String[] validRestrictions = valid.split(",");
 
         if (optionCount <= 0 || destination == null) {
             return;
@@ -49,10 +56,26 @@ public class CardDiscoverEffect extends SpellAbilityEffect {
                 continue;
             }
 
-            final CardCollection candidates = buildCandidates(sa, player, source);
-            final CardCollection validCandidates = CardLists.getValidCards(candidates, valid,
-                    player, host, sa);
-            final List<Card> options = selectUniqueOptions(validCandidates, optionCount, MyRandom.getRandom());
+            final Random random = MyRandom.getRandom();
+            final List<Card> options;
+            if (source.equalsIgnoreCase("CardDatabase")) {
+                final CardDiscoverCandidateFilter filter = CardDiscoverCandidateFilter.compile(valid, host, sa);
+                options = selectDatabaseOptions(
+                        StaticData.instance().getCommonCards().getUniqueCards(),
+                        filter, optionCount, MAX_DYNAMIC_CANDIDATES, random,
+                        paperCard -> Card.fromPaperCard(paperCard, player),
+                        card -> card.isValid(validRestrictions, player, host, sa), true);
+                if (!filter.isComplete() && options.size() < optionCount) {
+                    System.err.println("CardDiscoverEffect exhausted its dynamic candidate budget for ValidCards$ "
+                            + valid + " (" + filter.getCapability() + "); returning "
+                            + options.size() + " option(s).");
+                }
+            } else {
+                final CardCollection candidates = buildLibraryCandidates(sa, source);
+                final CardCollection validCandidates = CardLists.getValidCards(candidates, valid,
+                        player, host, sa);
+                options = selectUniqueOptions(validCandidates, optionCount, random);
+            }
             if (options.isEmpty()) {
                 continue;
             }
@@ -85,15 +108,9 @@ public class CardDiscoverEffect extends SpellAbilityEffect {
         }
     }
 
-    private static CardCollection buildCandidates(final SpellAbility sa, final Player discoveringPlayer,
+    private static CardCollection buildLibraryCandidates(final SpellAbility sa,
             final String source) {
         final CardCollection candidates = new CardCollection();
-        if (source.equalsIgnoreCase("CardDatabase")) {
-            for (final PaperCard paperCard : StaticData.instance().getCommonCards().getUniqueCards()) {
-                candidates.add(Card.fromPaperCard(paperCard, discoveringPlayer));
-            }
-            return candidates;
-        }
         if (source.equalsIgnoreCase("Library")) {
             final List<Player> owners = AbilityUtils.getDefinedPlayers(sa.getHostCard(),
                     sa.getParamOrDefault("SourceController", "You"), sa);
@@ -104,6 +121,73 @@ public class CardDiscoverEffect extends SpellAbilityEffect {
             }
         }
         return candidates;
+    }
+
+    static List<Card> selectDatabaseOptions(final Iterable<PaperCard> paperCards,
+            final CardDiscoverCandidateFilter filter, final int limit, final int dynamicBudget,
+            final Random random, final Function<PaperCard, Card> cardFactory,
+            final Predicate<Card> exactValidator) {
+        return selectDatabaseOptions(paperCards, filter, limit, dynamicBudget, random,
+                cardFactory, exactValidator, false);
+    }
+
+    private static List<Card> selectDatabaseOptions(final Iterable<PaperCard> paperCards,
+            final CardDiscoverCandidateFilter filter, final int limit, final int dynamicBudget,
+            final Random random, final Function<PaperCard, Card> cardFactory,
+            final Predicate<Card> exactValidator, final boolean uniqueNamesGuaranteed) {
+        if (limit <= 0) {
+            return Collections.emptyList();
+        }
+
+        final int materializationLimit = filter.isComplete()
+                ? limit : Math.max(0, dynamicBudget);
+        if (materializationLimit == 0) {
+            return Collections.emptyList();
+        }
+
+        final List<PaperCard> sampled = reservoirSampleUnique(
+                paperCards, filter, materializationLimit, random, uniqueNamesGuaranteed);
+        final List<Card> options = new ArrayList<>(Math.min(limit, sampled.size()));
+        final Set<String> selectedNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        for (final PaperCard paperCard : sampled) {
+            final Card candidate = cardFactory.apply(paperCard);
+            if (candidate == null || !exactValidator.test(candidate) || candidate.getName() == null) {
+                continue;
+            }
+            if (selectedNames.add(candidate.getName())) {
+                options.add(candidate);
+                if (options.size() == limit) {
+                    break;
+                }
+            }
+        }
+        return options;
+    }
+
+    private static List<PaperCard> reservoirSampleUnique(final Iterable<PaperCard> paperCards,
+            final CardDiscoverCandidateFilter filter, final int limit, final Random random,
+            final boolean uniqueNamesGuaranteed) {
+        final List<PaperCard> sample = new ArrayList<>(limit);
+        final Set<String> seenNames = uniqueNamesGuaranteed ? null
+                : new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        int eligibleCount = 0;
+        for (final PaperCard paperCard : paperCards) {
+            if (!filter.matches(paperCard) || paperCard.getName() == null
+                    || (seenNames != null && !seenNames.add(paperCard.getName()))) {
+                continue;
+            }
+
+            eligibleCount++;
+            if (sample.size() < limit) {
+                sample.add(paperCard);
+            } else {
+                final int replacement = random.nextInt(eligibleCount);
+                if (replacement < limit) {
+                    sample.set(replacement, paperCard);
+                }
+            }
+        }
+        return sample;
     }
 
     static List<Card> selectUniqueOptions(final Iterable<Card> candidates, final int limit,
