@@ -1,0 +1,6 @@
+Name:天启骑士
+ManaCost:no cost
+Colors:white,black
+Types:Creature Knight
+PT:2/2
+Oracle:

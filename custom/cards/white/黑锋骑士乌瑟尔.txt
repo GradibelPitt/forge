@@ -1,0 +1,9 @@
+Name:黑锋骑士乌瑟尔
+ManaCost:1 W W W
+Types:Legendary Planeswalker Uther
+Loyalty:4
+T:Mode$ Always | TriggerZones$ Battlefield | IsPresent$ Creature.YouCtrl+named天启骑士 | PresentCompare$ GE4 | Execute$ TrigWinGame | TriggerDescription$ 当你操控四个或更多天启骑士时，你赢得这盘游戏。
+SVar:TrigWinGame:DB$ WinsGame | Defined$ You
+A:AB$ Token | Cost$ AddCounter<1/LOYALTY> | Planeswalker$ True | TokenScript$ wb_2_2_apocalypse_knight | TokenAmount$ 1 | TokenOwner$ You | SpellDescription$ 派出一个名为“天启骑士”的2/2白黑双色骑士衍生生物。
+A:AB$ Token | Cost$ SubCounter<7/LOYALTY> | Planeswalker$ True | Ultimate$ True | TokenScript$ wb_2_2_apocalypse_knight | TokenAmount$ 4 | TokenOwner$ You | SpellDescription$ 派出四个名为“天启骑士”的2/2白黑双色骑士衍生生物。
+Oracle:当你操控四个或更多天启骑士时，你赢得这盘游戏。\n[+1]: 派出一个名为“天启骑士”的2/2白黑双色骑士衍生生物。\n[-7]: 派出四个名为“天启骑士”的2/2白黑双色骑士衍生生物。
