@@ -1,0 +1,10 @@
+Name:暗影收割者安度因
+ManaCost:3 W B
+Types:Legendary Planeswalker Anduin
+Loyalty:4
+T:Mode$ SpellCast | ValidCard$ Card | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigLoyalty | TriggerDescription$ 每当你施放咒语时，于本回合中，你可以起动安度因的一个忠诚异能一次，且能视同本回合中未起动过其忠诚异能地来起动之。
+SVar:TrigLoyalty:DB$ Effect | StaticAbilities$ LoyaltyAbs | RememberObjects$ Self | ExileOnMoved$ Battlefield
+SVar:LoyaltyAbs:Mode$ NumLoyaltyAct | ValidCard$ Card.EffectSource | Additional$ 1 | OnlySourceAbs$ True | Description$ 于本回合中，你可以起动安度因的一个忠诚异能一次，且能视同本回合中未起动过其忠诚异能地来起动之。
+A:AB$ DealDamage | Cost$ AddCounter<0/LOYALTY> | Planeswalker$ True | ValidTgts$ Any | NumDmg$ 2 | SpellDescription$ 安度因对任意一个目标造成2点伤害。
+A:AB$ Destroy | Cost$ SubCounter<1/LOYALTY> | Planeswalker$ True | ValidTgts$ Creature.powerGE4 | TgtPrompt$ 选择目标力量等于或大于4的生物 | SpellDescription$ 消灭目标力量等于或大于4的生物。
+Oracle:每当你施放咒语时，于本回合中，你可以起动安度因的一个忠诚异能一次，且能视同本回合中未起动过其忠诚异能地来起动之。\n[0]: 安度因对任意一个目标造成2点伤害。\n[-1]: 消灭目标力量等于或大于4的生物。

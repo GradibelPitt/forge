@@ -52,3 +52,4 @@ Type=Custom_Set
 53 M 冰霜女巫吉安娜 @Custom
 54 M 黑锋骑士乌瑟尔 @Custom
 55 M 虚空之影瓦莉拉 @Custom
+56 M 暗影收割者安度因 @Custom
