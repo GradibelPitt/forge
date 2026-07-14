@@ -33,12 +33,16 @@ class ChaosTentacleContractTest(unittest.TestCase):
             text,
         )
 
-    def test_discovery_uses_graveyard_tentacle_count_for_mana_value(self):
+    def test_discovery_caps_graveyard_tentacle_count_at_ten_for_mana_value(self):
         text = self.read_card()
 
-        self.assertIn("SVar:X:Count$ValidGraveyard Card.named混乱触须+YouOwn", text)
+        self.assertIn(
+            "SVar:X:Count$ValidGraveyard Card.named混乱触须+YouOwn/LimitMax.10",
+            text,
+        )
         self.assertNotIn("SVar:Y:", text)
         self.assertIn("Discover a sorcery card with mana value X, then cast it", text)
+        self.assertIn("X is the number of Chaos Tentacle cards in your graveyard, up to a maximum of 10", text)
         self.assertNotIn("mana value X plus 1", text)
 
     def test_discovered_sorcery_is_cast_for_free_then_its_targets_are_randomized(self):
@@ -64,7 +68,7 @@ class ChaosTentacleContractTest(unittest.TestCase):
         expected = (
             "混乱触须|混乱触须|神器|"
             "{T}，牺牲混乱触须：发现一张法术力值为X的法术牌，然后不支付其法术力费用并为其随机选择目标来施放之。"
-            "X为你坟墓场中名为“混乱触须”的牌数量。"
+            "X为你坟墓场中名为“混乱触须”的牌数量，且最高为10。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
