@@ -18,24 +18,27 @@ class ChainbreakerHoggerContractTest(unittest.TestCase):
         self.assertIn("K:Superreach", script)
         self.assertIn("CanBlockAny$ True", script)
 
-    def test_new_game_effect_copies_legendary_permanents_into_the_library(self):
+    def test_new_game_effect_copies_legendary_permanents_from_the_starting_deck(self):
         script = CARD.read_text(encoding="utf-8")
         lines = script.splitlines()
         trigger_line = next(line for line in lines if line.startswith("T:Mode$ NewGame |"))
-        copy_library_line = next(
-            line for line in lines if line.startswith("SVar:CopyLibrary:")
+        copy_starting_deck_line = next(
+            (line for line in lines if line.startswith("SVar:CopyStartingDeck:")),
+            None,
         )
 
         self.assertIn("TriggerZones$ Hand,Library", script)
-        self.assertIn("Execute$ CopyLibrary", trigger_line)
-        self.assertIn("SubAbility$ CopyHand", copy_library_line)
-        expected_definitions = (
-            "DefinedName$ ValidLibrary Permanent.Legendary+YouOwn+notnamed破链灾星霍格 | Zone$ Library",
-            "DefinedName$ ValidHand Permanent.Legendary+YouOwn+notnamed破链灾星霍格 | Zone$ Library",
+        self.assertIn("Execute$ CopyStartingDeck", trigger_line)
+        self.assertIsNotNone(copy_starting_deck_line)
+        self.assertIn(
+            "DefinedName$ StartingDeckLegendaryPermanents | "
+            "ExcludeName$ 破链灾星霍格 | Zone$ Library",
+            copy_starting_deck_line,
         )
-        for expected in expected_definitions:
-            with self.subTest(expected=expected):
-                self.assertIn(expected, script)
+        self.assertIn("SubAbility$ GrantLegendEmblem", copy_starting_deck_line)
+        self.assertNotIn("DefinedName$ ValidStartingDeck", script)
+        self.assertNotIn("DefinedName$ ValidHand", script)
+        self.assertNotIn("DefinedName$ ValidLibrary", script)
 
     def test_new_game_chain_creates_permanent_player_scoped_legend_emblem(self):
         script = CARD.read_text(encoding="utf-8")

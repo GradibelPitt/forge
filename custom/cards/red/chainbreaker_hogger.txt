@@ -4,9 +4,8 @@ Types:Legendary Creature Gnoll
 PT:10/10
 K:Superreach
 S:Mode$ Continuous | Affected$ Card.Self | CanBlockAny$ True | Description$ CARDNAME can block any number of creatures.
-T:Mode$ NewGame | TriggerZones$ Hand,Library | Execute$ CopyLibrary | Static$ True | TriggerDescription$ At the beginning of the game, duplicate each other legendary permanent card in your starting deck and shuffle the duplicates into your library.
-SVar:CopyLibrary:DB$ MakeCard | Conjure$ True | DefinedName$ ValidLibrary Permanent.Legendary+YouOwn+notnamed破链灾星霍格 | Zone$ Library | SubAbility$ CopyHand
-SVar:CopyHand:DB$ MakeCard | Conjure$ True | DefinedName$ ValidHand Permanent.Legendary+YouOwn+notnamed破链灾星霍格 | Zone$ Library | SubAbility$ GrantLegendEmblem
+T:Mode$ NewGame | TriggerZones$ Hand,Library | Execute$ CopyStartingDeck | Static$ True | TriggerDescription$ At the beginning of the game, duplicate each other legendary permanent card in your starting deck and shuffle the duplicates into your library.
+SVar:CopyStartingDeck:DB$ MakeCard | Conjure$ True | DefinedName$ StartingDeckLegendaryPermanents | ExcludeName$ 破链灾星霍格 | Zone$ Library | SubAbility$ GrantLegendEmblem
 SVar:GrantLegendEmblem:DB$ Effect | Name$ Emblem — 破链灾星霍格 | StaticAbilities$ IgnoreLegendRule | Duration$ Permanent | Unique$ True
 SVar:IgnoreLegendRule:Mode$ IgnoreLegendRule | ValidCard$ Permanent.YouCtrl | Description$ The "legend rule" doesn't apply to permanents you control.
 Oracle:Superreach (This creature can block any number of attacking creatures and ignores blocking restrictions from those attackers unless they have ignore superreach.)\nAt the beginning of the game, duplicate each other legendary permanent card in your starting deck and shuffle the duplicates into your library.\nThe "legend rule" doesn't apply to permanents you control.

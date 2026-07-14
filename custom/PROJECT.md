@@ -35,7 +35,7 @@
 
 - 测试牌已从 `PH01` 拆分到独立 `TEST` 版本；凡内部名称含 `test`（不区分大小写）的牌只登记在 `editions/Test_Set.txt`。`PH01` 保留正式 DIY 卡牌及其原收藏编号。
 - `Superreach`、`Ignore Superreach`、`Boarding`、`IgnoreDeckLimits` 和 `DeckMinimum` 已在当前 Forge 源码中找到实现或使用点。
-- 破链灾星霍格通过脚本提供开局复制传奇永久物、传奇规则徽记与超级延势。
+- 破链灾星霍格通过 `StartingDeckLegendaryPermanents` 直接枚举注册牌手当前主牌 `CardPool`，开局复制其中其他传奇永久物，并提供传奇规则徽记与超级延势；复制结果不依赖结算时的手牌/牌库状态，也不会像数据库发现那样物化全卡池候选。
 - 海盗帕奇斯通过牌张脚本从手牌/牌库登场；突牙使用引擎级 `Boarding:3`。
 - 卡图同步工具已支持从 `cards/pictures/` 安装到 Forge 本地图片缓存。
 - 最新引擎迁移已恢复 `CardDiscover`，并修复 `BranchEffect` 在分支解析时传递替代效应对象；新桌面聚合 JAR 已构建，安装到实际客户端与客户端对局验证仍待单独记录。

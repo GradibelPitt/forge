@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import forge.StaticData;
 import forge.card.CardEdition;
 import forge.card.ICardFace;
+import forge.deck.CardPool;
 import forge.game.Game;
 import forge.game.GameEntityCounterTable;
 import forge.game.ability.AbilityKey;
@@ -64,15 +65,21 @@ public class MakeCardEffect extends SpellAbilityEffect {
                 }
             } else if (sa.hasParam("DefinedName")) {
                 final String def = sa.getParam("DefinedName");
-                CardCollection cards = new CardCollection();
+                CardCollection cards = null;
                 if (def.equals("ChosenMap")) {
                     cards = source.getChosenMap().get(player);
+                } else if (def.equals("StartingDeckLegendaryPermanents")) {
+                    names.addAll(getLegendaryPermanentStartingDeckNames(
+                            player.getRegisteredPlayer().getDeck().getMain(),
+                            sa.getParamOrDefault("ExcludeName", "")));
                 } else {
                     cards = AbilityUtils.getDefinedCards(source, def, sa);
                 }
-                for (final Card c : cards) {
-                    //get the original papercard name
-                    names.add(c.getPaperCard().getName());
+                if (cards != null) {
+                    for (final Card c : cards) {
+                        //get the original papercard name
+                        names.add(c.getPaperCard().getName());
+                    }
                 }
             } else if (sa.hasParam("Spellbook")) {
                 faces.addAll(parseFaces(sa, "Spellbook"));
@@ -226,6 +233,23 @@ public class MakeCardEffect extends SpellAbilityEffect {
                 player.shuffle(sa);
             }
         }
+    }
+
+    static List<String> getLegendaryPermanentStartingDeckNames(final CardPool startingDeck,
+            final String excludedName) {
+        final List<String> names = Lists.newArrayList();
+        for (final Map.Entry<PaperCard, Integer> entry : startingDeck) {
+            final PaperCard paperCard = entry.getKey();
+            if (paperCard.getName().equals(excludedName)
+                    || !paperCard.getRules().getType().isLegendary()
+                    || !paperCard.getRules().getType().isPermanent()) {
+                continue;
+            }
+            for (int i = 0; i < entry.getValue(); i++) {
+                names.add(paperCard.getName());
+            }
+        }
+        return names;
     }
 
     private List<ICardFace> parseFaces(final SpellAbility sa, final String param) {

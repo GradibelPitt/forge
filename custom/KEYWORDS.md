@@ -43,7 +43,7 @@
 - **DSL:** `K:Boarding:N`，例如 `K:Boarding:3`。
 - **Java implementation:** `Keyword.java`、`keyword/Boarding.java`、`GameAction.java`。
 - **Tests:** `forge-game/src/test/java/forge/game/keyword/BoardingTest.java`；`tests/test_deck_limit_override_cards.py`。
-- **Edge cases:** 按实体 ID 去重；同一角色多次受伤只计一次；对象之后离场或改变操控者不撤销记录；cleanup 清空本回合记录；条件已满足后牌才进入手牌或牌库时仍立即检查。
+- **Edge cases:** 按实体 ID 去重；同一角色多次受伤只计一次；对象之后离场或改变操控者不撤销记录；cleanup 清空本回合记录。当前只在完整伤害批次后检查；条件已满足后牌才进入手牌或牌库时不会立即检查，必须等到下一次伤害批次。
 
 ## DeckMinimum
 
