@@ -126,6 +126,19 @@ class TitansBatchContractTest(unittest.TestCase):
             self.assertIn("倾探5", text)
             self.assertNotIn("发现5", text)
 
+    def test_eonar_checks_its_exhaust_marker_as_a_command_zone_effect(self):
+        script = titan_script("生命的缚誓者艾欧娜尔").read_text(encoding="utf-8")
+
+        self.assertIn(
+            "IsPresent$ Effect.namedEonar Exhausted This Turn+YouCtrl | "
+            "PresentZone$ Command",
+            script,
+        )
+        self.assertNotIn(
+            "IsPresent$ Card.namedEonar Exhausted This Turn+YouCtrl",
+            script,
+        )
+
     def test_edition_uses_full_image_records_41_through_51(self):
         rows = EDITION.read_text(encoding="utf-8").splitlines()
         for number, name in enumerate(TITANS, start=41):

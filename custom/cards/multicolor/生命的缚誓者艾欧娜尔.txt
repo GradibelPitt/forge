@@ -5,7 +5,7 @@ PT:5/7
 K:Trample
 K:Haste
 T:Mode$ AbilityCast | ValidCard$ Card.Self | ValidActivatingPlayer$ You | ValidSA$ Activated.Exhaust | TriggerZones$ Battlefield | Execute$ MarkEonarExhausted | TriggerDescription$ Whenever you activate an exhaust ability of CARDNAME, mark that it exhausted this turn.
-T:Mode$ Phase | Phase$ BeginCombat | ValidPlayer$ You | TriggerZones$ Battlefield | IsPresent$ Card.namedEonar Exhausted This Turn+YouCtrl | PresentZone$ Command | Execute$ TrigTreefolk | TriggerDescription$ At the beginning of combat on your turn, if CARDNAME exhausted this turn, create a 5/5 green Treefolk creature token with reach.
+T:Mode$ Phase | Phase$ BeginCombat | ValidPlayer$ You | TriggerZones$ Battlefield | IsPresent$ Effect.namedEonar Exhausted This Turn+YouCtrl | PresentZone$ Command | Execute$ TrigTreefolk | TriggerDescription$ At the beginning of combat on your turn, if CARDNAME exhausted this turn, create a 5/5 green Treefolk creature token with reach.
 A:AB$ UntapAll | Cost$ G T | ValidCards$ Land.YouCtrl | Exhaust$ True | SpellDescription$ Untap all lands you control. (Activate each exhaust ability only once.)
 A:AB$ SetLife | Cost$ W T | Defined$ You | LifeAmount$ StartingLife | Exhaust$ True | SpellDescription$ Your life total becomes equal to your starting life total. (Activate each exhaust ability only once.)
 A:AB$ Draw | Cost$ U T | Defined$ You | ConditionCheckSVar$ HandCount | ConditionSVarCompare$ LT7 | NumCards$ CardsToSeven | Exhaust$ True | SpellDescription$ Draw cards until you have seven cards in hand. (Activate each exhaust ability only once.)
