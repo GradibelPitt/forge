@@ -17,4 +17,4 @@ SVar:ClearCopiedToken:DB$ Cleanup | ClearRemembered$ True
 SVar:AddLifelinkCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ Lifelink | CounterNum$ 1 | SubAbility$ AddReanimatedFlyingCounter
 SVar:AddReanimatedFlyingCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ Flying | CounterNum$ 1 | SubAbility$ ClearReanimatedCard
 SVar:ClearReanimatedCard:DB$ Cleanup | ClearRemembered$ True
-Oracle:飞行，敏捷\n在你的回合战斗开始时，若阿曼苏尔本回合中曾竭绝，则发现5。\n竭绝—{W}，{T}：放逐两个目标非由你操控的生物。\n竭绝—{U}，{T}：派出一个目标由你操控且不是长老生物的生物之复制品衍生物。它不是传奇，且在其上放置两个+1/+1指示物和一个飞行指示物。\n竭绝—{B}，{T}：将目标法术力值为5或更小的生物牌从坟墓场放进战场并由你操控，且在其上放置一个系命指示物、一个飞行指示物和一个终命指示物。
+Oracle:飞行，敏捷\n在你的回合战斗开始时，若阿曼苏尔本回合中曾竭绝，则倾探5。\n竭绝—{W}，{T}：放逐两个目标非由你操控的生物。\n竭绝—{U}，{T}：派出一个目标由你操控且不是长老生物的生物之复制品衍生物。它不是传奇，且在其上放置两个+1/+1指示物和一个飞行指示物。\n竭绝—{B}，{T}：将目标法术力值为5或更小的生物牌从坟墓场放进战场并由你操控，且在其上放置一个系命指示物、一个飞行指示物和一个终命指示物。

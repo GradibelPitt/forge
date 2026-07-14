@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FORGE_ROOT = ROOT.parent
 EDITION = ROOT / "editions" / "Placeholder_Set.txt"
 TRANSLATIONS = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
+CARDS_DOC = ROOT / "CARDS.md"
 ART_BACKUP = ROOT / "tools" / "card-artwork" / "titans-1.31"
 V07_DISPLAY_NAME = "终极V-07-TR-0N"
 V07_INTERNAL_NAME = "V07TRON Prime"
@@ -93,6 +94,21 @@ class TitansBatchContractTest(unittest.TestCase):
             for needle in needles:
                 with self.subTest(name=name, needle=needle):
                     self.assertIn(needle, text)
+
+    def test_amanthul_calls_native_discover_and_uses_qingtan_terminology(self):
+        script = titan_script("阿曼苏尔").read_text(encoding="utf-8")
+        oracle = script.split("Oracle:", 1)[1]
+        translation = next(
+            line
+            for line in TRANSLATIONS.read_text(encoding="utf-8").splitlines()
+            if line.startswith("阿曼苏尔|")
+        )
+        cards_doc = CARDS_DOC.read_text(encoding="utf-8")
+
+        self.assertIn("DB$ Discover | Num$ 5", script)
+        for text in (oracle, translation, cards_doc):
+            self.assertIn("倾探5", text)
+            self.assertNotIn("发现5", text)
 
     def test_edition_uses_full_image_records_41_through_51(self):
         rows = EDITION.read_text(encoding="utf-8").splitlines()
