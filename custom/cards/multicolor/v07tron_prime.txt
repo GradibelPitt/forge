@@ -11,4 +11,4 @@ A:AB$ PutCounter | Cost$ C T | Defined$ Self | CounterType$ P1P1 | CounterNum$ 1
 SVar:CopyExhaustAbility:DB$ CopySpellAbility | Defined$ TriggeredSpellAbility | MayChooseTarget$ True
 SVar:CreateTreasure:DB$ Token | TokenScript$ c_a_treasure_sac | TokenOwner$ You
 SVar:PutHexproofCounter:DB$ PutCounter | Defined$ Self | CounterType$ Hexproof | CounterNum$ 1
-Oracle:虚色，敏捷\n每当终极V-07-TR-0N竭绝时，若你操控另一个生物，则复制该异能。你可以为该复制品选择新的目标。\n竭绝—{C}，{T}：终极V-07-TR-0N对任意一个目标造成4点伤害。\n竭绝—{C}，{T}：抓一张牌。派出一个珍宝衍生物。\n竭绝—{C}，{T}：在终极V-07-TR-0N上放置一个+1/+1指示物和一个辟邪指示物。
+Oracle:Devoid, haste\nWhenever V07TRON Prime exhausts, if you control another creature, copy that ability. You may choose new targets for the copy.\nExhaust — {C}, {T}: V07TRON Prime deals 4 damage to any target. (Activate each exhaust ability only once.)\nExhaust — {C}, {T}: Draw a card. Create a Treasure token. (Activate each exhaust ability only once.)\nExhaust — {C}, {T}: Put a +1/+1 counter and a hexproof counter on V07TRON Prime. (Activate each exhaust ability only once.)

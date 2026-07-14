@@ -14,4 +14,4 @@ SVar:TrigTreefolk:DB$ Token | TokenScript$ g_5_5_treefolk_reach | TokenAmount$ 1
 SVar:StartingLife:Count$YourStartingLife
 SVar:HandCount:Count$ValidHand Card.YouOwn
 SVar:CardsToSeven:Number$7/Minus.HandCount
-Oracle:践踏，敏捷\n在你的回合战斗开始时，若生命的缚誓者艾欧娜尔本回合中曾竭绝，则派出一个5/5绿色、具延势的树妖衍生生物。\n竭绝—{G}，{T}：重置所有由你操控的地。\n竭绝—{W}，{T}：你的总生命成为你的起始总生命。\n竭绝—{U}，{T}：抓牌，直到你的手牌数量为七张。
+Oracle:Trample, haste\nAt the beginning of combat on your turn, if 生命的缚誓者艾欧娜尔 exhausted this turn, create a 5/5 green Treefolk creature token with reach.\nExhaust — {G}, {T}: Untap all lands you control. (Activate each exhaust ability only once.)\nExhaust — {W}, {T}: Your life total becomes equal to your starting life total. (Activate each exhaust ability only once.)\nExhaust — {U}, {T}: Draw cards until you have seven cards in hand. (Activate each exhaust ability only once.)

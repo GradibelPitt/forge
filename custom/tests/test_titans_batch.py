@@ -78,7 +78,9 @@ class TitansBatchContractTest(unittest.TestCase):
                 self.assertIn("Creature", text)
                 self.assertEqual(3, text.count("Exhaust$ True"))
                 self.assertIn("Oracle:", text)
-                self.assertIn("竭绝", text.split("Oracle:", 1)[1])
+                oracle = text.split("Oracle:", 1)[1]
+                self.assertIn("Exhaust", oracle)
+                self.assertNotIn("竭绝", oracle)
 
     def test_yogg_saron_slide_is_not_part_of_this_batch(self):
         self.assertNotIn("尤格萨隆", TITANS)
@@ -122,7 +124,9 @@ class TitansBatchContractTest(unittest.TestCase):
         cards_doc = CARDS_DOC.read_text(encoding="utf-8")
 
         self.assertIn("DB$ Discover | Num$ 5", script)
-        for text in (oracle, translation, cards_doc):
+        self.assertIn("discover 5", oracle)
+        self.assertNotIn("倾探5", oracle)
+        for text in (translation, cards_doc):
             self.assertIn("倾探5", text)
             self.assertNotIn("发现5", text)
 
@@ -208,6 +212,17 @@ class TitansBatchContractTest(unittest.TestCase):
                 self.assertEqual(name, rows[0].split("|", 2)[1])
                 self.assertIn("长老", rows[0])
                 self.assertNotIn("古老", rows[0])
+                translated_oracle = rows[0].split("|", 3)[3]
+                source_oracle = titan_script(name).read_text(encoding="utf-8").split(
+                    "Oracle:", 1
+                )[1].strip()
+                self.assertIn("竭绝", translated_oracle)
+                self.assertNotIn("Exhaust", translated_oracle)
+                self.assertEqual(
+                    len(source_oracle.split(r"\n")),
+                    len(translated_oracle.split(r"\n")),
+                    "Forge pairs source and translated Oracle text by line",
+                )
 
     def test_v07tron_uses_a_searchable_hyphenless_internal_key(self):
         self.assertIn("v07tron", V07_INTERNAL_NAME.lower())

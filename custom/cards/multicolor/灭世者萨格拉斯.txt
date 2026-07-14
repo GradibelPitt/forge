@@ -13,4 +13,4 @@ SVar:LegionEndStep:Mode$ Phase | Phase$ End of Turn | ValidPlayer$ You | Trigger
 SVar:CreateSmallLegions:DB$ Token | TokenScript$ br_3_2_burning_legion | TokenAmount$ 2 | TokenOwner$ You
 SVar:LegionToughness:Mode$ Continuous | Affected$ Creature.named燃烧军团+YouCtrl | AddToughness$ 2
 SVar:LegionReach:Mode$ Continuous | Affected$ Creature.named燃烧军团+YouCtrl | AddKeyword$ Reach
-Oracle:死触，敏捷\n当灭世者萨格拉斯进战场时，你获得具有“在你的结束步骤开始时，派出两个3/2黑红双色、名称为燃烧军团的恶魔衍生生物”的徽记。\n竭绝—{U}，{T}：你获得具有“由你操控且名称为燃烧军团的生物得+0/+2且具有延势”的徽记。\n竭绝—{B}，{T}：放逐所有非恶魔生物。\n竭绝—{R}，{T}：派出两个6/6黑红双色、名称为燃烧军团的恶魔衍生生物。
+Oracle:Deathtouch, haste\nWhen 灭世者萨格拉斯 enters, you get an emblem with "At the beginning of your end step, create two 3/2 black and red Demon creature tokens named Burning Legion."\nExhaust — {U}, {T}: You get an emblem with "Creatures you control named Burning Legion get +0/+2 and have reach." (Activate each exhaust ability only once.)\nExhaust — {B}, {T}: Exile all non-Demon creatures. (Activate each exhaust ability only once.)\nExhaust — {R}, {T}: Create two 6/6 black and red Demon creature tokens named Burning Legion. (Activate each exhaust ability only once.)
