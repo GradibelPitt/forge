@@ -11,7 +11,7 @@ Type=Custom_Set
 10 M 海盗帕奇斯
 11 M 突牙
 14 M 炉石传说
-15 C 空中悍匪
+15 C 空中悍匪 @Custom
 16 C 空降歹徒 @Custom
 17 M Gigantic Spright @Custom
 18 R 战斗号角 @Custom
