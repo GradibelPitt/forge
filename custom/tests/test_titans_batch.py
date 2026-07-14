@@ -9,6 +9,13 @@ EDITION = ROOT / "editions" / "Placeholder_Set.txt"
 TRANSLATIONS = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 CARDS_DOC = ROOT / "CARDS.md"
 ART_BACKUP = ROOT / "tools" / "card-artwork" / "titans-1.31"
+SARGERAS_EMBLEM_SOURCE = (
+    ROOT
+    / "tools"
+    / "card-artwork"
+    / "codex-clipboard-4fb6642e-ca49-494b-a47a-ed3fc940178b.png"
+)
+SARGERAS_EMBLEM_ART = ROOT / "tokens" / "pictures" / "emblem_twisting_nether.png"
 V07_DISPLAY_NAME = "终极V-07-TR-0N"
 V07_INTERNAL_NAME = "V07TRON Prime"
 
@@ -137,6 +144,18 @@ class TitansBatchContractTest(unittest.TestCase):
                 self.assertTrue(image.is_file(), image)
                 self.assertTrue(backup.is_file(), backup)
                 self.assertEqual(digest(backup), digest(image))
+
+    def test_sargeras_twisting_nether_emblem_uses_supplied_full_image(self):
+        script = titan_script("灭世者萨格拉斯").read_text(encoding="utf-8")
+
+        self.assertIn(
+            "SVar:CreateLegionEmblem:DB$ Effect | Name$ Emblem — Twisting Nether | "
+            "Image$ emblem_twisting_nether | EffectOwner$ You",
+            script,
+        )
+        self.assertTrue(SARGERAS_EMBLEM_SOURCE.is_file(), SARGERAS_EMBLEM_SOURCE)
+        self.assertTrue(SARGERAS_EMBLEM_ART.is_file(), SARGERAS_EMBLEM_ART)
+        self.assertEqual(digest(SARGERAS_EMBLEM_SOURCE), digest(SARGERAS_EMBLEM_ART))
 
     def test_translation_rows_cover_every_titan(self):
         text = TRANSLATIONS.read_text(encoding="utf-8")
