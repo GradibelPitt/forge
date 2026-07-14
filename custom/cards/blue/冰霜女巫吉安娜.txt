@@ -10,8 +10,8 @@ SVar:DBDelayedTrigger:DB$ DelayedTrigger | Mode$ ChangesZone | RememberObjects$ 
 SVar:TrigToken:DB$ Token | TokenScript$ u_3_6_elemental
 SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
 A:AB$ Effect | Cost$ SubCounter<6/LOYALTY> | Planeswalker$ True | Ultimate$ True | Name$ Emblem — 冰霜女巫吉安娜 | Image$ emblem_frost_lich_jaina | StaticAbilities$ EmblemLifelink | Triggers$ EmblemTapTrigger | Duration$ Permanent | SpellDescription$ 你获得具有以下异能的徽记～「系命。每当一个由对手操控的生物成为横置时，此徽记对该生物造成3点伤害。」
-SVar:EmblemLifelink:Mode$ Continuous | Affected$ Card.Self | AffectedZone$ Command | AddKeyword$ Lifelink | Description$ Lifelink.
-SVar:EmblemTapTrigger:Mode$ Taps | ValidCard$ Creature.OppCtrl | Execute$ EmblemDamage | TriggerDescription$ Whenever a creature an opponent controls becomes tapped, this emblem deals 3 damage to that creature.
+SVar:EmblemLifelink:Mode$ Continuous | Affected$ Emblem.Self | AffectedZone$ Command | AddKeyword$ Lifelink | Description$ Lifelink.
+SVar:EmblemTapTrigger:Mode$ Taps | ValidCard$ Creature.OppCtrl | TriggerZones$ Command | Execute$ EmblemDamage | TriggerDescription$ Whenever a creature an opponent controls becomes tapped, this emblem deals 3 damage to that creature.
 SVar:EmblemDamage:DB$ DealDamage | Defined$ TriggeredCardLKICopy | NumDmg$ 3
 DeckHas:Ability$Token
 Oracle:由你操控的元素具有系命异能。\n[+1]: 横置目标永久物。在其上放置一个晕眩指示物。\n[-1]: 吉安娜对任意一个目标造成1点伤害。当一个本回合中曾以此法受到伤害的生物死去时，派出一个3/6蓝色元素衍生生物。\n[-6]: 你获得具有以下异能的徽记～「系命。每当一个由对手操控的生物成为横置时，此徽记对该生物造成3点伤害。」

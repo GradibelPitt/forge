@@ -83,13 +83,13 @@ class FrostLichJainaContractTest(unittest.TestCase):
             text,
         )
         self.assertIn(
-            "SVar:EmblemLifelink:Mode$ Continuous | Affected$ Card.Self | "
+            "SVar:EmblemLifelink:Mode$ Continuous | Affected$ Emblem.Self | "
             "AffectedZone$ Command | AddKeyword$ Lifelink",
             text,
         )
         self.assertIn(
             "SVar:EmblemTapTrigger:Mode$ Taps | ValidCard$ Creature.OppCtrl | "
-            "Execute$ EmblemDamage",
+            "TriggerZones$ Command | Execute$ EmblemDamage",
             text,
         )
         self.assertIn(
