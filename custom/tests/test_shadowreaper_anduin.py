@@ -43,9 +43,10 @@ class ShadowreaperAnduinContractTest(unittest.TestCase):
         )
         self.assertIn(
             "SVar:LoyaltyAbs:Mode$ NumLoyaltyAct | ValidCard$ Card.EffectSource | "
-            "Additional$ 1 | OnlySourceAbs$ True",
+            "Additional$ 1 | Description$",
             text,
         )
+        self.assertNotIn("OnlySourceAbs$ True", text)
 
     def test_zero_loyalty_ability_deals_two_damage_to_any_target(self):
         text = self.read_card()
