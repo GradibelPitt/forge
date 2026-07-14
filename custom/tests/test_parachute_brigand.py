@@ -33,7 +33,7 @@ class ParachuteBrigandContractTest(unittest.TestCase):
     def test_zh_cn_display_text_matches_the_latest_document(self):
         expected = (
             "空降歹徒|空降歹徒|生物～海盗|"
-            "当如果本回合一个海盗在你的操控下进战场时，你可以从手牌中免费施放这张牌"
+            "如果本回合一个海盗在你的操控下进战场时，你可以从手牌中免费施放这张牌"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

@@ -15,7 +15,7 @@ Type=Custom_Set
 16 C 空降歹徒 @Custom
 17 M Gigantic Spright @Custom
 18 R 战斗号角 @Custom
-19 C 尼鲁巴蛛网领主
+19 C 尼鲁巴蛛网领主 @Custom
 20 C 农夫 @Custom
 21 R 决战 @Custom
 22 R 援军光环 @Custom
