@@ -48,3 +48,4 @@ Type=Custom_Set
 49 M 翠绿之星阿古斯
 50 M 复仇者阿格拉玛
 51 M V07TRON Prime
+52 M 鲜血掠夺者古尔丹 @Custom

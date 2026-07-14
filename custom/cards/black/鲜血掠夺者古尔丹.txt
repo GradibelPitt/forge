@@ -1,0 +1,11 @@
+Name:鲜血掠夺者古尔丹
+ManaCost:2 B B
+Types:Legendary Planeswalker Guldan
+Loyalty:4
+A:AB$ DealDamage | Cost$ AddCounter<1/LOYALTY> | Planeswalker$ True | ValidTgts$ Any | NumDmg$ 3 | SubAbility$ DBGainLife | SpellDescription$ 古尔丹对任意一个目标造成3点伤害。你获得3点生命。
+SVar:DBGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 3
+A:AB$ ChangeZone | Cost$ SubCounter<2/LOYALTY> | Planeswalker$ True | Origin$ Graveyard | Destination$ Battlefield | ValidTgts$ Demon.YouCtrl | TgtPrompt$ 选择目标在你的坟墓场中的恶魔牌 | SpellDescription$ 将目标恶魔牌从你的坟墓场移回战场。
+A:AB$ ChangeZone | Cost$ SubCounter<8/LOYALTY> | Planeswalker$ True | Ultimate$ True | Origin$ Library | Destination$ Battlefield | ChangeType$ Demon | ChangeNum$ XFetch | Shuffle$ True | StackDescription$ SpellDescription | SpellDescription$ 从你的牌库中搜寻任意数量的恶魔牌，将它们放进战场，然后洗牌。
+SVar:XFetch:Count$ValidLibrary Demon.YouCtrl
+DeckHints:Type$Demon
+Oracle:[+1]: 古尔丹对任意一个目标造成3点伤害。你获得3点生命。\n[-2]: 将目标恶魔牌从你的坟墓场移回战场。\n[-8]: 从你的牌库中搜寻任意数量的恶魔牌，将它们放进战场，然后洗牌。
