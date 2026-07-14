@@ -123,6 +123,8 @@ Java 测试从 `D:\Forge\forge-latest` 执行，并使用实际模块和测试�
 - 删除旧 `forge-master` 与旧独立 `forge-diy` 目录后，从 `D:\Forge\forge-latest\custom` 重新运行 42 项 Python 测试，结果为全部通过；`Gigantic Spright` 与海盗帕奇斯的单卡 lint 也均无错误。这证明当前 custom 源、测试和工具不依赖已删除的旧路径。
 - 构建产物存在不等于当前所有源码改动都已部署，也不等于客户端行为已经验证。
 
+- 2026-07-13 新增 `心灵视界`：`{U}` 法术，检视目标对手的手牌并允许选择包括地牌在内的任意牌；按所选印刷牌名化生全新复制品到你的手牌，该牌永久获得“此咒语减少 `{1}` 来施放”。实现复用 Forge 原生 `RevealHand`、`ChooseCard`、`MakeCard` 与永久 `Animate`/`ReduceCost`，未修改 Java。TDD 红阶段因脚本与图片不存在而产生 3 个 `FileNotFoundError` 和 1 个图片断言失败；实现后 4 项目标契约测试、单卡 lint 与 DIY 全量 140 项测试全部通过。`tools/install_to_forge.ps1` 已同步脚本、PH01 #39 与卡图；脚本源/部署 SHA-256 均为 `35749A486CA53F1A3D21ACBC70064EC9761F4D114B2F29360EFDC069D1CA9E22`，卡图源/缓存均为 `1CFD511F04FAED906DB9A0F630D704873C2DF5ADA1013D7DE8626AB29F506837`，版本表源/部署均为 `8C5C65EE175D38EA44414CE84B7F8F6C2B9C9A1F88A79391CDBB132C502E290E`。简体中文条目已写入源码 `forge-gui/res/languages/cardnames-zh-CN.txt`，但当前安装脚本不单独同步该资源；本次检查时没有运行中的 Forge Java 进程。仍需启动或重载客户端，手工确认隐藏手牌仅向施法者显示、地牌可选、非地牌费用减少及中文牌框文本。
+
 ## Manual verification backlog
 
 - 在完整对局中验证 Boarding 的多次伤害、离场和晚进入手牌/牌库边界。
