@@ -5,20 +5,11 @@ Date=2026-07-10
 Type=Custom_Set
 
 [cards]
-1 C Forge Test Goblin
-2 C test1
-3 C test2
-4 C test3
-5 C test4
-6 C test5
 7 C 马克扎尔的小鬼
 8 M 破链灾星霍格 @Custom
 8a M 破链灾星霍格
-9 C test_解除构筑限制
 10 M 海盗帕奇斯
 11 M 突牙
-12 C Test Superreach 1
-13 C Test Superreach 2
 14 M 炉石传说
 15 C 空中悍匪
 16 C 空降歹徒 @Custom

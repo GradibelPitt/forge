@@ -33,7 +33,7 @@
 
 ## Current implemented state
 
-- `PH01` 当前有 38 个不同卡名、39 条版本登记（`破链灾星霍格` 的 `8` 与 `8a` 为两张画面记录），包含测试牌、机制测试牌、海盗牌、`Gigantic Spright`、破链灾星霍格、“炉石传说”及后续 DIY 卡牌。
+- 测试牌已从 `PH01` 拆分到独立 `TEST` 版本；凡内部名称含 `test`（不区分大小写）的牌只登记在 `editions/Test_Set.txt`。`PH01` 保留正式 DIY 卡牌及其原收藏编号。
 - `Superreach`、`Ignore Superreach`、`Boarding`、`IgnoreDeckLimits` 和 `DeckMinimum` 已在当前 Forge 源码中找到实现或使用点。
 - 破链灾星霍格通过脚本提供开局复制传奇永久物、传奇规则徽记与超级延势。
 - 海盗帕奇斯通过牌张脚本从手牌/牌库登场；突牙使用引擎级 `Boarding:3`。

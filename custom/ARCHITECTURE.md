@@ -7,7 +7,7 @@
 | Concern | Authoritative source | Generated or deployed destination | Notes |
 |---|---|---|---|
 | DIY 卡牌 | `D:\Forge\forge-latest\custom\cards\` | `%APPDATA%\Forge\custom\cards\` | 安装脚本保持子目录结构 |
-| 自定义版本 | `D:\Forge\forge-latest\custom\editions\` | `%APPDATA%\Forge\custom\editions\` | 当前版本为 `PH01` |
+| 自定义版本 | `D:\Forge\forge-latest\custom\editions\` | `%APPDATA%\Forge\custom\editions\` | 正式 DIY 为 `PH01`，测试牌为 `TEST` |
 | Token | `D:\Forge\forge-latest\custom\tokens\` | `%APPDATA%\Forge\custom\tokens\` | token 脚本同步到自定义目录；`tokens/pictures/` 同步到 `%LOCALAPPDATA%\Forge\Cache\pics\tokens\` |
 | 卡图 | `D:\Forge\forge-latest\custom\cards\pictures\` | `%LOCALAPPDATA%\Forge\Cache\pics\cards\` | 版本图使用如 `PH01/<名称>.full.jpg` |
 | DIY 测试 | `D:\Forge\forge-latest\custom\tests\` | 无 | Python 契约测试 |
@@ -21,7 +21,8 @@
 
 - `cards/<color>/`：Forge `.txt` 卡牌脚本。
 - `cards/pictures/`：无版本通用图或按版本代码组织的卡图。
-- `editions/Placeholder_Set.txt`：`PH01` 版本元数据和收藏编号。
+- `editions/Placeholder_Set.txt`：`PH01` 正式 DIY 版本元数据和收藏编号。
+- `editions/Test_Set.txt`：内部名称含 `test`（不区分大小写）的测试牌专用 `TEST` 版本。
 - `tokens/`：需要时存放 token 脚本；没有 token 时可以不存在。
 - `tests/`：检查脚本字段、版本登记和机制契约。
 - `tools/new_card.py`、`find_similar.py`、`lint_card.py`：创建、查找官方范例和静态校验工具。

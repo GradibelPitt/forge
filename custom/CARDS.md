@@ -4,7 +4,7 @@
 
 ## Test cards
 
-| Card | Cost / type / stats | Script | PH01 | Purpose |
+| Card | Cost / type / stats | Script | TEST | Purpose |
 |---|---|---|---:|---|
 | Forge Test Goblin | `{1}{R}`，2/1 鬼怪／战士 | `cards/red/forge_test_goblin.txt` | 1 | 基础加载、敏捷和进场抓牌 |
 | test1 | `{1}` 神器 | `cards/colorless/test1.txt` | 2 | 同名牌数量豁免测试 |
@@ -12,9 +12,9 @@
 | test3 | `{0}` 传奇神器 | `cards/colorless/test3.txt` | 4 | 全区域传奇规则豁免脚本测试 |
 | test4 | `{0}` 神器 | `cards/colorless/test4.txt` | 5 | 牌库末张自动上手与胜利条件 |
 | test5 | `{0}` 神器 | `cards/colorless/test5.txt` | 6 | `StartInHand` 与组合任意色法力 |
-| test_解除构筑限制 | `{0}` 神器 | `cards/colorless/test_解除构筑限制.txt` | 9 | `IgnoreDeckLimits` 测试 |
-| Test Superreach 1 | `{0}` 10/10 生物 | `cards/colorless/test_superreach_1.txt` | 12 | Superreach 阻挡者 |
-| Test Superreach 2 | `{0}` 20/20 生物 | `cards/colorless/test_superreach_2.txt` | 13 | 多种攻击者阻挡限制组合 |
+| test_解除构筑限制 | `{0}` 神器 | `cards/colorless/test_解除构筑限制.txt` | 7 | `IgnoreDeckLimits` 测试 |
+| Test Superreach 1 | `{0}` 10/10 生物 | `cards/colorless/test_superreach_1.txt` | 8 | Superreach 阻挡者 |
+| Test Superreach 2 | `{0}` 20/20 生物 | `cards/colorless/test_superreach_2.txt` | 9 | 多种攻击者阻挡限制组合 |
 
 ## Gameplay cards
 

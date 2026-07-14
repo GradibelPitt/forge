@@ -7,6 +7,7 @@ OVERRIDE = ROOT / "cards" / "colorless" / "test_解除构筑限制.txt"
 PATCHES = ROOT / "cards" / "red" / "海盗帕奇斯.txt"
 TUSK = ROOT / "cards" / "red" / "突牙.txt"
 EDITION = ROOT / "editions" / "Placeholder_Set.txt"
+TEST_EDITION = ROOT / "editions" / "Test_Set.txt"
 
 
 class DeckLimitOverrideCardsTest(unittest.TestCase):
@@ -62,8 +63,10 @@ class DeckLimitOverrideCardsTest(unittest.TestCase):
 
     def test_cards_are_listed_in_the_custom_edition(self):
         edition = EDITION.read_text(encoding="utf-8")
+        test_edition = TEST_EDITION.read_text(encoding="utf-8")
 
-        self.assertIn("9 C test_解除构筑限制", edition)
+        self.assertIn("7 C test_解除构筑限制", test_edition)
+        self.assertNotIn("test_解除构筑限制", edition)
         self.assertIn("10 M 海盗帕奇斯", edition)
         self.assertIn("11 M 突牙", edition)
 

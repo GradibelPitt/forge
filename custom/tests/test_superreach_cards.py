@@ -5,7 +5,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 SUPERREACH_1 = ROOT / "cards" / "colorless" / "test_superreach_1.txt"
 SUPERREACH_2 = ROOT / "cards" / "colorless" / "test_superreach_2.txt"
-EDITION = ROOT / "editions" / "Placeholder_Set.txt"
+EDITION = ROOT / "editions" / "Test_Set.txt"
 
 
 def edition_card_rows():
@@ -103,10 +103,10 @@ class SuperreachCardsContractTest(unittest.TestCase):
     def test_cards_are_listed_in_the_custom_edition(self):
         rows = edition_card_rows()
 
-        self.assertIn("12 C Test Superreach 1", rows)
-        self.assertIn("13 C Test Superreach 2", rows)
-        self.assertEqual(1, rows.count("12 C Test Superreach 1"))
-        self.assertEqual(1, rows.count("13 C Test Superreach 2"))
+        self.assertIn("8 C Test Superreach 1", rows)
+        self.assertIn("9 C Test Superreach 2", rows)
+        self.assertEqual(1, rows.count("8 C Test Superreach 1"))
+        self.assertEqual(1, rows.count("9 C Test Superreach 2"))
 
     def test_custom_edition_card_rows_have_unique_numbers_and_names(self):
         rows = edition_card_rows()
