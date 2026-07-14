@@ -1,0 +1,17 @@
+Name:冰霜女巫吉安娜
+ManaCost:2 U U
+Types:Legendary Planeswalker Jaina
+Loyalty:3
+S:Mode$ Continuous | Affected$ Creature.Elemental+YouCtrl | AddKeyword$ Lifelink | Description$ Elementals you control have lifelink.
+A:AB$ Tap | Cost$ AddCounter<1/LOYALTY> | Planeswalker$ True | ValidTgts$ Permanent | SubAbility$ DBStun | SpellDescription$ 横置目标永久物。在其上放置一个晕眩指示物。
+SVar:DBStun:DB$ PutCounter | Defined$ Targeted | CounterType$ Stun | CounterNum$ 1
+A:AB$ DealDamage | Cost$ SubCounter<1/LOYALTY> | Planeswalker$ True | ValidTgts$ Any | NumDmg$ 1 | RememberDamaged$ True | SubAbility$ DBDelayedTrigger | SpellDescription$ 吉安娜对任意一个目标造成1点伤害。
+SVar:DBDelayedTrigger:DB$ DelayedTrigger | Mode$ ChangesZone | RememberObjects$ Remembered | ValidCard$ Card.IsTriggerRemembered | Origin$ Battlefield | Destination$ Graveyard | ThisTurn$ True | Execute$ TrigToken | SubAbility$ DBCleanup | SpellDescription$ 当一个本回合中曾以此法受到伤害的生物死去时，派出一个3/6蓝色元素衍生生物。
+SVar:TrigToken:DB$ Token | TokenScript$ u_3_6_elemental
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+A:AB$ Effect | Cost$ SubCounter<6/LOYALTY> | Planeswalker$ True | Ultimate$ True | Name$ Emblem — 冰霜女巫吉安娜 | Image$ emblem_frost_lich_jaina | StaticAbilities$ EmblemLifelink | Triggers$ EmblemTapTrigger | Duration$ Permanent | SpellDescription$ 你获得具有以下异能的徽记～「系命。每当一个由对手操控的生物成为横置时，此徽记对该生物造成3点伤害。」
+SVar:EmblemLifelink:Mode$ Continuous | Affected$ Card.Self | AffectedZone$ Command | AddKeyword$ Lifelink | Description$ Lifelink.
+SVar:EmblemTapTrigger:Mode$ Taps | ValidCard$ Creature.OppCtrl | Execute$ EmblemDamage | TriggerDescription$ Whenever a creature an opponent controls becomes tapped, this emblem deals 3 damage to that creature.
+SVar:EmblemDamage:DB$ DealDamage | Defined$ TriggeredCardLKICopy | NumDmg$ 3
+DeckHas:Ability$Token
+Oracle:由你操控的元素具有系命异能。\n[+1]: 横置目标永久物。在其上放置一个晕眩指示物。\n[-1]: 吉安娜对任意一个目标造成1点伤害。当一个本回合中曾以此法受到伤害的生物死去时，派出一个3/6蓝色元素衍生生物。\n[-6]: 你获得具有以下异能的徽记～「系命。每当一个由对手操控的生物成为横置时，此徽记对该生物造成3点伤害。」
