@@ -29,15 +29,17 @@ class ChaosTentacleContractTest(unittest.TestCase):
         text = self.read_card()
 
         self.assertIn(
-            "A:AB$ CardDiscover | Cost$ T Sac<1/CARDNAME> | Defined$ You | Source$ CardDatabase | ValidCards$ Sorcery.cmcEQY | OptionCount$ 3 | Destination$ Exile | RememberChosen$ True | SubAbility$ CastDiscoveredSpell",
+            "A:AB$ CardDiscover | Cost$ T Sac<1/CARDNAME> | Defined$ You | Source$ CardDatabase | ValidCards$ Sorcery.cmcEQX | OptionCount$ 3 | Destination$ Exile | RememberChosen$ True | SubAbility$ CastDiscoveredSpell",
             text,
         )
 
-    def test_discovery_uses_graveyard_tentacles_plus_one_for_mana_value(self):
+    def test_discovery_uses_graveyard_tentacle_count_for_mana_value(self):
         text = self.read_card()
 
         self.assertIn("SVar:X:Count$ValidGraveyard Card.named混乱触须+YouOwn", text)
-        self.assertIn("SVar:Y:SVar$X/Plus.1", text)
+        self.assertNotIn("SVar:Y:", text)
+        self.assertIn("Discover a sorcery card with mana value X, then cast it", text)
+        self.assertNotIn("mana value X plus 1", text)
 
     def test_discovered_sorcery_is_cast_for_free_then_its_targets_are_randomized(self):
         text = self.read_card()
@@ -61,7 +63,7 @@ class ChaosTentacleContractTest(unittest.TestCase):
     def test_card_has_simplified_chinese_display_text(self):
         expected = (
             "混乱触须|混乱触须|神器|"
-            "{T}，牺牲混乱触须：发现一张法术力值为X加1的法术牌，然后不支付其法术力费用并为其随机选择目标来施放之。"
+            "{T}，牺牲混乱触须：发现一张法术力值为X的法术牌，然后不支付其法术力费用并为其随机选择目标来施放之。"
             "X为你坟墓场中名为“混乱触须”的牌数量。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
