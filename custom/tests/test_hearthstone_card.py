@@ -5,6 +5,8 @@ import unittest
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CARD_PATH = PROJECT_ROOT / "cards" / "colorless" / "炉石传说.txt"
 EDITION_PATH = PROJECT_ROOT / "editions" / "Placeholder_Set.txt"
+ART_PATH = PROJECT_ROOT / "cards" / "pictures" / "PH01" / "炉石传说.artcrop.jpg"
+ART_BACKUP_PATH = PROJECT_ROOT / "tools" / "card-artwork" / "炉石传说_original.png"
 
 
 class HearthstoneCardContractTest(unittest.TestCase):
@@ -70,7 +72,17 @@ class HearthstoneCardContractTest(unittest.TestCase):
     def test_has_exact_placeholder_set_entry(self):
         edition = EDITION_PATH.read_text(encoding="utf-8")
 
-        self.assertIn("14 M 炉石传说", edition.splitlines())
+        self.assertIn("14 M 炉石传说 @Custom", edition.splitlines())
+
+    def test_has_standard_crop_art(self):
+        from PIL import Image
+
+        self.assertTrue(ART_BACKUP_PATH.is_file())
+        self.assertTrue(ART_PATH.is_file())
+        with Image.open(ART_PATH) as image:
+            self.assertEqual("RGB", image.mode)
+            self.assertGreater(image.width, image.height)
+            self.assertAlmostEqual(image.width / image.height, 1.37, delta=0.02)
 
 
 if __name__ == "__main__":
