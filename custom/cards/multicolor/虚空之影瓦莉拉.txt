@@ -1,0 +1,15 @@
+Name:虚空之影瓦莉拉
+ManaCost:3 U B
+Types:Legendary Planeswalker Valeera
+Loyalty:4
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigProtect | TriggerDescription$ 当瓦莉拉进场时，直到你的下一个回合，你和瓦莉拉获得反一切保护异能。
+SVar:TrigProtect:DB$ Pump | Defined$ You | Duration$ UntilYourNextTurn | KW$ Protection from everything | SubAbility$ DBProtectValeera
+SVar:DBProtectValeera:DB$ Pump | Defined$ Self | Duration$ UntilYourNextTurn | KW$ Protection from everything
+A:AB$ Draw | Cost$ AddCounter<1/LOYALTY> | Planeswalker$ True | Defined$ You | NumCards$ 1 | SubAbility$ DBDiscard | SpellDescription$ 抓一张牌，然后弃一张牌。至多一个目标生物本回合不能被阻挡。
+SVar:DBDiscard:DB$ Discard | Defined$ You | NumCards$ 1 | Mode$ TgtChoose | SubAbility$ DBUnblockable
+SVar:DBUnblockable:DB$ Effect | TargetMin$ 0 | TargetMax$ 1 | ValidTgts$ Creature | RememberObjects$ Targeted | ExileOnMoved$ Battlefield | StaticAbilities$ Unblockable
+SVar:Unblockable:Mode$ CantBlockBy | ValidAttacker$ Card.IsRemembered | Description$ 此生物本回合不能被阻挡。
+A:AB$ DelayedTrigger | Cost$ SubCounter<2/LOYALTY> | Planeswalker$ True | AILogic$ SpellCopy | Mode$ SpellCast | ValidCard$ Card | ValidActivatingPlayer$ You | ThisTurn$ True | Execute$ TrigCopy | SpellDescription$ 本回合中，当你施放你的下一个咒语时，将它复制。你可以为该复制品选择新的目标。
+SVar:TrigCopy:DB$ CopySpellAbility | Defined$ TriggeredSpellAbility | AILogic$ Always | Amount$ 1 | MayChooseTarget$ True
+DeckHas:Ability$Discard
+Oracle:当瓦莉拉进场时，直到你的下一个回合，你和瓦莉拉获得反一切保护异能。\n[+1]: 抓一张牌，然后弃一张牌。至多一个目标生物本回合不能被阻挡。\n[-2]: 本回合中，当你施放你的下一个咒语时，将它复制。你可以为该复制品选择新的目标。
