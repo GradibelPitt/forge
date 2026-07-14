@@ -1,0 +1,15 @@
+Name:维和者阿米图斯
+ManaCost:3 R G W
+Types:Legendary Creature Elder Human
+PT:1/7
+K:Defender
+K:Haste
+R:Event$ DamageDone | ActiveZones$ Battlefield | ValidTarget$ Creature.YouCtrl | DamageAmount$ GE3 | ReplaceWith$ CapDamage | PreventionEffect$ True | Description$ If damage would be dealt to a creature you control, prevent all but 2 of that damage.
+A:AB$ PutCounterAll | Cost$ R T | ValidCards$ Creature.YouCtrl+StrictlyOther | CounterType$ P1P1 | CounterNum$ 2 | Exhaust$ True | SpellDescription$ Put two +1/+1 counters on each other creature you control. (Activate each exhaust ability only once.)
+A:AB$ ChangeZone | Cost$ G T | Hidden$ True | Origin$ Hand | Destination$ Battlefield | ChangeType$ Creature.cmcLE5+YouOwn | ChangeNum$ 2 | Optional$ True | RememberChanged$ True | SubAbility$ MakeSoldiers | Exhaust$ True | SpellDescription$ You may put up to two creature cards with mana value 5 or less from your hand onto the battlefield. Each of them becomes a Soldier in addition to its other types and has base power and toughness 2/2. (Activate each exhaust ability only once.)
+A:AB$ AnimateAll | Cost$ W T | ValidCards$ Creature.OppCtrl | Power$ 2 | Toughness$ 2 | Duration$ Permanent | Exhaust$ True | SpellDescription$ Creatures your opponents control have base power and toughness 2/2. (Activate each exhaust ability only once.)
+SVar:CapDamage:DB$ ReplaceDamage | Amount$ DamageAboveTwo
+SVar:DamageAboveTwo:ReplaceCount$DamageAmount/Minus.2
+SVar:MakeSoldiers:DB$ Animate | Defined$ Remembered | Power$ 2 | Toughness$ 2 | Types$ Soldier | Duration$ Permanent | SubAbility$ Cleanup
+SVar:Cleanup:DB$ Cleanup | ClearRemembered$ True
+Oracle:守军，敏捷\n如果将对由你操控的生物造成伤害，则改为对其造成至多2点伤害。\n竭绝—{R}，{T}：在每个其他由你操控的生物上各放置两个+1/+1指示物。\n竭绝—{G}，{T}：你可以将至多两张法术力值为5或更小的生物牌从你手上放进战场。它们的基础力量与防御力为2/2，且除原本类别外还是士兵。\n竭绝—{W}，{T}：所有由对手操控的生物之基础力量与防御力为2/2。

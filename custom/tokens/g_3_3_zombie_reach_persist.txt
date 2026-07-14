@@ -1,0 +1,9 @@
+Name:僵尸
+ManaCost:no cost
+Colors:green
+Types:Creature Zombie
+PT:3/3
+K:Reach
+K:Persist
+Oracle:Reach, persist
+

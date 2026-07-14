@@ -10,7 +10,7 @@ Type=Custom_Set
 8a M 破链灾星霍格
 10 M 海盗帕奇斯
 11 M 突牙
-14 M 炉石传说
+14 M 炉石传说 @Custom
 15 C 空中悍匪 @Custom
 16 C 空降歹徒 @Custom
 17 M Gigantic Spright @Custom
@@ -37,3 +37,14 @@ Type=Custom_Set
 38 C 心灵震爆 @Custom
 39 C 心灵视界 @Custom
 40 C 混乱触须 @Custom
+41 M 阿曼苏尔
+42 M 灭世者萨格拉斯
+43 M 兵主
+44 M 生命的缚誓者艾欧娜尔
+45 M 维和者阿米图斯
+46 M 诺甘农
+47 M 雷霆之神高戈奈斯
+48 M 卡兹格罗斯
+49 M 翠绿之星阿古斯
+50 M 复仇者阿格拉玛
+51 M V07TRON Prime

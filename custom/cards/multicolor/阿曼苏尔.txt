@@ -1,0 +1,20 @@
+Name:阿曼苏尔
+ManaCost:3 W U B
+Types:Legendary Creature Elder Angel
+PT:3/10
+K:Flying
+K:Haste
+T:Mode$ AbilityCast | ValidCard$ Card.Self | ValidActivatingPlayer$ You | ValidSA$ Activated.Exhaust | TriggerZones$ Battlefield | Execute$ MarkExhausted
+T:Mode$ Phase | Phase$ BeginCombat | ValidPlayer$ You | TriggerZones$ Battlefield | IsPresent$ Card.namedAmanThul Exhausted+YouCtrl | PresentZone$ Command | PresentCompare$ GE1 | Execute$ DiscoverFive | TriggerDescription$ At the beginning of combat on your turn, if CARDNAME exhausted this turn, discover 5.
+A:AB$ ChangeZone | Cost$ W T | Origin$ Battlefield | Destination$ Exile | ValidTgts$ Creature.YouDontCtrl | TargetMin$ 2 | TargetMax$ 2 | TgtPrompt$ Select two target creatures you don't control | Exhaust$ True | SpellDescription$ Exile two target creatures you don't control. (Activate each exhaust ability only once.)
+A:AB$ CopyPermanent | Cost$ U T | ValidTgts$ Creature.nonElder+YouCtrl | TgtPrompt$ Select target non-Elder creature you control | NonLegendary$ True | RememberTokens$ True | SubAbility$ AddCopiedP1P1Counters | Exhaust$ True | SpellDescription$ Create a token that's a copy of target non-Elder creature you control, except it isn't legendary. Put two +1/+1 counters and a flying counter on it. (Activate each exhaust ability only once.)
+A:AB$ ChangeZone | Cost$ B T | Origin$ Graveyard | Destination$ Battlefield | GainControl$ True | ValidTgts$ Creature.cmcLE5 | TgtPrompt$ Select target creature card with mana value 5 or less in a graveyard | WithCountersType$ FINALITY | WithCountersAmount$ 1 | RememberChanged$ True | SubAbility$ AddLifelinkCounter | Exhaust$ True | SpellDescription$ Put target creature card with mana value 5 or less from a graveyard onto the battlefield under your control with a lifelink counter, a flying counter, and a finality counter on it. (Activate each exhaust ability only once.)
+SVar:MarkExhausted:DB$ Effect | Name$ AmanThul Exhausted | EffectOwner$ You | Duration$ UntilEndOfTurn | Unique$ True
+SVar:DiscoverFive:DB$ Discover | Num$ 5
+SVar:AddCopiedP1P1Counters:DB$ PutCounter | Defined$ Remembered | CounterType$ P1P1 | CounterNum$ 2 | SubAbility$ AddFlyingCounter
+SVar:AddFlyingCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ Flying | CounterNum$ 1 | SubAbility$ ClearCopiedToken
+SVar:ClearCopiedToken:DB$ Cleanup | ClearRemembered$ True
+SVar:AddLifelinkCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ Lifelink | CounterNum$ 1 | SubAbility$ AddReanimatedFlyingCounter
+SVar:AddReanimatedFlyingCounter:DB$ PutCounter | Defined$ Remembered | CounterType$ Flying | CounterNum$ 1 | SubAbility$ ClearReanimatedCard
+SVar:ClearReanimatedCard:DB$ Cleanup | ClearRemembered$ True
+Oracle:飞行，敏捷\n在你的回合战斗开始时，若阿曼苏尔本回合中曾竭绝，则发现5。\n竭绝—{W}，{T}：放逐两个目标非由你操控的生物。\n竭绝—{U}，{T}：派出一个目标由你操控且不是长老生物的生物之复制品衍生物。它不是传奇，且在其上放置两个+1/+1指示物和一个飞行指示物。\n竭绝—{B}，{T}：将目标法术力值为5或更小的生物牌从坟墓场放进战场并由你操控，且在其上放置一个系命指示物、一个飞行指示物和一个终命指示物。

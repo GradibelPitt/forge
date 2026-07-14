@@ -1,0 +1,7 @@
+Name:元素
+ManaCost:no cost
+Colors:green
+Types:Creature Elemental
+PT:2/2
+K:Reach
+Oracle:Reach

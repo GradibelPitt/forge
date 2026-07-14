@@ -1,0 +1,7 @@
+Name:燃烧军团
+ManaCost:no cost
+Colors:black,red
+Types:Creature Demon
+PT:6/6
+Oracle:
+

@@ -1,0 +1,16 @@
+Name:灭世者萨格拉斯
+ManaCost:4 U B R
+Types:Legendary Creature Elder Demon
+PT:6/12
+K:Deathtouch
+K:Haste
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ CreateLegionEmblem | TriggerZones$ Battlefield | TriggerDescription$ When CARDNAME enters, you get an emblem with "At the beginning of your end step, create two 3/2 black and red Demon creature tokens named Burning Legion."
+A:AB$ Effect | Cost$ U T | Name$ Emblem — Legion Fortification | EffectOwner$ You | StaticAbilities$ LegionToughness,LegionReach | Duration$ Permanent | Exhaust$ True | SpellDescription$ You get an emblem with "Creatures you control named Burning Legion get +0/+2 and have reach." (Activate each exhaust ability only once.)
+A:AB$ ChangeZoneAll | Cost$ B T | Origin$ Battlefield | Destination$ Exile | ChangeType$ Creature.nonDemon | Exhaust$ True | SpellDescription$ Exile all non-Demon creatures. (Activate each exhaust ability only once.)
+A:AB$ Token | Cost$ R T | TokenScript$ br_6_6_burning_legion | TokenAmount$ 2 | TokenOwner$ You | Exhaust$ True | SpellDescription$ Create two 6/6 black and red Demon creature tokens named Burning Legion. (Activate each exhaust ability only once.)
+SVar:CreateLegionEmblem:DB$ Effect | Name$ Emblem — Twisting Nether | EffectOwner$ You | Triggers$ LegionEndStep | Duration$ Permanent
+SVar:LegionEndStep:Mode$ Phase | Phase$ End of Turn | ValidPlayer$ You | TriggerZones$ Command | Execute$ CreateSmallLegions | TriggerDescription$ At the beginning of your end step, create two 3/2 black and red Demon creature tokens named Burning Legion.
+SVar:CreateSmallLegions:DB$ Token | TokenScript$ br_3_2_burning_legion | TokenAmount$ 2 | TokenOwner$ You
+SVar:LegionToughness:Mode$ Continuous | Affected$ Creature.named燃烧军团+YouCtrl | AddToughness$ 2
+SVar:LegionReach:Mode$ Continuous | Affected$ Creature.named燃烧军团+YouCtrl | AddKeyword$ Reach
+Oracle:死触，敏捷\n当灭世者萨格拉斯进战场时，你获得具有“在你的结束步骤开始时，派出两个3/2黑红双色、名称为燃烧军团的恶魔衍生生物”的徽记。\n竭绝—{U}，{T}：你获得具有“由你操控且名称为燃烧军团的生物得+0/+2且具有延势”的徽记。\n竭绝—{B}，{T}：放逐所有非恶魔生物。\n竭绝—{R}，{T}：派出两个6/6黑红双色、名称为燃烧军团的恶魔衍生生物。

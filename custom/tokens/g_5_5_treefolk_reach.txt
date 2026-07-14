@@ -1,0 +1,7 @@
+Name:树妖
+ManaCost:no cost
+Colors:green
+Types:Creature Treefolk
+PT:5/5
+K:Reach
+Oracle:延势

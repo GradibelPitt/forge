@@ -1,0 +1,17 @@
+Name:复仇者阿格拉玛
+ManaCost:2 B R G
+Types:Legendary Creature Elder Ranger
+PT:3/7
+K:Vigilance
+K:Haste
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ CreateTaeshalach | TriggerDescription$ When CARDNAME enters, create Taeshalach, a legendary colorless artifact token with fading 3.
+SVar:CreateTaeshalach:DB$ Token | TokenScript$ c_taeshalach_fading3 | TokenOwner$ You
+A:AB$ Animate | Cost$ B T | Defined$ Valid Artifact.named泰沙拉克+YouCtrl | Duration$ Permanent | Triggers$ TaeshalachDestroyTrigger | Exhaust$ True | SpellDescription$ Taeshalach permanently gains "At the beginning of your end step, destroy target creature with toughness 3 or less." (Activate each exhaust ability only once.)
+SVar:TaeshalachDestroyTrigger:Mode$ Phase | Phase$ End of Turn | ValidPlayer$ You | Execute$ TaeshalachDestroy | TriggerDescription$ At the beginning of your end step, destroy target creature with toughness 3 or less.
+SVar:TaeshalachDestroy:DB$ Destroy | ValidTgts$ Creature.toughnessLE3 | TgtPrompt$ Select target creature with toughness 3 or less
+A:AB$ Animate | Cost$ R T | Defined$ Valid Artifact.named泰沙拉克+YouCtrl | Duration$ Permanent | Triggers$ TaeshalachDwarfTrigger | Exhaust$ True | SpellDescription$ Taeshalach permanently gains "At the beginning of your end step, create a 3/3 green Dwarf creature token with double strike." (Activate each exhaust ability only once.)
+SVar:TaeshalachDwarfTrigger:Mode$ Phase | Phase$ End of Turn | ValidPlayer$ You | Execute$ TaeshalachDwarf | TriggerDescription$ At the beginning of your end step, create a 3/3 green Dwarf creature token with double strike.
+SVar:TaeshalachDwarf:DB$ Token | TokenScript$ g_3_3_dwarf_double_strike | TokenOwner$ You
+A:AB$ PutCounter | Cost$ G T | Defined$ Valid Artifact.named泰沙拉克+YouCtrl | CounterType$ FADE | CounterNum$ 1 | Exhaust$ True | SpellDescription$ Put a fade counter on Taeshalach. (Activate each exhaust ability only once.)
+DeckHas:Ability$Token|Counters
+Oracle:警戒，敏捷\n当复仇者阿格拉玛进战场时，派出一个名称为泰沙拉克，具消逝3的传奇无色神器衍生物。\n竭绝—{B}，{T}：泰沙拉克永久获得“在你的结束步骤开始时，消灭目标防御力为3或更小的生物。”\n竭绝—{R}，{T}：泰沙拉克永久获得“在你的结束步骤开始时，派出一个3/3绿色、具连击的矮人衍生生物。”\n竭绝—{G}，{T}：在泰沙拉克上放置一个消逝指示物。

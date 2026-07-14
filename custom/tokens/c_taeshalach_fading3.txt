@@ -1,0 +1,5 @@
+Name:泰沙拉克
+ManaCost:no cost
+Types:Legendary Artifact
+K:Fading:3
+Oracle:Fading 3

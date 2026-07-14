@@ -1,0 +1,18 @@
+Name:卡兹格罗斯
+ManaCost:2 R W B
+Types:Legendary Creature Elder Dwarf
+PT:4/5
+K:First Strike
+K:Haste
+T:Mode$ AbilityCast | ValidCard$ Card.Self | ValidActivatingPlayer$ You | ValidSA$ Activated.Exhaust | TriggerZones$ Battlefield | Execute$ MarkExhausted | TriggerDescription$ Whenever you activate an exhaust ability of CARDNAME, mark that it exhausted this turn.
+T:Mode$ Phase | Phase$ BeginCombat | ValidPlayer$ You | IsPresent$ Card.named卡兹格罗斯已竭绝+YouCtrl | PresentZone$ Command | Execute$ ExhaustedFight | TriggerZones$ Battlefield | TriggerDescription$ At the beginning of combat on your turn, if CARDNAME exhausted this turn, prevent all combat damage that would be dealt to it this turn, then it fights target creature you don't control.
+SVar:ExhaustedFight:DB$ Pump | Defined$ Self | KW$ Prevent all combat damage that would be dealt to CARDNAME. | Duration$ EndOfTurn | SubAbility$ FightCreature
+SVar:FightCreature:DB$ Fight | Defined$ Self | ValidTgts$ Creature.YouDontCtrl | TgtPrompt$ Select target creature you don't control
+A:AB$ ChangeZone | Cost$ R T | Origin$ Library | Destination$ Hand | ChangeType$ Equipment | ChangeNum$ 1 | Reveal$ True | Shuffle$ True | Exhaust$ True | SpellDescription$ Search your library for an Equipment card, reveal it, put it into your hand, then shuffle. (Activate each exhaust ability only once.)
+A:AB$ GainLife | Cost$ W T | Defined$ You | LifeAmount$ 5 | Exhaust$ True | SubAbility$ WhiteShield | SpellDescription$ You gain 5 life and put a shield counter on CARDNAME. (Activate each exhaust ability only once.)
+SVar:WhiteShield:DB$ PutCounter | Defined$ Self | CounterType$ SHIELD | CounterNum$ 1
+A:AB$ DealDamage | Cost$ B T | ValidTgts$ Player | TgtPrompt$ Select target player | NumDmg$ 5 | Exhaust$ True | SubAbility$ BlackPump | SpellDescription$ CARDNAME deals 5 damage to target player and gets +5/+5 until end of turn. (Activate each exhaust ability only once.)
+SVar:BlackPump:DB$ Pump | Defined$ Self | NumAtt$ +5 | NumDef$ +5
+SVar:MarkExhausted:DB$ Effect | Name$ 卡兹格罗斯已竭绝 | Duration$ UntilEndOfTurn | Unique$ True
+DeckHints:Type$Equipment
+Oracle:先攻，敏捷\n在你的回合战斗开始时，若卡兹格罗斯本回合中曾竭绝，则于本回合中，防止将对其造成的所有战斗伤害。然后它与目标非由你操控的生物互斗。\n竭绝—{R}，{T}：从你牌库中搜寻一张武具牌，展示之并置于你手上，然后洗牌。\n竭绝—{W}，{T}：你获得5点生命。在卡兹格罗斯上放置一个后盾指示物。\n竭绝—{B}，{T}：卡兹格罗斯对目标牌手造成5点伤害。它得+5/+5直到回合结束。

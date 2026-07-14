@@ -1,0 +1,28 @@
+Name:兵主
+ManaCost:4 G U R
+Types:Legendary Creature Elder Warlock
+PT:7/9
+K:Lifelink
+K:Haste
+T:Mode$ AbilityCast | ValidCard$ Card.Self | ValidActivatingPlayer$ You | ValidSA$ Activated.Exhaust+NamedAbilityPrimus Green Exhaust | TriggerZones$ Battlefield | Execute$ MarkGreenExhaust | TriggerDescription$ Whenever you activate CARDNAME's green exhaust ability, mark that green mana was used to exhaust it this turn.
+T:Mode$ AbilityCast | ValidCard$ Card.Self | ValidActivatingPlayer$ You | ValidSA$ Activated.Exhaust+NamedAbilityPrimus Blue Exhaust | TriggerZones$ Battlefield | Execute$ MarkBlueExhaust | TriggerDescription$ Whenever you activate CARDNAME's blue exhaust ability, mark that blue mana was used to exhaust it this turn.
+T:Mode$ AbilityCast | ValidCard$ Card.Self | ValidActivatingPlayer$ You | ValidSA$ Activated.Exhaust+NamedAbilityPrimus Red Exhaust | TriggerZones$ Battlefield | Execute$ MarkRedExhaust | TriggerDescription$ Whenever you activate CARDNAME's red exhaust ability, mark that red mana was used to exhaust it this turn.
+T:Mode$ Phase | Phase$ BeginCombat | ValidPlayer$ You | TriggerZones$ Battlefield | IsPresent$ Card.namedPrimus Exhausted Green+YouCtrl | PresentZone$ Command | PresentCompare$ GE1 | Execute$ ReturnGreenCard | TriggerDescription$ At the beginning of combat on your turn, if CARDNAME exhausted this turn using green mana, return target green card from your graveyard to your hand.
+T:Mode$ Phase | Phase$ BeginCombat | ValidPlayer$ You | TriggerZones$ Battlefield | IsPresent$ Card.namedPrimus Exhausted Blue+YouCtrl | PresentZone$ Command | PresentCompare$ GE1 | Execute$ ReturnBlueCard | TriggerDescription$ At the beginning of combat on your turn, if CARDNAME exhausted this turn using blue mana, return target blue card from your graveyard to your hand.
+T:Mode$ Phase | Phase$ BeginCombat | ValidPlayer$ You | TriggerZones$ Battlefield | IsPresent$ Card.namedPrimus Exhausted Red+YouCtrl | PresentZone$ Command | PresentCompare$ GE1 | Execute$ ReturnRedCard | TriggerDescription$ At the beginning of combat on your turn, if CARDNAME exhausted this turn using red mana, return target red card from your graveyard to your hand.
+A:AB$ Token | Cost$ G T | Named$ Primus Green Exhaust | TokenScript$ g_3_3_zombie_reach_persist | TokenAmount$ 2 | TokenOwner$ You | Exhaust$ True | SpellDescription$ Create two 3/3 green Zombie creature tokens with reach and persist. (Activate each exhaust ability only once.)
+A:AB$ Draw | Cost$ U T | Named$ Primus Blue Exhaust | NumCards$ 1 | SubAbility$ ReduceNextSpell | Exhaust$ True | SpellDescription$ Draw a card. The next instant or sorcery spell you cast costs {3} less to cast. (Activate each exhaust ability only once.)
+A:AB$ Destroy | Cost$ R T | Named$ Primus Red Exhaust | ValidTgts$ Creature.YouDontCtrl | TgtPrompt$ Select target creature you don't control | RememberLKI$ True | SubAbility$ GainDestroyedToughness | Exhaust$ True | SpellDescription$ Destroy target creature you don't control. You gain life equal to its toughness and put that many +0/+1 counters on CARDNAME. (Activate each exhaust ability only once.)
+SVar:MarkGreenExhaust:DB$ Effect | Name$ Primus Exhausted Green | EffectOwner$ You | Duration$ UntilEndOfTurn | Unique$ True
+SVar:ReduceNextSpell:DB$ Effect | StaticAbilities$ ReduceInstantSorcery | ForgetOnCast$ Instant.YouCtrl,Sorcery.YouCtrl | Duration$ Permanent
+SVar:ReduceInstantSorcery:Mode$ ReduceCost | Type$ Spell | ValidCard$ Instant,Sorcery | Activator$ You | Amount$ 3
+SVar:MarkBlueExhaust:DB$ Effect | Name$ Primus Exhausted Blue | EffectOwner$ You | Duration$ UntilEndOfTurn | Unique$ True
+SVar:GainDestroyedToughness:DB$ GainLife | Defined$ You | LifeAmount$ X | SubAbility$ AddToughnessCounters
+SVar:AddToughnessCounters:DB$ PutCounter | Defined$ Self | CounterType$ P0P1 | CounterNum$ X | SubAbility$ ClearDestroyedLKI
+SVar:MarkRedExhaust:DB$ Effect | Name$ Primus Exhausted Red | EffectOwner$ You | Duration$ UntilEndOfTurn | Unique$ True
+SVar:ClearDestroyedLKI:DB$ Cleanup | ClearRemembered$ True
+SVar:ReturnGreenCard:DB$ ChangeZone | Origin$ Graveyard | Destination$ Hand | ValidTgts$ Card.Green+YouOwn | TgtPrompt$ Select target green card in your graveyard
+SVar:ReturnBlueCard:DB$ ChangeZone | Origin$ Graveyard | Destination$ Hand | ValidTgts$ Card.Blue+YouOwn | TgtPrompt$ Select target blue card in your graveyard
+SVar:ReturnRedCard:DB$ ChangeZone | Origin$ Graveyard | Destination$ Hand | ValidTgts$ Card.Red+YouOwn | TgtPrompt$ Select target red card in your graveyard
+SVar:X:RememberedLKI$CardToughness
+Oracle:系命，敏捷\n在你的回合战斗开始时，若兵主本回合中曾竭绝，则你可以将你坟墓场中一张具有用于竭绝兵主之法术力颜色的目标牌移回你手上。\n竭绝—{G}，{T}：派出两个3/3绿色，具延势与留存的灵俑衍生生物。\n竭绝—{U}，{T}：抓一张牌。你施放的下一个瞬间或法术咒语减少{3}来施放。\n竭绝—{R}，{T}：消灭目标非由你操控的生物。你获得等同于其防御力的生命，并在兵主上放置等量的+0/+1指示物。

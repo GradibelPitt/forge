@@ -1,0 +1,14 @@
+Name:翠绿之星阿古斯
+ManaCost:2 W B G
+Types:Legendary Creature Elder Assassin
+PT:5/9
+K:Reach
+K:Haste
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ EntryLifelink | TriggerDescription$ When CARDNAME enters, put a lifelink counter on each other creature you control.
+SVar:EntryLifelink:DB$ PutCounter | Defined$ Valid Creature.StrictlyOther+YouCtrl | CounterType$ Lifelink | CounterNum$ 1
+S:Mode$ Continuous | Affected$ Creature.Other+YouCtrl | AddKeyword$ Riot | Description$ Other creatures you control have riot. (They enter with your choice of a +1/+1 counter or haste.)
+A:AB$ ChangeZone | Cost$ W T | DefinedPlayer$ Player | Origin$ Battlefield | Destination$ Exile | ChangeType$ Creature | ChangeNum$ 2 | Mandatory$ True | Exhaust$ True | SpellDescription$ Each player exiles two creatures they control. (Activate each exhaust ability only once.)
+A:AB$ Discard | Cost$ B T | Defined$ Player | NumCards$ 2 | Mode$ TgtChoose | Exhaust$ True | SpellDescription$ Each player discards two cards. (Activate each exhaust ability only once.)
+A:AB$ Token | Cost$ G T | TokenScript$ g_2_2_elemental_reach | TokenAmount$ 4 | TokenOwner$ You | Exhaust$ True | SpellDescription$ Create four 2/2 green Elemental creature tokens with reach. (Activate each exhaust ability only once.)
+DeckHas:Ability$Counters|Token
+Oracle:延势，敏捷\n当翠绿之星阿古斯进战场时，在每个其他由你操控的生物上各放置一个系命指示物。\n其他由你操控的生物具有起事。\n竭绝—{W}，{T}：每位牌手各放逐两个由其操控的生物。\n竭绝—{B}，{T}：每位牌手各弃两张牌。\n竭绝—{G}，{T}：派出四个2/2绿色、具延势的元素衍生生物。
