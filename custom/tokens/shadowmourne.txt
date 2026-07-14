@@ -1,0 +1,6 @@
+Name:影之哀伤
+ManaCost:no cost
+Types:Legendary Artifact Equipment
+K:Equip:4
+S:Mode$ Continuous | Affected$ Creature.EquippedBy | AddPower$ 4 | AddToughness$ 3 | AddKeyword$ Double Strike & Menace | Description$ 佩带此武具的生物得+4/+3且具有连击与威慑异能。
+Oracle:佩带此武具的生物得+4/+3且具有连击与威慑异能。\n佩带{4}

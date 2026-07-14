@@ -9,7 +9,6 @@ EDITION = ROOT / "editions" / "Placeholder_Set.txt"
 ART = ROOT / "cards" / "pictures" / "PH01" / "冰霜女巫吉安娜.artcrop.jpg"
 ART_BACKUP = ROOT / "tools" / "card-artwork" / "Art_ICC_833.png"
 EMBLEM_ART = ROOT / "tokens" / "pictures" / "emblem_frost_lich_jaina.png"
-SOURCE_ART = Path(r"C:\Users\Marsh\Desktop\Art_ICC_833.png")
 TOKEN_ART = ROOT / "tokens" / "pictures" / "u_3_6_elemental.jpg"
 TOKEN_ART_BACKUP = ROOT / "tools" / "card-artwork" / "images.jpg"
 ZH_CN = ROOT.parent / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
@@ -135,9 +134,9 @@ class FrostLichJainaContractTest(unittest.TestCase):
             self.assertAlmostEqual(1.37, image.width / image.height, places=2)
 
     def test_emblem_reuses_the_supplied_jaina_artwork(self):
-        self.assertTrue(SOURCE_ART.is_file(), SOURCE_ART)
+        self.assertTrue(ART_BACKUP.is_file(), ART_BACKUP)
         self.assertTrue(EMBLEM_ART.is_file(), EMBLEM_ART)
-        self.assertEqual(SOURCE_ART.read_bytes(), EMBLEM_ART.read_bytes())
+        self.assertEqual(ART_BACKUP.read_bytes(), EMBLEM_ART.read_bytes())
 
     def test_zh_cn_display_text_matches_the_requested_oracle(self):
         expected = (

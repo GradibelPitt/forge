@@ -1,0 +1,10 @@
+Name:天灾领主加尔鲁什
+ManaCost:2 B R
+Types:Legendary Planeswalker Garrosh
+Loyalty:5
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigShadowmourne | TriggerDescription$ 当天灾领主加尔鲁什进场时，派出传奇衍生神器影之哀伤，其为无色武具，且具有「佩带此武具的生物得+4/+3且具有连击与威慑异能」与佩带{4}。
+SVar:TrigShadowmourne:DB$ Token | TokenScript$ shadowmourne
+A:AB$ DamageAll | Cost$ AddCounter<1/LOYALTY> | Planeswalker$ True | ValidCards$ Creature | NumDmg$ 1 | SpellDescription$ 天灾领主加尔鲁什对每个生物各造成1点伤害。
+A:AB$ Token | Cost$ SubCounter<1/LOYALTY> | Planeswalker$ True | TokenScript$ b_2_2_zombie_decayed | TokenAmount$ 1 | TokenOwner$ You | SpellDescription$ 派出一个2/2黑色，具败朽异能的灵俑衍生生物。
+DeckHas:Ability$Token
+Oracle:当天灾领主加尔鲁什进场时，派出传奇衍生神器影之哀伤，其为无色武具，且具有「佩带此武具的生物得+4/+3且具有连击与威慑异能」与佩带{4}。\n[+1]: 天灾领主加尔鲁什对每个生物各造成1点伤害。\n[-1]: 派出一个2/2黑色，具败朽异能的灵俑衍生生物。
