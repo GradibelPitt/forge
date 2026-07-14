@@ -187,6 +187,9 @@ Java 测试从 `D:\Forge\forge-latest` 执行，并使用实际模块和测试�
 
 ## Manual verification backlog
 
+- 2026-07-14 霍格构筑状态修复：旧脚本在 `NewGame` 结算时分别扫描实时 `Library` 与 `Hand`，因此海盗帕奇斯先离开隐藏区后会漏复制。现改为 `MakeCardEffect` 的专用 `StartingDeckLegendaryPermanents` 来源，直接遍历注册牌手当前主牌 `CardPool` 的计数条目，以 `PaperCard` 类型元数据筛选其他传奇永久物；不访问全局卡牌数据库、不调用 `Card.fromPaperCard`，复杂度为 O(主牌不同条目数 + 实际复制数)，不会重现发现候选池溢出。TDD 回归验证主牌中两张帕奇斯即使不在手牌/牌库也返回两份复制名，且排除霍格和非永久物。目标 Java 测试 6/6、完整 `forge-core` 13/13、完整 `forge-game` 38/38、自定义 Python 206/206、霍格 lint、runtime 脚本测试、profile 同步测试与全 manifest 校验均通过。打包字节码确认辅助方法只有 `CardPool.iterator`、`PaperCard.getRules`、`CardType.isLegendary/isPermanent`。源码提交 `b537dce6e5c` 已推送 `diy-fork/diy`；runtime 提交 `7264384a2efa` 已推送 `origin/main`，build ID 为 `20260714-192306-b537dce6`。聚合 JAR 三处 SHA-256 均为 `DE16CC806DE59895F37E0CF34CA07D4360DCB4E0620E9726AC26002E6C64EBCA`；霍格脚本在源码、本机 profile 与 runtime 三处 SHA-256 均为 `3C85D661F6AD4A9B563B0F2ACF87490073C4CB0FA9E0A0FD594FC45E0F967AFA`。当前 PID 24316 的 Forge 进程早于 JAR 替换启动，需重启后载入。
+- 同次登船核验：运行时探针中 `Boarding:3` 在记录第三个不同的友方受伤角色后把牌从牌库移到战场，核心效果能够生效；当前检查点仅位于完整伤害批次之后，因此阈值已满足后才进入手牌或牌库的牌必须等到下一次伤害批次才会重查。该晚进入区域边界未在本次霍格修复中改动。
+
 - 在完整对局中验证 Boarding 的多次伤害、离场和晚进入手牌/牌库边界。
 - 确认当前桌面客户端确实加载最新聚合 JAR。
 - 中文本地化实现后，在中文界面逐卡检查名称、类别和规则文字。

@@ -32,13 +32,13 @@
 
 - [x] Run `BoardingTest`, `MakeCardEffectTest`, and `TriggerHandlerTest` together.
 - [x] Run the full `forge-game` module test suite.
-- [ ] Build the desktop aggregate JAR.
-- [ ] Inspect packaged `MakeCardEffect` bytecode for the registered-deck path and absence of global database/card-materialization calls in the helper.
+- [x] Build the desktop aggregate JAR.
+- [x] Inspect packaged `MakeCardEffect` bytecode for the registered-deck path and absence of global database/card-materialization calls in the helper.
 
 ## Task 5: Deploy and publish
 
-- [ ] Install the updated Hogger script to the local Forge profile and compare hashes.
-- [ ] Commit and push only the related source, test, plan, and documentation files to `diy-fork/diy`.
-- [ ] Publish the aggregate JAR and managed Hogger script to `forge-diy-runtime`.
-- [ ] Regenerate runtime manifests, run runtime tests, commit, and push `origin/main`.
-- [ ] Record exact verification and artifact hashes in `custom/VERIFICATION.md`.
+- [x] Install the updated Hogger script to the local Forge profile and compare hashes.
+- [x] Commit and push only the related source, test, plan, and documentation files to `diy-fork/diy`.
+- [x] Publish the aggregate JAR and managed Hogger script to `forge-diy-runtime`.
+- [x] Regenerate runtime manifests, run runtime tests, commit, and push `origin/main`.
+- [x] Record exact verification and artifact hashes in `custom/VERIFICATION.md`.
