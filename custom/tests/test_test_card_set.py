@@ -32,6 +32,12 @@ def edition_card_names(path):
 
 
 class TestCardSetContract(unittest.TestCase):
+    def test_gameplay_set_uses_hearthstone_display_name(self):
+        metadata = GAMEPLAY_EDITION.read_text(encoding="utf-8")
+        self.assertIn("Code=PH01", metadata)
+        self.assertIn("Name=炉石传说", metadata)
+        self.assertNotIn("Name=Placeholder Set", metadata)
+
     def test_names_containing_test_live_only_in_the_test_set(self):
         expected = card_names_containing_test()
         self.assertEqual(9, len(expected))

@@ -21,7 +21,7 @@
 
 - `cards/<color>/`：Forge `.txt` 卡牌脚本。
 - `cards/pictures/`：无版本通用图或按版本代码组织的卡图。
-- `editions/Placeholder_Set.txt`：`PH01` 正式 DIY 版本元数据和收藏编号。
+- `editions/Placeholder_Set.txt`：显示名为“炉石传说”的 `PH01` 正式 DIY 版本元数据和收藏编号。
 - `editions/Test_Set.txt`：内部名称含 `test`（不区分大小写）的测试牌专用 `TEST` 版本。
 - `tokens/`：需要时存放 token 脚本；没有 token 时可以不存在。
 - `tests/`：检查脚本字段、版本登记和机制契约。
