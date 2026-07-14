@@ -30,14 +30,15 @@ class ReskaThePitBossContractTest(unittest.TestCase):
         )
         self.assertIn("SVar:X:Count$ValidGraveyard Creature.YouOwn", text)
 
-    def test_entering_a_graveyard_from_any_zone_gains_control_of_a_target_nonland_permanent(self):
+    def test_dying_gains_control_of_a_target_nonland_permanent(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn(
-            "T:Mode$ ChangesZone | Origin$ Any | Destination$ Graveyard | ValidCard$ Card.Self | "
+            "T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Card.Self | "
             "Execute$ TrigGainControl",
             text,
         )
+        self.assertNotIn("Origin$ Any | Destination$ Graveyard", text)
         self.assertIn(
             "SVar:TrigGainControl:DB$ GainControl | ValidTgts$ Permanent.nonLand",
             text,
@@ -49,7 +50,7 @@ class ReskaThePitBossContractTest(unittest.TestCase):
         self.assertTrue(ART.is_file())
 
     def test_zh_cn_display_text_matches_the_requested_description(self):
-        expected = "矿坑老板雷斯卡|矿坑老板雷斯卡|传奇生物～僵尸|敏捷\\n坟墓场中的每张生物牌都使此咒语减少{U}或{B}。\\n当矿坑老板雷斯卡从任何区域进入坟墓场时，获得目标非地永久物的操控权。"
+        expected = "矿坑老板雷斯卡|矿坑老板雷斯卡|传奇生物～僵尸|敏捷\\n坟墓场中的每张生物牌都使此咒语减少{U}或{B}。\\n当矿坑老板雷斯卡死去时，获得目标非地永久物的操控权。"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
 

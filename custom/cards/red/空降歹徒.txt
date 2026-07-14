@@ -2,6 +2,6 @@ Name:空降歹徒
 ManaCost:2
 Types:Creature Pirate
 PT:2/2
-T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Pirate.YouCtrl | TriggerZones$ Hand | Execute$ TrigCast | TriggerDescription$ Whenever a Pirate enters under your control, you may cast CARDNAME from your hand without paying its mana cost.
-SVar:TrigCast:DB$ Play | Defined$ Self | ValidSA$ Spell | ValidZone$ Hand | Controller$ You | WithoutManaCost$ True | Optional$ True | Amount$ 1
-Oracle:Whenever a Pirate enters under your control, you may cast 空降歹徒 from your hand without paying its mana cost.
+S:Mode$ Continuous | MayPlay$ True | MayPlayWithoutManaCost$ True | MayPlayDontGrantZonePermissions$ True | Affected$ Card.Self | AffectedZone$ Hand | EffectZone$ All | CheckSVar$ PirateEntered | SVarCompare$ GE1 | Description$ If a Pirate entered the battlefield under your control this turn, you may cast CARDNAME from your hand without paying its mana cost.
+SVar:PirateEntered:Count$ThisTurnEntered_Battlefield_Pirate.YouCtrl
+Oracle:If a Pirate entered the battlefield under your control this turn, you may cast CARDNAME from your hand without paying its mana cost.

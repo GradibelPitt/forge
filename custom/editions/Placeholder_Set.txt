@@ -45,3 +45,4 @@ Type=Custom_Set
 37 R 维希度斯的窟穴 @Custom
 38 C 心灵震爆 @Custom
 39 C 心灵视界 @Custom
+40 C 混乱触须 @Custom

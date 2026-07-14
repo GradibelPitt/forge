@@ -7,7 +7,7 @@ CARD = ROOT / "cards" / "colorless" / "脱困古神尤格萨隆.txt"
 EDITION = ROOT / "editions" / "Placeholder_Set.txt"
 ART = ROOT / "cards" / "pictures" / "PH01" / "脱困古神尤格萨隆.artcrop.jpg"
 ART_BACKUP = ROOT / "tools" / "card-artwork" / "1-照片-1.jpg"
-CHAOS_TENTACLE = ROOT / "tokens" / "c_chaos_tentacle.txt"
+CHAOS_TENTACLE = ROOT / "cards" / "colorless" / "混乱触须.txt"
 ZH_CN = ROOT.parent / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 
@@ -50,20 +50,21 @@ class YoggSaronUnboundContractTest(unittest.TestCase):
             "A:AB$ GainControl | Cost$ T | ValidTgts$ Creature.nonArtifact | TgtPrompt$ Select target nonartifact creature | Exhaust$ True",
             text,
         )
-    def test_each_of_yoggs_exhaust_abilities_creates_a_chaos_tentacle(self):
+    def test_each_of_yoggs_exhaust_abilities_conjures_a_chaos_tentacle_card(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn(
-            "T:Mode$ AbilityCast | ValidCard$ Card.Self | ValidActivatingPlayer$ You | ValidSA$ Activated.Exhaust | TriggerZones$ Battlefield | Execute$ CreateChaosTentacle",
+            "T:Mode$ AbilityCast | ValidCard$ Card.Self | ValidActivatingPlayer$ You | ValidSA$ Activated.Exhaust | TriggerZones$ Battlefield | Execute$ ConjureChaosTentacle",
             text,
         )
         self.assertIn(
-            "SVar:CreateChaosTentacle:DB$ Token | TokenScript$ c_chaos_tentacle | TokenOwner$ You",
+            "SVar:ConjureChaosTentacle:DB$ MakeCard | Conjure$ True | Name$ 混乱触须 | Zone$ Battlefield",
             text,
         )
-        token = CHAOS_TENTACLE.read_text(encoding="utf-8")
-        self.assertIn("Name:混乱触须", token)
-        self.assertIn("Types:Artifact", token)
+        self.assertNotIn("TokenScript$ c_chaos_tentacle", text)
+        tentacle = CHAOS_TENTACLE.read_text(encoding="utf-8")
+        self.assertIn("Name:混乱触须", tentacle)
+        self.assertIn("Types:Artifact", tentacle)
 
     def test_second_exhaust_goads_each_opponents_nonartifact_creatures(self):
         text = CARD.read_text(encoding="utf-8")
@@ -74,14 +75,14 @@ class YoggSaronUnboundContractTest(unittest.TestCase):
         )
         self.assertNotIn("RepeatCards$ Creature.OppCtrl", text)
 
-    def test_third_exhaust_creates_six_chaos_tentacles(self):
+    def test_third_exhaust_conjures_six_chaos_tentacle_cards(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn(
-            "A:AB$ Token | Cost$ T | TokenAmount$ 6 | TokenScript$ c_chaos_tentacle | TokenOwner$ You | Exhaust$ True",
+            "A:AB$ MakeCard | Cost$ T | Conjure$ True | Name$ 混乱触须 | Amount$ 6 | Zone$ Battlefield | Exhaust$ True",
             text,
         )
-        self.assertNotIn("A:AB$ Repeat | Cost$ T | RepeatSubAbility$ RandomSpell", text)
+        self.assertNotIn("A:AB$ Token", text)
 
     def test_previous_random_spell_chain_is_kept_as_an_unwired_reusable_template(self):
         text = CARD.read_text(encoding="utf-8")
@@ -117,10 +118,10 @@ class YoggSaronUnboundContractTest(unittest.TestCase):
             "脱困古神尤格萨隆|脱困古神尤格萨隆|传奇生物～古神|"
             "恐惧\\n敏捷\\n"
             "本局游戏中，你每释放过一个非生物咒语，脱困古神尤格萨隆便减少{1}来施放。\\n"
-            "当你启动脱困古神尤格萨隆的竭绝异能时，派出一个混乱触须神器衍生物。\\n"
+            "当你启动脱困古神尤格萨隆的竭绝异能时，派出一个混乱触须。\\n"
             "竭绝—{T}：获得目标非神器生物的操控权。\\n"
             "竭绝—{T}：煽惑所有由对手操控的非神器生物。\\n"
-            "竭绝—{T}：派出六个混乱触须神器衍生物。"
+            "竭绝—{T}：化生六个混乱触须并放进战场。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

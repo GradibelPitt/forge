@@ -1,5 +1,5 @@
 Name:混乱触须
-ManaCost:no cost
+ManaCost:1
 Colors:colorless
 Types:Artifact
 A:AB$ CardDiscover | Cost$ T Sac<1/CARDNAME> | Defined$ You | Source$ CardDatabase | ValidCards$ Sorcery.cmcEQY | OptionCount$ 3 | Destination$ Exile | RememberChosen$ True | SubAbility$ CastDiscoveredSpell | SpellDescription$ Discover a sorcery card with mana value X plus 1, then cast it at random targets without paying its mana cost, where X is the number of Chaos Tentacle cards in your graveyard.

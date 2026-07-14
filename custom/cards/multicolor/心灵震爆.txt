@@ -1,5 +1,5 @@
 Name:心灵震爆
-ManaCost:B R
+ManaCost:W B
 Types:Sorcery Shadow
 A:SP$ DealDamage | ValidTgts$ Opponent | NumDmg$ 5 | SpellDescription$ 对目标对手造成5点伤害。
 Oracle:对目标对手造成5点伤害。

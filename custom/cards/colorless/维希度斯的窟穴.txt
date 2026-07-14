@@ -1,5 +1,9 @@
 Name:维希度斯的窟穴
 ManaCost:no cost
 Types:Land
-A:AB$ Draw | Cost$ T Discard<1/Card> | NumCards$ 2 | Defined$ You | SpellDescription$ Draw two cards.
-Oracle:{T}, Discard a card: Draw two cards.
+R:Event$ Moved | ValidCard$ Card.Self | Destination$ Battlefield | ReplaceWith$ LandTapped | ReplacementResult$ Updated | Description$ CARDNAME enters tapped with two depletion counters on it.
+SVar:LandTapped:DB$ Tap | Defined$ Self | ETB$ True | SubAbility$ DBAddCounter
+SVar:DBAddCounter:DB$ PutCounter | Defined$ Self | ETB$ True | CounterType$ DEPLETION | CounterNum$ 2
+A:AB$ Draw | Cost$ T SubCounter<1/DEPLETION> Discard<1/Card> | NumCards$ 2 | Defined$ You | SubAbility$ DBSac | SpellDescription$ Draw two cards. If there are no depletion counters on CARDNAME, sacrifice it.
+SVar:DBSac:DB$ Sacrifice | SacValid$ Self | ConditionPresent$ Card.Self+counters_EQ0_DEPLETION
+Oracle:CARDNAME enters tapped with two depletion counters on it.\n{T}, Remove a depletion counter from CARDNAME, Discard a card: Draw two cards. If there are no depletion counters on CARDNAME, sacrifice it.

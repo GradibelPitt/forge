@@ -10,11 +10,11 @@ SVar:CountNonCreatureSpell:Mode$ SpellCast | ValidCard$ Card.nonCreature | Valid
 SVar:AddSpellCounter:DB$ PutCounter | Defined$ Self | CounterType$ SPELL | CounterNum$ 1
 SVar:ReduceYoggCost:Mode$ ReduceCost | ValidCard$ Card.named脱困古神尤格萨隆+YouOwn | Type$ Spell | Activator$ You | Amount$ X | Description$ 脱困古神尤格萨隆 costs {1} less to cast for each noncreature spell you have cast this game.
 SVar:X:Count$CardCounters.SPELL
-T:Mode$ AbilityCast | ValidCard$ Card.Self | ValidActivatingPlayer$ You | ValidSA$ Activated.Exhaust | TriggerZones$ Battlefield | Execute$ CreateChaosTentacle | TriggerDescription$ Whenever you activate an exhaust ability of CARDNAME, create a Chaos Tentacle artifact token.
-SVar:CreateChaosTentacle:DB$ Token | TokenScript$ c_chaos_tentacle | TokenOwner$ You
+T:Mode$ AbilityCast | ValidCard$ Card.Self | ValidActivatingPlayer$ You | ValidSA$ Activated.Exhaust | TriggerZones$ Battlefield | Execute$ ConjureChaosTentacle | TriggerDescription$ Whenever you activate an exhaust ability of CARDNAME, conjure a Chaos Tentacle card onto the battlefield.
+SVar:ConjureChaosTentacle:DB$ MakeCard | Conjure$ True | Name$ 混乱触须 | Zone$ Battlefield
 A:AB$ GainControl | Cost$ T | ValidTgts$ Creature.nonArtifact | TgtPrompt$ Select target nonartifact creature | Exhaust$ True | SpellDescription$ Gain control of target nonartifact creature. (Activate each exhaust ability only once.)
 A:AB$ Goad | Cost$ T | Defined$ Valid Creature.OppCtrl+nonArtifact | Exhaust$ True | SpellDescription$ Goad all nonartifact creatures your opponents control. (Activate each exhaust ability only once.)
-A:AB$ Token | Cost$ T | TokenAmount$ 6 | TokenScript$ c_chaos_tentacle | TokenOwner$ You | Exhaust$ True | SpellDescription$ Create six Chaos Tentacle artifact tokens. (Activate each exhaust ability only once.)
+A:AB$ MakeCard | Cost$ T | Conjure$ True | Name$ 混乱触须 | Amount$ 6 | Zone$ Battlefield | Exhaust$ True | SpellDescription$ Conjure six Chaos Tentacle cards onto the battlefield. (Activate each exhaust ability only once.)
 # Archived reusable spellstorm variant. Attach `SubAbility$ ArchivedChaosSpellstorm` to a future ability to restore it.
 SVar:ArchivedChaosSpellstorm:DB$ Repeat | RepeatSubAbility$ ArchivedRandomSpell | MaxRepeat$ Z
 SVar:ArchivedRandomSpell:DB$ NameCard | AtRandom$ True | ValidCards$ Instant,Sorcery | SubAbility$ ArchivedConjureRandomSpell
@@ -22,4 +22,4 @@ SVar:ArchivedConjureRandomSpell:DB$ MakeCard | Name$ ChosenName | Conjure$ True 
 SVar:ArchivedCastConjuredSpell:DB$ Play | Defined$ Remembered | ValidSA$ Spell | ZoneRegardless$ True | Controller$ You | WithoutManaCost$ True | Optional$ False | SubAbility$ ArchivedClearRandomSpell
 SVar:ArchivedClearRandomSpell:DB$ Cleanup | ClearRemembered$ True | ClearNamedCard$ True
 SVar:Z:Count$ValidGraveyard Instant.YouOwn,Sorcery.YouOwn
-Oracle:Fear\nHaste\nThis spell costs {1} less to cast for each noncreature spell you have cast this game.\nWhenever you activate an exhaust ability of CARDNAME, create a Chaos Tentacle artifact token.\nExhaust — {T}: Gain control of target nonartifact creature.\nExhaust — {T}: Goad all nonartifact creatures your opponents control.\nExhaust — {T}: Create six Chaos Tentacle artifact tokens.
+Oracle:Fear\nHaste\nThis spell costs {1} less to cast for each noncreature spell you have cast this game.\nWhenever you activate an exhaust ability of CARDNAME, conjure a Chaos Tentacle card onto the battlefield.\nExhaust — {T}: Gain control of target nonartifact creature.\nExhaust — {T}: Goad all nonartifact creatures your opponents control.\nExhaust — {T}: Conjure six Chaos Tentacle cards onto the battlefield.

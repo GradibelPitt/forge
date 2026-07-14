@@ -13,11 +13,12 @@ ZH_CN = ROOT.parent / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 
 class MindBlastContractTest(unittest.TestCase):
-    def test_card_is_a_red_black_shadow_sorcery(self):
+    def test_card_is_a_white_black_shadow_sorcery(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:心灵震爆", text)
-        self.assertIn("ManaCost:B R", text)
+        self.assertIn("ManaCost:W B", text)
+        self.assertNotIn("ManaCost:B R", text)
         self.assertIn("Types:Sorcery Shadow", text)
 
     def test_card_deals_five_damage_to_target_opponent(self):
