@@ -22,7 +22,7 @@ class YoggSaronUnboundContractTest(unittest.TestCase):
         self.assertIn("K:Fear", text)
         self.assertIn("K:Haste", text)
         self.assertIn(
-            "T:Mode$ NewGame | TriggerZones$ Hand,Library | Execute$ CreateSpellCounterEmblem | Static$ True",
+            "T:Mode$ NewGame | TriggerZones$ Hand,Library,Command | Execute$ CreateSpellCounterEmblem | Static$ True",
             text,
         )
         self.assertIn(

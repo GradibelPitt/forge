@@ -4,7 +4,7 @@ Types:Legendary Creature God
 PT:7/5
 K:Fear
 K:Haste
-T:Mode$ NewGame | TriggerZones$ Hand,Library | Execute$ CreateSpellCounterEmblem | Static$ True | TriggerDescription$ At the beginning of the game, create an emblem that tracks noncreature spells you cast this game.
+T:Mode$ NewGame | TriggerZones$ Hand,Library,Command | Execute$ CreateSpellCounterEmblem | Static$ True | TriggerDescription$ At the beginning of the game, create an emblem that tracks noncreature spells you cast this game.
 SVar:CreateSpellCounterEmblem:DB$ Effect | Name$ Emblem — 脱困古神尤格萨隆 | Triggers$ CountNonCreatureSpell | StaticAbilities$ ReduceYoggCost | Duration$ Permanent | Unique$ True
 SVar:CountNonCreatureSpell:Mode$ SpellCast | ValidCard$ Card.nonCreature | ValidActivatingPlayer$ You | TriggerZones$ Command | Execute$ AddSpellCounter | TriggerDescription$ Whenever you cast a noncreature spell, put a spell counter on CARDNAME.
 SVar:AddSpellCounter:DB$ PutCounter | Defined$ Self | CounterType$ SPELL | CounterNum$ 1
