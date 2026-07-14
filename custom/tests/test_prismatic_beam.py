@@ -15,8 +15,8 @@ class PrismaticBeamContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:棱彩光束", text)
-        self.assertIn("ManaCost:7", text)
-        self.assertIn("Types:Instant", text)
+        self.assertIn("ManaCost:4 U W R", text)
+        self.assertIn("Types:Sorcery", text)
         self.assertIn("A:SP$ DamageAll", text)
         self.assertIn("ValidTgts$ Opponent", text)
         self.assertIn("ValidPlayers$ Targeted", text)
@@ -29,7 +29,7 @@ class PrismaticBeamContractTest(unittest.TestCase):
         self.assertIn("25 R 棱彩光束 @Custom", EDITION.read_text(encoding="utf-8"))
         self.assertTrue(ART.is_file())
         self.assertTrue(BACKUP.is_file())
-        expected = "棱彩光束|棱彩光束|瞬间|对目标对手以及他操控的每个生物和鹏洛客各造成3点伤害。目标对手每操控一个生物或鹏洛客，本牌的法术力费用减少1"
+        expected = "棱彩光束|棱彩光束|法术|对目标对手以及他操控的每个生物和鹏洛客各造成3点伤害。目标对手每操控一个生物或鹏洛客，本牌的法术力费用减少1"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
     def test_art_is_rgb_landscape_crop(self):

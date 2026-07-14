@@ -11,14 +11,14 @@ ZH_CN = ROOT.parent / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 
 class CompsognathusContractTest(unittest.TestCase):
-    def test_card_has_the_requested_hybrid_cost_stats_and_madness(self):
+    def test_card_has_the_requested_hybrid_cost_and_stats_without_madness(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:栉龙", text)
         self.assertIn("ManaCost:UB", text)
         self.assertIn("Types:Creature Dinosaur", text)
         self.assertIn("PT:1/2", text)
-        self.assertIn("K:Madness:0", text)
+        self.assertNotIn("K:Madness", text)
 
     def test_enter_the_battlefield_draw_is_remembered_and_death_discards_only_that_card(self):
         text = CARD.read_text(encoding="utf-8")
@@ -46,7 +46,7 @@ class CompsognathusContractTest(unittest.TestCase):
         self.assertTrue(ART.is_file())
 
     def test_zh_cn_display_text_matches_the_requested_description(self):
-        expected = "栉龙|栉龙|生物～恐龙|当栉龙进战场时，抓一张牌。\\n当栉龙死去时，若你手上仍然有以此法抓的牌，将其弃掉。\\n疯魔{0}"
+        expected = "栉龙|栉龙|生物～恐龙|当栉龙进战场时，抓一张牌。\\n当栉龙死去时，若你手上仍然有以此法抓的牌，将其弃掉。"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
 

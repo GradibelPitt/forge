@@ -1,5 +1,5 @@
 Name:虚触侍从
-ManaCost:R
+ManaCost:W B
 Types:Creature Human Warlock
 PT:1/3
 R:Event$ DamageDone | ActiveZones$ Battlefield | ValidTarget$ Player | ReplaceWith$ DmgPlus1 | Description$ If a player would be dealt damage, that damage is increased by 1 instead.

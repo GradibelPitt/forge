@@ -1,6 +1,6 @@
 Name:歹徒
 ManaCost:no cost
-Colors:colorless
+Colors:red
 Types:Creature
 PT:3/3
 K:Haste

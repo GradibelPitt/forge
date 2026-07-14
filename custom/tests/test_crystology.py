@@ -15,7 +15,7 @@ class CrystologyContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:水晶学", text)
-        self.assertIn("ManaCost:U", text)
+        self.assertIn("ManaCost:W U", text)
         self.assertIn("Types:Sorcery", text)
         self.assertIn(
             "A:SP$ ChangeZone | Origin$ Library | Destination$ Hand | ChangeType$ Creature.powerEQ1 | "

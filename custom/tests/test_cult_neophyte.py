@@ -11,24 +11,28 @@ ZH_CN = ROOT.parent / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 
 class CultNeophyteContractTest(unittest.TestCase):
-    def test_characteristics_and_battlefield_cost_increase(self):
+    def test_characteristics_and_etb_cost_increase_until_next_turn(self):
         text = CARD.read_text(encoding="utf-8")
         self.assertIn("Name:异教低阶牧师", text)
         self.assertIn("ManaCost:U B", text)
         self.assertNotIn("ManaCost:UB", text)
         self.assertIn("Types:Creature Human Cleric", text)
         self.assertIn("PT:3/2", text)
-        static = next(line for line in text.splitlines() if line.startswith("S:Mode$ RaiseCost"))
-        self.assertIn("ValidCard$ Instant,Sorcery", static)
-        self.assertIn("Activator$ Opponent", static)
-        self.assertIn("Type$ Spell", static)
-        self.assertIn("Amount$ 1", static)
-        self.assertNotIn("Duration$", static)
-        self.assertNotIn("Unique$", static)
+        self.assertIn(
+            "T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | "
+            "Execute$ TrigTax",
+            text,
+        )
+        self.assertIn("SVar:TrigTax:DB$ Effect | Duration$ UntilYourNextTurn | StaticAbilities$ RaiseCost", text)
+        self.assertIn(
+            "SVar:RaiseCost:Mode$ RaiseCost | ValidCard$ Card.nonCreature | Activator$ Opponent | "
+            "Type$ Spell | Amount$ 1",
+            text,
+        )
 
     def test_registration_and_chinese_wording(self):
         self.assertIn("27 R 异教低阶牧师 @Custom", EDITION.read_text(encoding="utf-8"))
-        expected = "异教低阶牧师|异教低阶牧师|生物～人类／牧师|对手施放的瞬间和法术咒语增加{1}来施放。"
+        expected = "异教低阶牧师|异教低阶牧师|生物～人类／牧师|当此生物进场时，直到你的下一个回合，所有对手施放的非生物咒语增加{1}来施放。"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
     def test_art_is_preserved_and_cropped_for_dynamic_frame(self):

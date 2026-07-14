@@ -15,14 +15,14 @@ class HandOfGuldanContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:古尔丹之手", text)
-        self.assertIn("ManaCost:4 U U", text)
+        self.assertIn("ManaCost:2 U B", text)
         self.assertIn("Types:Sorcery", text)
         self.assertIn(
-            "A:SP$ Draw | Defined$ You | NumCards$ 3 | SpellDescription$ 抓三张牌。",
+            "A:SP$ Draw | Defined$ You | NumCards$ 2 | SpellDescription$ 抓两张牌。",
             text,
         )
-        self.assertIn("K:Madness:0", text)
-        self.assertIn("Oracle:抓三张牌。\\n疯魔{0}", text)
+        self.assertIn("K:Madness:U B", text)
+        self.assertIn("Oracle:抓两张牌。\\n疯魔{U}{B}", text)
 
     def test_card_is_registered_with_standard_crop_art(self):
         self.assertIn("29 R 古尔丹之手 @Custom", EDITION.read_text(encoding="utf-8"))
@@ -37,7 +37,7 @@ class HandOfGuldanContractTest(unittest.TestCase):
             self.assertEqual("RGB", image.mode)
 
     def test_zh_cn_display_text_matches_the_card(self):
-        expected = "古尔丹之手|古尔丹之手|法术|抓三张牌。\\n疯魔{0}"
+        expected = "古尔丹之手|古尔丹之手|法术|抓两张牌。\\n疯魔{U}{B}"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
 

@@ -21,19 +21,26 @@ class ShowdownContractTest(unittest.TestCase):
 
         self.assertIn("Name:决战", text)
         self.assertIn("ManaCost:W R", text)
-        self.assertIn("Types:Instant", text)
+        self.assertIn("Types:Sorcery", text)
         self.assertIn(
             "A:SP$ RepeatEach | RepeatPlayers$ Player | RepeatSubAbility$ DBToken | "
-            "SpellDescription$ Each player creates three 3/3 colorless creature tokens named Outlaw with haste.",
+            "SubAbility$ DBDelayedTrigger | SpellDescription$ Each player creates three 3/3 red creature tokens named Outlaw with haste. Sacrifice those tokens at the beginning of your next upkeep.",
             text,
         )
         self.assertIn(
             "SVar:DBToken:DB$ Token | TokenScript$ c_3_3_outlaw_haste | "
-            "TokenAmount$ 3 | TokenOwner$ Player.IsRemembered",
+            "TokenAmount$ 3 | TokenOwner$ Player.IsRemembered | RememberTokens$ True",
             text,
         )
         self.assertIn(
-            "Oracle:每位牌手各派出三个名为“歹徒”的3/3无色生物衍生物，且它们具有敏捷异能。",
+            "SVar:DBDelayedTrigger:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | "
+            "RememberObjects$ Remembered | Execute$ TrigSacrifice | SubAbility$ DBCleanup",
+            text,
+        )
+        self.assertIn("SVar:TrigSacrifice:DB$ SacrificeAll | Defined$ DelayTriggerRememberedLKI", text)
+        self.assertIn("SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True", text)
+        self.assertIn(
+            "Oracle:每位牌手各派出三个名为“歹徒”的3/3红色衍生生物，且它们具有敏捷异能。在你的下一个维持开始时，牺牲这些衍生物。",
             text,
         )
 
@@ -42,7 +49,7 @@ class ShowdownContractTest(unittest.TestCase):
 
         self.assertIn("Name:歹徒", text)
         self.assertIn("ManaCost:no cost", text)
-        self.assertIn("Colors:colorless", text)
+        self.assertIn("Colors:red", text)
         self.assertIn("Types:Creature", text)
         self.assertIn("PT:3/3", text)
         self.assertIn("K:Haste", text)
@@ -73,8 +80,8 @@ class ShowdownContractTest(unittest.TestCase):
 
     def test_zh_cn_uses_standard_wording(self):
         expected = (
-            "决战|决战！|瞬间|"
-            "每位牌手各派出三个名为“歹徒”的3/3无色生物衍生物，且它们具有敏捷异能。"
+            "决战|决战！|法术|"
+            "每位牌手各派出三个名为“歹徒”的3/3红色衍生生物，且它们具有敏捷异能。在你的下一个维持开始时，牺牲这些衍生物。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

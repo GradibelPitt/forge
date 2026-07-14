@@ -11,19 +11,19 @@ ZH_CN = ROOT.parent / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 
 class SoulBarrageContractTest(unittest.TestCase):
-    def test_card_is_a_red_black_sorcery_with_madness_zero(self):
+    def test_card_is_a_red_black_sorcery_with_black_red_madness(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:灵魂弹幕", text)
-        self.assertIn("ManaCost:3 B R", text)
+        self.assertIn("ManaCost:2 B R", text)
         self.assertIn("Types:Sorcery", text)
-        self.assertIn("K:Madness:0", text)
+        self.assertIn("K:Madness:B R", text)
 
-    def test_card_deals_six_damage_divided_as_chosen_among_any_targets(self):
+    def test_card_deals_four_damage_divided_as_chosen_among_any_targets(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn(
-            "A:SP$ DealDamage | ValidTgts$ Any | TgtPrompt$ Select any number of targets to distribute damage to | NumDmg$ 6 | TargetMin$ 0 | TargetMax$ 6 | DividedAsYouChoose$ 6",
+            "A:SP$ DealDamage | ValidTgts$ Any | TgtPrompt$ Select any number of targets to distribute damage to | NumDmg$ 4 | TargetMin$ 0 | TargetMax$ 4 | DividedAsYouChoose$ 4",
             text,
         )
         self.assertNotIn("RepeatSubAbility$ DBDamage", text)
@@ -34,7 +34,7 @@ class SoulBarrageContractTest(unittest.TestCase):
         self.assertTrue(ART.is_file())
 
     def test_zh_cn_display_text_matches_the_requested_description(self):
-        expected = r"灵魂弹幕|灵魂弹幕|法术|灵魂弹幕造成6点伤害，由你任意分配。\n疯魔{0}"
+        expected = r"灵魂弹幕|灵魂弹幕|法术|灵魂弹幕对任意数量的目标造成共4点伤害，你可以任意分配。\n疯魔{B}{R}"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
 

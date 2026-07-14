@@ -15,7 +15,7 @@ class PeasantContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:农夫", text)
-        self.assertIn("ManaCost:U", text)
+        self.assertIn("ManaCost:2", text)
         self.assertIn("Types:Creature Human Citizen", text)
         self.assertIn("PT:2/1", text)
         self.assertIn(

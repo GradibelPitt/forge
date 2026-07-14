@@ -15,7 +15,7 @@ class VoidtouchedAttendantContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:虚触侍从", text)
-        self.assertIn("ManaCost:R", text)
+        self.assertIn("ManaCost:W B", text)
         self.assertIn("Types:Creature Human Warlock", text)
         self.assertIn("PT:1/3", text)
         self.assertIn(

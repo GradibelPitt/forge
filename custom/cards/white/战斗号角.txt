@@ -1,5 +1,5 @@
 Name:战斗号角
 ManaCost:1 W U G
 Types:Sorcery
-A:SP$ ChangeZone | Origin$ Library | Destination$ Battlefield | ChangeType$ Creature.cmcLE2 | ChangeNum$ 3 | ShuffleNonMandatory$ True | SpellDescription$ 从你的牌堆中搜寻至多三个法术力消耗小于等于2的生物，将它们以任意顺序放进战场，然后洗牌
-Oracle:从你的牌堆中搜寻至多三个法术力消耗小于等于2的生物，将它们以任意顺序放进战场，然后洗牌
+A:SP$ Dig | DigNum$ 8 | ChangeNum$ 3 | Optional$ True | ChangeValid$ Creature.cmcLE2 | DestinationZone$ Battlefield | SpellDescription$ 检视你牌库顶的八张牌。将其中至多三张法术力值等于或小于2的生物牌放进战场。将其余的牌以任意顺序置于你牌库底。
+Oracle:检视你牌库顶的八张牌。将其中至多三张法术力值等于或小于2的生物牌放进战场。将其余的牌以任意顺序置于你牌库底。

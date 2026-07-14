@@ -15,8 +15,7 @@ class CursedCatacombsContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:咒怨之墓", text)
-        self.assertIn("ManaCost:0", text)
-        self.assertIn("Colors:black", text)
+        self.assertIn("ManaCost:BP", text)
         self.assertIn("Types:Sorcery", text)
         self.assertIn(
             "A:SP$ CardDiscover | Defined$ You | Source$ Library | SourceController$ You | "
@@ -54,7 +53,7 @@ class CursedCatacombsContractTest(unittest.TestCase):
             self.assertEqual("RGB", image.mode)
 
     def test_zh_cn_display_text_matches_the_requested_description(self):
-        expected = "咒怨之墓|咒怨之墓|法术|咒怨之墓是黑色。\\n发现你牌堆中的一张牌，在你的回合结束时，弃掉以此法获得的且仍然在你手牌中的牌。"
+        expected = "咒怨之墓|咒怨之墓|法术|发现你牌堆中的一张牌，在你的回合结束时，弃掉以此法获得的且仍然在你手牌中的牌。"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
 

@@ -1,6 +1,6 @@
 Name:古尔丹之手
-ManaCost:4 U U
+ManaCost:2 U B
 Types:Sorcery
-K:Madness:0
-A:SP$ Draw | Defined$ You | NumCards$ 3 | SpellDescription$ 抓三张牌。
-Oracle:抓三张牌。\n疯魔{0}
+K:Madness:U B
+A:SP$ Draw | Defined$ You | NumCards$ 2 | SpellDescription$ 抓两张牌。
+Oracle:抓两张牌。\n疯魔{U}{B}

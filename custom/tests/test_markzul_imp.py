@@ -14,7 +14,7 @@ class MarkzulImpContractTest(unittest.TestCase):
         script = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:马克扎尔的小鬼", script)
-        self.assertIn("ManaCost:B B", script)
+        self.assertIn("ManaCost:1 B B B", script)
         self.assertIn("Types:Creature Demon", script)
         self.assertIn("PT:1/3", script)
         self.assertIn(

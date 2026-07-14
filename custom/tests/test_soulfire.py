@@ -19,7 +19,7 @@ class SoulfireContractTest(unittest.TestCase):
         self.assertIn("Colors:red black", text)
         self.assertIn("Types:Sorcery", text)
 
-    def test_card_deals_three_damage_to_any_target_then_discards_one_card(self):
+    def test_card_deals_three_damage_to_any_target_then_discards_one_at_random(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn(
@@ -27,7 +27,7 @@ class SoulfireContractTest(unittest.TestCase):
             text,
         )
         self.assertIn(
-            "SVar:DBDiscard:DB$ Discard | Defined$ You | NumCards$ 1",
+            "SVar:DBDiscard:DB$ Discard | Defined$ You | NumCards$ 1 | Mode$ Random",
             text,
         )
 
@@ -37,7 +37,7 @@ class SoulfireContractTest(unittest.TestCase):
         self.assertTrue(ART.is_file())
 
     def test_zh_cn_display_text_matches_the_requested_description(self):
-        expected = "灵魂之火|灵魂之火|法术|灵魂之火对任一目标造成3点伤害，弃一张牌。"
+        expected = "灵魂之火|灵魂之火|法术|灵魂之火对任一目标造成3点伤害，随机弃一张牌。"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
 

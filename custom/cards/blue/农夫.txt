@@ -1,5 +1,5 @@
 Name:农夫
-ManaCost:U
+ManaCost:2
 Types:Creature Human Citizen
 PT:2/1
 T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDraw | TriggerDescription$ At the beginning of your upkeep, draw a card.

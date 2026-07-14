@@ -1,6 +1,6 @@
 Name:镀银魔像
-ManaCost:3
+ManaCost:2 B
 Types:Artifact Creature Golem
 PT:3/3
-K:Madness:0
-Oracle:疯魔{0}
+K:Madness:B
+Oracle:疯魔{B}

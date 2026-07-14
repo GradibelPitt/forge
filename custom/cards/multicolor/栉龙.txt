@@ -2,10 +2,9 @@ Name:栉龙
 ManaCost:UB
 Types:Creature Dinosaur
 PT:1/2
-K:Madness:0
 T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDraw | TriggerDescription$ 当栉龙进战场时，抓一张牌。
 SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1 | RememberDrawn$ True
 T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Card.Self | Execute$ TrigDiscard | TriggerDescription$ 当栉龙死去时，若你手上仍然有以此法抓的牌，将其弃掉。
 SVar:TrigDiscard:DB$ Discard | Defined$ You | Mode$ Defined | DefinedCards$ ValidHand Card.IsRemembered | SubAbility$ Cleanup
 SVar:Cleanup:DB$ Cleanup | ClearRemembered$ True
-Oracle:当栉龙进战场时，抓一张牌。\n当栉龙死去时，若你手上仍然有以此法抓的牌，将其弃掉。\n疯魔{0}
+Oracle:当栉龙进战场时，抓一张牌。\n当栉龙死去时，若你手上仍然有以此法抓的牌，将其弃掉。

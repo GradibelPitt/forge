@@ -2,5 +2,6 @@ Name:尼鲁巴蛛网领主
 ManaCost:1 B
 Types:Creature Spider Undead
 PT:1/4
-S:Mode$ RaiseCost | ValidCard$ Creature | Activator$ Opponent | Type$ Spell | Amount$ 2 | Description$ Creature spells your opponents cast cost {2} more to cast.
-Oracle:对手的生物咒语施放费用增加{2}。
+T:Mode$ AbilityTriggered | ValidDestination$ Battlefield | ValidMode$ ChangesZone,ChangesZoneAll | ValidSource$ Creature.OppCtrl | TriggerZones$ Battlefield | Execute$ TrigCounter | TriggerDescription$ Whenever a triggered ability of a creature an opponent controls triggers because a permanent entered, counter that ability unless its controller pays {2}.
+SVar:TrigCounter:DB$ Counter | Defined$ TriggeredSpellAbility | UnlessCost$ 2 | UnlessPayer$ TriggeredSpellAbilityController
+Oracle:每当一个由对手操控的生物的触发式异能因永久物进场而触发时，除非其操控者支付{2}，否则反击之。

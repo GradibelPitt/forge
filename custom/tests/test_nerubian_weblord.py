@@ -11,7 +11,7 @@ ZH_CN = ROOT.parent / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 
 class NerubianWeblordContractTest(unittest.TestCase):
-    def test_card_matches_the_complete_card_image_effect(self):
+    def test_card_taxes_opposing_creature_etb_triggers(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:尼鲁巴蛛网领主", text)
@@ -19,11 +19,16 @@ class NerubianWeblordContractTest(unittest.TestCase):
         self.assertIn("Types:Creature Spider Undead", text)
         self.assertIn("PT:1/4", text)
         self.assertIn(
-            "S:Mode$ RaiseCost | ValidCard$ Creature | Activator$ Opponent | Type$ Spell | "
-            "Amount$ 2 | Description$ Creature spells your opponents cast cost {2} more to cast.",
+            "T:Mode$ AbilityTriggered | ValidDestination$ Battlefield | ValidMode$ ChangesZone,ChangesZoneAll | "
+            "ValidSource$ Creature.OppCtrl | TriggerZones$ Battlefield | Execute$ TrigCounter",
             text,
         )
-        self.assertIn("Oracle:对手的生物咒语施放费用增加{2}。", text)
+        self.assertIn(
+            "SVar:TrigCounter:DB$ Counter | Defined$ TriggeredSpellAbility | UnlessCost$ 2 | "
+            "UnlessPayer$ TriggeredSpellAbilityController",
+            text,
+        )
+        self.assertIn("Oracle:每当一个由对手操控的生物的触发式异能因永久物进场而触发时，除非其操控者支付{2}，否则反击之。", text)
 
     def test_card_is_registered_with_the_complete_card_image(self):
         edition = EDITION.read_text(encoding="utf-8")
@@ -34,7 +39,7 @@ class NerubianWeblordContractTest(unittest.TestCase):
         self.assertTrue(ART.is_file())
 
     def test_zh_cn_display_text_is_complete(self):
-        expected = "尼鲁巴蛛网领主|尼鲁巴蛛网领主|生物～蜘蛛／亡灵|对手的生物咒语施放费用增加{2}。"
+        expected = "尼鲁巴蛛网领主|尼鲁巴蛛网领主|生物～蜘蛛／亡灵|每当一个由对手操控的生物的触发式异能因永久物进场而触发时，除非其操控者支付{2}，否则反击之。"
 
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
