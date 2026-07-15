@@ -1,0 +1,9 @@
+Name:骨网之卵
+ManaCost:1 B
+Types:Creature Spider
+PT:0/2
+K:Reach
+K:Madness:0
+T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Card.Self | Execute$ TrigToken | TriggerDescription$ 当此生物死去时，派出两个2/1，黑绿双色的蜘蛛衍生生物。
+SVar:TrigToken:DB$ Token | TokenAmount$ 2 | TokenScript$ bg_2_1_spider | TokenOwner$ You
+Oracle:延势\n当此生物死去时，派出两个2/1，黑绿双色的蜘蛛衍生生物。\n疯魔{0}

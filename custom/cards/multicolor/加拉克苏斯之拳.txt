@@ -1,0 +1,6 @@
+Name:加拉克苏斯之拳
+ManaCost:1 B R
+Types:Instant
+K:Madness:0
+A:SP$ DealDamage | NumDmg$ 4 | ValidTgts$ Creature.OppCtrl | TargetsAtRandom$ True | SpellDescription$ 加拉克苏斯之拳对随机选择之一个由对手操控的生物造成4点伤害。
+Oracle:加拉克苏斯之拳对随机选择之一个由对手操控的生物造成4点伤害。\n疯魔{0}
