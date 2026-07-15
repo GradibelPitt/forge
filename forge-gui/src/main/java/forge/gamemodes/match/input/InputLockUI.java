@@ -16,10 +16,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class InputLockUI implements Input {
     private final AtomicInteger iCall = new AtomicInteger();
 
-    private final InputQueue inputQueue;
     private final PlayerControllerHuman controller;
-    public InputLockUI(final InputQueue inputQueue0, final PlayerControllerHuman controller) {
-        inputQueue = inputQueue0;
+    public InputLockUI(final InputQueue inputQueue, final PlayerControllerHuman controller) {
         this.controller = controller;
     }
 
@@ -68,7 +66,7 @@ public class InputLockUI implements Input {
     };
 
     protected final boolean isActive() {
-        return inputQueue.getInput() == this;
+        return controller.getInputProxy().getInput() == this;
     }
 
     protected void showMessage(final String message) {

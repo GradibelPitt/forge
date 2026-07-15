@@ -68,8 +68,8 @@ public class InputQueue extends Observable implements IHasForgeLog {
     public final void clearInputs() {
         netLog.trace("clearInputs() called, stack size = {}", inputStack.size());
         int count = 0;
-        while(!inputStack.isEmpty()) {
-            InputSynchronized inp = inputStack.pop();
+        InputSynchronized inp;
+        while ((inp = inputStack.peek()) != null) {
             netLog.trace("Stopping input #{}: {}", count, inp.getClass().getSimpleName());
             inp.stop();
             count++;

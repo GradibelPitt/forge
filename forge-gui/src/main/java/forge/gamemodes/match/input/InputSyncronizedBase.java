@@ -42,17 +42,48 @@ public abstract class InputSyncronizedBase extends InputBase implements InputSyn
     @Override
     public final void stop() {
         netLog.trace("stop() called on {}, latch count before = {}", this.getClass().getSimpleName(), cdlDone.getCount());
-        onStop();
-
-        // ensure input won't accept any user actions.
-        FThreads.invokeInEdtNowOrLater(this::setFinished);
-
-        // thread irrelevant
-        if (getController().getInputQueue().getInput() != null) {
-            getController().getInputQueue().removeInput(InputSyncronizedBase.this);
+        Throwable failure = null;
+        try {
+            onStop();
+        } catch (final RuntimeException | Error ex) {
+            failure = ex;
         }
-        cdlDone.countDown();
+
+        try {
+            // ensure input won't accept any user actions.
+            FThreads.invokeInEdtNowOrLater(this::setFinished);
+        } catch (final RuntimeException | Error ex) {
+            failure = preserveFirstFailure(failure, ex);
+        }
+
+        try {
+            // thread irrelevant
+            if (getController().getInputQueue().getInput() == this) {
+                getController().getInputQueue().removeInput(InputSyncronizedBase.this);
+            }
+        } catch (final RuntimeException | Error ex) {
+            failure = preserveFirstFailure(failure, ex);
+        } finally {
+            cdlDone.countDown();
+        }
         netLog.trace("stop() done, latch count after = {}", cdlDone.getCount());
+
+        if (failure instanceof RuntimeException) {
+            throw (RuntimeException) failure;
+        }
+        if (failure instanceof Error) {
+            throw (Error) failure;
+        }
+    }
+
+    private static Throwable preserveFirstFailure(final Throwable first, final Throwable next) {
+        if (first == null) {
+            return next;
+        }
+        if (first != next) {
+            first.addSuppressed(next);
+        }
+        return first;
     }
 
     protected void onStop() { }
