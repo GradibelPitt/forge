@@ -5,7 +5,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ActiveControllerTrackerTest {
     @Test
@@ -16,7 +18,7 @@ class ActiveControllerTrackerTest {
         final ActiveControllerTracker<EqualController> tracker = new ActiveControllerTracker<>();
 
         tracker.reset(game, List.of(topLevel));
-        tracker.replaceActive(game, List.of(subgame, subgame));
+        assertTrue(tracker.replaceActive(game, List.of(subgame, subgame)));
 
         final List<EqualController> tracked = tracker.snapshotForFailure(game);
         assertEquals(2, tracked.size());
@@ -34,15 +36,15 @@ class ActiveControllerTrackerTest {
         final ActiveControllerTracker<EqualController> tracker = new ActiveControllerTracker<>();
 
         tracker.reset(oldGame, List.of(oldTopLevel));
-        tracker.replaceActive(oldGame, List.of(oldSubgame));
-        tracker.replaceActive(oldGame, List.of(oldTopLevel));
+        assertTrue(tracker.replaceActive(oldGame, List.of(oldSubgame)));
+        assertTrue(tracker.replaceActive(oldGame, List.of(oldTopLevel)));
 
         final List<EqualController> afterSubgame = tracker.snapshotForFailure(oldGame);
         assertEquals(1, afterSubgame.size());
         assertSame(oldTopLevel, afterSubgame.get(0));
 
         tracker.reset(newGame, List.of(newTopLevel));
-        tracker.replaceActive(oldGame, List.of(oldSubgame));
+        assertFalse(tracker.replaceActive(oldGame, List.of(oldSubgame)));
 
         assertEquals(List.of(), tracker.snapshotForFailure(oldGame));
         final List<EqualController> trackedForNewGame = tracker.snapshotForFailure(newGame);

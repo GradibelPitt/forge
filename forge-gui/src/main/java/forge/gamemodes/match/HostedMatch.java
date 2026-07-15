@@ -284,7 +284,7 @@ public class HostedMatch {
             p.updateOpponentsForView();
         }
 
-        activeControllerTracker.reset(game, humanControllers);
+        resetActiveControllerTracking(game, humanControllers);
 
         // It's important to run match in a different thread to allow GUI inputs to be invoked from inside game. 
         // Game is set on pause while gui player takes decisions
@@ -524,36 +524,37 @@ public class HostedMatch {
 
         @Override
         public Void visit(final GameEventSubgameStart event) {
-            subGameCount++;
+            if (!runSubgameStartUiUpdateIfCurrent(event.subgame(), () -> {
+                final GameView gameView = event.subgame().getView();
 
-            final GameView gameView = event.subgame().getView();
-            activeControllerTracker.replaceActive(getRootGame(event.subgame()),
-                    getHumanControllersForGame(event.subgame()));
-
-            Runnable switchGameView = () -> {
-                for (final Player p : event.subgame().getPlayers()) {
-                    if (p.getController() instanceof PlayerControllerHuman humanController) {
-                        final IGuiGame gui = guis.get(p.getRegisteredPlayer());
-                        humanController.setGui(gui);
-                        gui.setGameView(null);
-                        gui.setGameView(gameView);
-                        gui.setOriginalGameController(p.getView(), humanController);
-                        gui.openView(new TrackableCollection<>(p.getView()));
-                        gui.setGameView(null);
-                        gui.setGameView(gameView);
-                        event.subgame().subscribeToEvents(new FControlGameEventHandler(humanController));
-                        gui.message(event.message());
+                final Runnable switchGameView = () -> {
+                    for (final Player p : event.subgame().getPlayers()) {
+                        if (p.getController() instanceof PlayerControllerHuman humanController) {
+                            final IGuiGame gui = guis.get(p.getRegisteredPlayer());
+                            humanController.setGui(gui);
+                            gui.setGameView(null);
+                            gui.setGameView(gameView);
+                            gui.setOriginalGameController(p.getView(), humanController);
+                            gui.openView(new TrackableCollection<>(p.getView()));
+                            gui.setGameView(null);
+                            gui.setGameView(gameView);
+                            event.subgame().subscribeToEvents(new FControlGameEventHandler(humanController));
+                            gui.message(event.message());
+                        }
                     }
+                };
+                if (GuiBase.getInterface().isLibgdxPort()) {
+                    GuiBase.getInterface().invokeInEdtNow(switchGameView);
+                } else {
+                    GuiBase.getInterface().invokeInEdtAndWait(switchGameView);
                 }
-            };
-            if (GuiBase.getInterface().isLibgdxPort())
-                GuiBase.getInterface().invokeInEdtNow(switchGameView);
-            else
-                GuiBase.getInterface().invokeInEdtAndWait(switchGameView);
 
-            //ensure opponents set properly
-            for (final Player p : event.subgame().getPlayers()) {
-                p.updateOpponentsForView();
+                //ensure opponents set properly
+                for (final Player p : event.subgame().getPlayers()) {
+                    p.updateOpponentsForView();
+                }
+            })) {
+                return null;
             }
 
             return null;
@@ -561,29 +562,32 @@ public class HostedMatch {
 
         @Override
         public Void visit(final GameEventSubgameEnd event) {
-            final GameView gameView = event.maingame().getView();
-            activeControllerTracker.replaceActive(getRootGame(event.maingame()),
-                    getHumanControllersForGame(event.maingame()));
-            Runnable switchGameView = () -> {
-                for (final Player p : event.maingame().getPlayers()) {
-                    if (p.getController() instanceof PlayerControllerHuman humanController) {
-                        final IGuiGame gui = guis.get(p.getRegisteredPlayer());
-                        gui.setGameView(null);
-                        gui.setGameView(gameView);
-                        gui.setOriginalGameController(p.getView(), humanController);
-                        gui.openView(new TrackableCollection<>(p.getView()));
-                        gui.setGameView(null);
-                        gui.setGameView(gameView);
-                        gui.handleGameEvent(new GameEventTurnPhase(
-                                gameView.getPlayerTurn(), gameView.getPhase(), ""));
-                        gui.message(event.message());
+            if (!runSubgameEndUiUpdateIfCurrent(event.maingame(), () -> {
+                final GameView gameView = event.maingame().getView();
+                final Runnable switchGameView = () -> {
+                    for (final Player p : event.maingame().getPlayers()) {
+                        if (p.getController() instanceof PlayerControllerHuman humanController) {
+                            final IGuiGame gui = guis.get(p.getRegisteredPlayer());
+                            gui.setGameView(null);
+                            gui.setGameView(gameView);
+                            gui.setOriginalGameController(p.getView(), humanController);
+                            gui.openView(new TrackableCollection<>(p.getView()));
+                            gui.setGameView(null);
+                            gui.setGameView(gameView);
+                            gui.handleGameEvent(new GameEventTurnPhase(
+                                    gameView.getPlayerTurn(), gameView.getPhase(), ""));
+                            gui.message(event.message());
+                        }
                     }
+                };
+                if (GuiBase.getInterface().isLibgdxPort()) {
+                    GuiBase.getInterface().invokeInEdtNow(switchGameView);
+                } else {
+                    GuiBase.getInterface().invokeInEdtAndWait(switchGameView);
                 }
-            };
-            if (GuiBase.getInterface().isLibgdxPort())
-                GuiBase.getInterface().invokeInEdtNow(switchGameView);
-            else
-                GuiBase.getInterface().invokeInEdtAndWait(switchGameView);
+            })) {
+                return null;
+            }
 
             return null;
         }
@@ -607,6 +611,30 @@ public class HostedMatch {
                 e.printStackTrace();
             }
         }
+    }
+
+    void resetActiveControllerTracking(final Game rootGame,
+            final Collection<? extends PlayerControllerHuman> baselineControllers) {
+        activeControllerTracker.reset(rootGame, baselineControllers);
+    }
+
+    boolean runSubgameStartUiUpdateIfCurrent(final Game subgame, final Runnable uiUpdate) {
+        if (!activeControllerTracker.replaceActive(
+                getRootGame(subgame), getHumanControllersForGame(subgame))) {
+            return false;
+        }
+        subGameCount++;
+        uiUpdate.run();
+        return true;
+    }
+
+    boolean runSubgameEndUiUpdateIfCurrent(final Game parentGame, final Runnable uiUpdate) {
+        if (!activeControllerTracker.replaceActive(
+                getRootGame(parentGame), getHumanControllersForGame(parentGame))) {
+            return false;
+        }
+        uiUpdate.run();
+        return true;
     }
 
     private static Game getRootGame(final Game nestedGame) {

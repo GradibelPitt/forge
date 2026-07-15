@@ -19,11 +19,12 @@ final class ActiveControllerTracker<T> {
         activeControllers = baselineControllers;
     }
 
-    synchronized void replaceActive(final Object game, final Collection<? extends T> active) {
+    synchronized boolean replaceActive(final Object game, final Collection<? extends T> active) {
         if (gameIdentity != game) {
-            return;
+            return false;
         }
         activeControllers = identityDistinctCopy(active);
+        return true;
     }
 
     synchronized List<T> snapshotForFailure(final Object game) {
