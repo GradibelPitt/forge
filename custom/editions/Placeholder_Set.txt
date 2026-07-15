@@ -54,3 +54,4 @@ Type=Custom_Set
 55 M 虚空之影瓦莉拉 @Custom
 56 M 暗影收割者安度因 @Custom
 57 M 天灾领主加尔鲁什 @Custom
+58 M 死亡猎手雷克萨 @Custom

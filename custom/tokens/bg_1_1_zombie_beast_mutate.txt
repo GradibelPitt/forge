@@ -1,0 +1,9 @@
+Name:灵俑野兽
+ManaCost:no cost
+Colors:black,green
+Types:Creature Zombie Beast
+PT:1/1
+T:Mode$ Mutates | ValidCard$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigPutCounter | TriggerDescription$ 每当此生物合变时，在其上放置一个+1/+1指示物。
+SVar:TrigPutCounter:DB$ PutCounter | Defined$ TriggeredCardLKICopy | CounterType$ P1P1 | CounterNum$ 1
+DeckHas:Ability$Counters
+Oracle:每当此生物合变时，在其上放置一个+1/+1指示物。

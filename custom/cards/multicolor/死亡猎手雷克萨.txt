@@ -1,0 +1,18 @@
+Name:死亡猎手雷克萨
+ManaCost:3 B G
+Types:Legendary Planeswalker Rexxar
+Loyalty:5
+S:Mode$ ReduceCost | ValidCard$ Creature | ValidSpell$ Spell.Mutate | Type$ Spell | Activator$ You | Amount$ 2 | Description$ 利用合变异能来施放的生物咒语减少{2}来施放。
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigMassacre | TriggerDescription$ 当雷克萨进场时，由对手操控的生物得-2/-2直到回合结束。
+SVar:TrigMassacre:DB$ PumpAll | NumAtt$ -2 | NumDef$ -2 | ValidCards$ Creature.OppCtrl | IsCurse$ True
+A:AB$ Effect | Cost$ AddCounter<1/LOYALTY> | Planeswalker$ True | Name$ 死亡猎手雷克萨的合变效应 | Duration$ UntilEndOfTurn | RememberObjects$ ValidExile Creature.ExiledWithSource | StaticAbilities$ GrantMutate | SubAbility$ CreateMutant | SpellDescription$ 所有以雷克萨放逐的生物牌获得合变异能直到回合结束。其合变费用等同于其法术力费用。派出一个1/1黑绿双色的灵俑／野兽衍生生物，且具有「每当此生物合变时，在其上放置一个+1/+1指示物。」
+SVar:GrantMutate:Mode$ Continuous | Affected$ Creature.IsRemembered | AffectedZone$ Exile | AddKeyword$ Mutate:CardManaCost | Description$ 这些牌获得合变异能，其合变费用等同于其法术力费用。
+SVar:CreateMutant:DB$ Token | TokenScript$ bg_1_1_zombie_beast_mutate | TokenAmount$ 1 | TokenOwner$ You
+A:AB$ CardDiscover | Cost$ SubCounter<2/LOYALTY> | Planeswalker$ True | Defined$ You | Source$ CardDatabase | ValidCards$ Creature.Beast | OptionCount$ 3 | Destination$ Exile | RememberChosen$ True | SubAbility$ DiscoverSecond | SpellDescription$ 发现两个野兽并将它们放逐。于这些牌持续放逐的时段内，你可以使用它们，且你可以将法术力视同任意颜色的法术力来施放它们。
+SVar:DiscoverSecond:DB$ CardDiscover | Defined$ You | Source$ CardDatabase | ValidCards$ Creature.Beast | OptionCount$ 3 | Destination$ Exile | RememberChosen$ True | SubAbility$ GrantPlay
+SVar:GrantPlay:DB$ Effect | Duration$ Permanent | RememberObjects$ Remembered | StaticAbilities$ MayPlay | ForgetOnMoved$ Exile | SubAbility$ Cleanup
+SVar:MayPlay:Mode$ Continuous | MayPlay$ True | MayPlayIgnoreColor$ True | Affected$ Card.IsRemembered | AffectedZone$ Exile | Description$ 于这些牌持续放逐的时段内，你可以使用它们，且你可以将法术力视同任意颜色的法术力来施放它们。
+SVar:Cleanup:DB$ Cleanup | ClearRemembered$ True
+DeckHas:Ability$Token
+DeckHints:Type$Beast
+Oracle:利用合变异能来施放的生物咒语减少{2}来施放。\n当雷克萨进场时，由对手操控的生物得-2/-2直到回合结束。\n[+1]: 所有以雷克萨放逐的生物牌获得合变异能直到回合结束。其合变费用等同于其法术力费用。派出一个1/1黑绿双色的灵俑／野兽衍生生物，且具有「每当此生物合变时，在其上放置一个+1/+1指示物。」\n[-2]: 发现两个野兽并将它们放逐。于这些牌持续放逐的时段内，你可以使用它们，且你可以将法术力视同任意颜色的法术力来施放它们。
