@@ -118,23 +118,26 @@ public class PlaySpellAbility {
 
         final PlaySpellAbility req = new PlaySpellAbility(controller, sa);
         if (!req.playAbility(true, false, false)) {
-            if (!controller.getGame().EXPERIMENTAL_RESTORE_SNAPSHOT) {
-                Card rollback = p.getGame().getCardState(source);
-                if (castFaceDown) {
-                    rollback.setFaceDown(false);
-                    rollback.updateStateForView();
-                } else if (flippedToCast) {
-                    // need to get the changed card if able
-                    rollback.turnFaceDown(true);
-                    if (rollback.isInZone(ZoneType.Exile)) {
-                        rollback.addMayLookFaceDownExile(p);
-                    }
-                }
-            }
+            rollbackCardStateAfterFailedPlay(p, source, castFaceDown, flippedToCast);
 
             return false;
         }
         return true;
+    }
+
+    static void rollbackCardStateAfterFailedPlay(final Player player, final Card source,
+            final boolean castFaceDown, final boolean flippedToCast) {
+        final Card rollback = player.getGame().getCardState(source);
+        if (castFaceDown) {
+            rollback.setFaceDown(false);
+            rollback.updateStateForView();
+        } else if (flippedToCast) {
+            // need to get the changed card if able
+            rollback.turnFaceDown(true);
+            if (rollback.isInZone(ZoneType.Exile)) {
+                rollback.addMayLookFaceDownExile(player);
+            }
+        }
     }
 
     static SpellAbility chooseOptionalAdditionalCosts(Player p, final SpellAbility original) {
@@ -690,26 +693,12 @@ public class PlaySpellAbility {
         game.clearTopLibsCast(ability);
 
         if (!prerequisitesMet) {
-            // Would love to restore game state when undoing a trigger rather than just declining all costs.
-            // Is there a way to tell the difference?
-
-            if (ability.isTrigger()) {
-                // Only roll back triggers if they were not paid for
-                if (game.EXPERIMENTAL_RESTORE_SNAPSHOT && preCostRequisites) {
-                    GameActionUtil.rollbackAbility(ability, fromZone, zonePosition, payment, c);
-                } else {
-                    // If precost requsities failed, then there probably isn't anything to refund during experimental
-                    payment.refundPayment();
-                }
-            } else {
-                GameActionUtil.rollbackAbility(ability, fromZone, zonePosition, payment, c);
-            }
+            rollbackFailedAbility(ability, fromZone, zonePosition, payment, c, preCostRequisites);
 
             if (!refreeze) {
                 game.getStack().unfreezeStack();
             }
 
-            // These restores may not need to happen if we're restoring from snapshot
             if (manaColorConversion) {
                 manapool.restoreColorReplacements();
             }
@@ -737,6 +726,17 @@ public class PlaySpellAbility {
             }
         }
         return true;
+    }
+
+    static void rollbackFailedAbility(final SpellAbility ability, final Zone fromZone,
+            final int zonePosition, final CostPayment payment, final Card oldCard,
+            final boolean preCostRequisites) {
+        if (!ability.isTrigger() || preCostRequisites) {
+            GameActionUtil.rollbackAbility(ability, fromZone, zonePosition, payment, oldCard);
+        } else {
+            // No cost was started when a trigger was declined before its prerequisites were met.
+            payment.refundPayment();
+        }
     }
 
     private boolean announceValuesLikeX() {

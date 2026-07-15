@@ -6,8 +6,7 @@ import forge.card.CardRules;
 import forge.deck.Deck;
 import forge.game.card.Card;
 import forge.game.card.CardFactory;
-import forge.game.cost.Cost;
-import forge.game.cost.CostPayment;
+import forge.game.cost.*;
 import forge.game.phase.PhaseType;
 import forge.game.player.IGameEntitiesFactory;
 import forge.game.player.Player;
@@ -23,6 +22,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +44,8 @@ public class GameActionUtilRollbackTest {
     }
 
     @Test
-    public void rollbackDoesNotRestoreSnapshotWhenBattlefieldChangedDuringActivation() {
+    public void rollbackDoesNotRestoreSnapshotWhenBattlefieldChangedDuringActivation()
+            throws ReflectiveOperationException {
         final RegisteredPlayer registeredPlayer = new RegisteredPlayer(new Deck("Rollback test"))
                 .setPlayer(new TestLobbyPlayer("Player"));
         final List<RegisteredPlayer> registeredPlayers = List.of(registeredPlayer);
@@ -55,7 +56,9 @@ public class GameActionUtilRollbackTest {
         game.getPhaseHandler().devModeSet(PhaseType.MAIN1, player);
 
         final Card source = cardOnBattlefield(1, game, player);
-        final AbilityActivated ability = new AbilityActivated(source, Cost.Zero,
+        source.setSickness(false);
+        final Cost tapCost = new Cost("T", true);
+        final AbilityActivated ability = new AbilityActivated(source, tapCost,
                 new TargetRestrictions(Map.of("ValidTgts", "Any"))) {
             private static final long serialVersionUID = 1L;
 
@@ -64,7 +67,7 @@ public class GameActionUtilRollbackTest {
             }
         };
         ability.setActivatingPlayer(player);
-        final CostPayment payment = new CostPayment(Cost.Zero, ability);
+        final CostPayment payment = new CostPayment(tapCost, ability);
 
         game.EXPERIMENTAL_RESTORE_SNAPSHOT = true;
         game.stashGameState();
@@ -72,6 +75,8 @@ public class GameActionUtilRollbackTest {
         final Card enteredAfterSnapshot = cardOnBattlefield(2, game, player);
         ability.getTargets().add(enteredAfterSnapshot);
         game.getStack().freezeStack(ability);
+        payTapCost(payment, ability, player);
+        Assert.assertTrue(source.isTapped(), "the fixture must pay the real tap cost before cancellation");
 
         GameActionUtil.rollbackAbility(ability, null, -1, payment, source);
 
@@ -81,6 +86,7 @@ public class GameActionUtilRollbackTest {
                 "manual cancellation must clear the stack freeze used while paying costs");
         Assert.assertTrue(ability.getTargets().isEmpty(),
                 "manual cancellation must clear choices made by the cancelled ability");
+        Assert.assertFalse(source.isTapped(), "manual cancellation must refund the paid tap cost");
     }
 
     private static Card cardOnBattlefield(final int id, final Game game, final Player player) {
@@ -95,6 +101,24 @@ public class GameActionUtilRollbackTest {
                 new PaperCard(rules, "TST", CardRarity.Common), player, id, game);
         player.getZone(ZoneType.Battlefield).add(card);
         return card;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void payTapCost(final CostPayment payment, final AbilityActivated ability,
+            final Player player) throws ReflectiveOperationException {
+        final CostTap tap = (CostTap) payment.getCost().getCostParts().stream()
+                .filter(CostTap.class::isInstance)
+                .findFirst()
+                .orElseThrow();
+        player.getGame().costPaymentStack.push(tap, payment);
+        try {
+            Assert.assertTrue(tap.payAsDecided(player, PaymentDecision.number(1), ability, false));
+            final Field paidPartsField = CostPayment.class.getDeclaredField("paidCostParts");
+            paidPartsField.setAccessible(true);
+            ((List<CostPart>) paidPartsField.get(payment)).add(tap);
+        } finally {
+            player.getGame().costPaymentStack.pop();
+        }
     }
 
     private static final class TestLobbyPlayer extends LobbyPlayer implements IGameEntitiesFactory {
@@ -116,4 +140,5 @@ public class GameActionUtilRollbackTest {
         public void hear(final LobbyPlayer player, final String message) {
         }
     }
+
 }
