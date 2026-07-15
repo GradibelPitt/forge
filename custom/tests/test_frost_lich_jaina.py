@@ -7,7 +7,8 @@ CARD = ROOT / "cards" / "blue" / "冰霜女巫吉安娜.txt"
 TOKEN = ROOT / "tokens" / "u_3_6_elemental.txt"
 EDITION = ROOT / "editions" / "Placeholder_Set.txt"
 ART = ROOT / "cards" / "pictures" / "PH01" / "冰霜女巫吉安娜.artcrop.jpg"
-ART_BACKUP = ROOT / "tools" / "card-artwork" / "Art_ICC_833.png"
+ART_BACKUP = ROOT / "tools" / "card-artwork" / "frost_lich_jaina_wide_original.png"
+EMBLEM_ART_BACKUP = ROOT / "tools" / "card-artwork" / "Art_ICC_833.png"
 EMBLEM_ART = ROOT / "tokens" / "pictures" / "emblem_frost_lich_jaina.png"
 TOKEN_ART = ROOT / "tokens" / "pictures" / "u_3_6_elemental.jpg"
 TOKEN_ART_BACKUP = ROOT / "tools" / "card-artwork" / "images.jpg"
@@ -129,14 +130,14 @@ class FrostLichJainaContractTest(unittest.TestCase):
 
         self.assertTrue(ART.is_file(), ART)
         with Image.open(ART) as image:
-            self.assertEqual((512, 374), image.size)
+            self.assertEqual((993, 725), image.size)
             self.assertEqual("RGB", image.mode)
             self.assertAlmostEqual(1.37, image.width / image.height, places=2)
 
     def test_emblem_reuses_the_supplied_jaina_artwork(self):
-        self.assertTrue(ART_BACKUP.is_file(), ART_BACKUP)
+        self.assertTrue(EMBLEM_ART_BACKUP.is_file(), EMBLEM_ART_BACKUP)
         self.assertTrue(EMBLEM_ART.is_file(), EMBLEM_ART)
-        self.assertEqual(ART_BACKUP.read_bytes(), EMBLEM_ART.read_bytes())
+        self.assertEqual(EMBLEM_ART_BACKUP.read_bytes(), EMBLEM_ART.read_bytes())
 
     def test_zh_cn_display_text_matches_the_requested_oracle(self):
         expected = (
