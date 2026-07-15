@@ -8,7 +8,7 @@ TOKEN = ROOT / "tokens" / "wb_2_2_apocalypse_knight.txt"
 EDITION = ROOT / "editions" / "Placeholder_Set.txt"
 CARD_ART = ROOT / "cards" / "pictures" / "PH01" / "黑锋骑士乌瑟尔.artcrop.jpg"
 TOKEN_ART = ROOT / "tokens" / "pictures" / "wb_2_2_apocalypse_knight.jpg"
-CARD_ART_BACKUP = ROOT / "tools" / "card-artwork" / "600px-Uther_of_the_Ebon_Blade_full.jpg"
+CARD_ART_BACKUP = ROOT / "tools" / "card-artwork" / "codex-clipboard-4749bcba-6b7c-485b-b406-4b6d4ae51cdd.png"
 TOKEN_ART_BACKUP = ROOT / "tools" / "card-artwork" / "0.jpg"
 ZH_CN = ROOT.parent / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
@@ -77,7 +77,7 @@ class UtherOfTheEbonBladeContractTest(unittest.TestCase):
         self.assertTrue(CARD_ART.is_file(), CARD_ART)
         self.assertTrue(TOKEN_ART.is_file(), TOKEN_ART)
         with Image.open(CARD_ART) as image:
-            self.assertEqual((600, 438), image.size)
+            self.assertEqual((993, 725), image.size)
             self.assertEqual("RGB", image.mode)
             self.assertAlmostEqual(1.37, image.width / image.height, places=2)
         with Image.open(TOKEN_ART) as image:
