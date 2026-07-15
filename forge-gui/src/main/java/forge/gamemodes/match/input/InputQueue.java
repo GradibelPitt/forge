@@ -79,8 +79,10 @@ public class InputQueue extends Observable implements IHasForgeLog {
             }
 
             try {
-                if (inputStack.peek() == inp) {
-                    inputStack.pop();
+                // The in-engine InputSynchronized implementations inherit Object identity equality
+                // from InputSyncronizedBase, so this atomically removes this exact failed input even
+                // if another thread pushed a new input above it while stop() was running.
+                if (inputStack.removeFirstOccurrence(inp)) {
                     inp.relaseLatchWhenGameIsOver();
                 }
             } catch (final RuntimeException | Error ex) {

@@ -148,6 +148,28 @@ class InputQueueRecoveryTest {
     }
 
     @Test
+    void clearInputsPreciselyRemovesFailedInputThatPushesAReplacement() throws Exception {
+        final PlayerControllerHuman controller = newController();
+        final InputQueue queue = controller.getInputQueue();
+        final RecordingInput replacement = new RecordingInput(controller, false);
+        final IllegalStateException stopFailure = new IllegalStateException("failed after replacement push");
+        final AtomicInteger failedStopCalls = new AtomicInteger();
+        final AtomicInteger failedReleaseCalls = new AtomicInteger();
+        final InputSynchronized failed = replacingFailedInput(
+                queue, replacement, stopFailure, failedStopCalls, failedReleaseCalls);
+        queue.setInput(failed);
+
+        final IllegalStateException failure = assertThrows(IllegalStateException.class, queue::clearInputs);
+
+        assertSame(stopFailure, failure);
+        assertEquals(1, failedStopCalls.get(), "the failed input must be removed before the loop advances");
+        assertEquals(1, failedReleaseCalls.get());
+        assertEquals(1, replacement.stopCalls);
+        assertEquals(0, latchOf(replacement).getCount());
+        assertNull(queue.getInput());
+    }
+
+    @Test
     void stopFinishesRemovesAndReleasesLatchWhenOnStopThrows() throws Exception {
         final PlayerControllerHuman controller = newController();
         final InputQueue queue = controller.getInputQueue();
@@ -261,6 +283,10 @@ class InputQueueRecoveryTest {
                 InputSynchronized.class.getClassLoader(),
                 new Class<?>[] { InputSynchronized.class },
                 (proxy, method, arguments) -> {
+                    final Object objectResult = identityObjectMethod(proxy, method.getName(), arguments);
+                    if (objectResult != null) {
+                        return objectResult;
+                    }
                     if (method.getName().equals("stop")) {
                         stopCalls.incrementAndGet();
                         throw failure;
@@ -271,6 +297,48 @@ class InputQueueRecoveryTest {
                     }
                     return defaultValue(method.getReturnType());
                 });
+    }
+
+    private static InputSynchronized replacingFailedInput(final InputQueue queue,
+                                                           final InputSynchronized replacement,
+                                                           final RuntimeException failure,
+                                                           final AtomicInteger stopCalls,
+                                                           final AtomicInteger releaseCalls) {
+        return (InputSynchronized) Proxy.newProxyInstance(
+                InputSynchronized.class.getClassLoader(),
+                new Class<?>[] { InputSynchronized.class },
+                (proxy, method, arguments) -> {
+                    final Object objectResult = identityObjectMethod(proxy, method.getName(), arguments);
+                    if (objectResult != null) {
+                        return objectResult;
+                    }
+                    if (method.getName().equals("stop")) {
+                        if (stopCalls.incrementAndGet() == 1) {
+                            queue.setInput(replacement);
+                            throw failure;
+                        }
+                        return null;
+                    }
+                    if (method.getName().equals("relaseLatchWhenGameIsOver")) {
+                        releaseCalls.incrementAndGet();
+                        return null;
+                    }
+                    return defaultValue(method.getReturnType());
+                });
+    }
+
+    private static Object identityObjectMethod(final Object proxy, final String methodName,
+                                               final Object[] arguments) {
+        if (methodName.equals("equals")) {
+            return proxy == arguments[0];
+        }
+        if (methodName.equals("hashCode")) {
+            return System.identityHashCode(proxy);
+        }
+        if (methodName.equals("toString")) {
+            return "test input@" + Integer.toHexString(System.identityHashCode(proxy));
+        }
+        return null;
     }
 
     private static IGuiBase testGui(final boolean runEdtTasks) {
