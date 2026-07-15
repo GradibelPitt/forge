@@ -1,0 +1,9 @@
+Name:小鬼骑士
+ManaCost:B R
+Types:Creature Demon Knight
+PT:3/2
+T:Mode$ DiscardedAll | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPutCounter | TriggerDescription$ 每当你弃一张或数张牌时，在此生物上放置等量的+1/+1指示物且直到回合结束获得践踏异能。
+SVar:TrigPutCounter:DB$ PutCounter | Defined$ Self | CounterType$ P1P1 | CounterNum$ X | SubAbility$ DBTrample
+SVar:X:TriggerCount$Amount
+SVar:DBTrample:DB$ Pump | Defined$ Self | KW$ Trample
+Oracle:每当你弃一张或数张牌时，在此生物上放置等量的+1/+1指示物且直到回合结束获得践踏异能。
