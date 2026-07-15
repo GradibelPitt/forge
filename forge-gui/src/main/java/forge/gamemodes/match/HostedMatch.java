@@ -27,6 +27,7 @@ import forge.gui.control.FControlGameEventHandler;
 import forge.gui.control.FControlGamePlayback;
 import forge.gui.control.PlaybackSpeed;
 import forge.gui.control.WatchLocalGame;
+import forge.gui.error.BugReporter;
 import forge.gui.events.*;
 import forge.gui.interfaces.IGuiGame;
 import forge.interfaces.IGameController;
@@ -40,6 +41,7 @@ import forge.haptic.HapticEngine;
 import forge.sound.MusicPlaylist;
 import forge.sound.SoundSystem;
 import forge.trackable.TrackableCollection;
+import forge.util.Localizer;
 import forge.util.TextUtil;
 import forge.util.collect.FCollectionView;
 import org.apache.commons.lang3.StringUtils;
@@ -63,6 +65,7 @@ public class HostedMatch {
     private final MatchUiEventVisitor visitor = new MatchUiEventVisitor();
     private final Map<PlayerControllerHuman, NextGameDecision> nextGameDecisions = Maps.newHashMap();
     private boolean isMatchOver = false;
+    private boolean matchOverCallbackInvoked = false;
     public int subGameCount = 0;
 
     public HostedMatch() {}
@@ -115,6 +118,7 @@ public class HostedMatch {
         }
 
         this.guis = guis == null ? ImmutableMap.of() : guis;
+        matchOverCallbackInvoked = false;
         final boolean useRandomFoil = FModel.getPreferences().getPrefBoolean(FPref.UI_RANDOM_FOIL);
         for (final RegisteredPlayer rp : players) {
             rp.setRandomFoil(useRandomFoil);
@@ -286,51 +290,115 @@ public class HostedMatch {
             // "quit"/"continue" decision via addNextGameDecision -> endCurrentGame())
             // concurrently clears the `game` field while match.startGame() is wrapping up.
             final Game currentGame = game;
+            final List<PlayerControllerHuman> currentHumanControllers = Lists.newArrayList(humanControllers);
 
-            if (humanCount == 0) {
-                // Create FControlGamePlayback in game thread to allow pausing
-                playbackControl = new FControlGamePlayback(humanControllers.get(0));
-                playbackControl.setGame(currentGame);
-                currentGame.subscribeToEvents(playbackControl);
-            }
-            // Actually start the game!
-            match.startGame(currentGame, startGameHook);
-            // this function waits?
-            if (endGameHook != null){
-                endGameHook.run();
-            }
-
-            // Flush any buffered game events to remote clients so they receive
-            // GameEventGameOutcome and GameEventGameFinished before we proceed.
-            for (PlayerControllerHuman hc : humanControllers) {
-                if (hc.getGui() instanceof forge.gamemodes.net.server.RemoteClientGuiGame ngg) {
-                    forge.gui.control.GameEventForwarder fwd = ngg.getForwarder();
-                    if (fwd != null) {
-                        fwd.flush();
-                    }
-                }
-            }
-
-            // After game is over...
-            isMatchOver = match.isMatchOver();
-            if (humanCount == 0) {
-                // ... if no human players, let AI decide next game
-                if (currentGame.getRules().getGameType() == GameType.Constructed) {
-                    // Dramatic interlude to signal end of game.
-                    FThreads.delayInEDT(3000, () -> {
-                        if (isMatchOver) {
-                            // Leave match-end overview open for spectator.
-                        } else {
-                            addNextGameDecision(null, NextGameDecision.CONTINUE);
-                        }
-                    });
-                } else if (isMatchOver) {
-                    addNextGameDecision(null, NextGameDecision.QUIT);
-                } else {
-                    addNextGameDecision(null, NextGameDecision.CONTINUE);
-                }
+            try {
+                runGameTask(currentGame, currentHumanControllers);
+            } catch (final RuntimeException | Error failure) {
+                handleGameTaskFailure(currentGame, currentHumanControllers, failure);
             }
         });
+    }
+
+    private void runGameTask(final Game currentGame,
+            final List<PlayerControllerHuman> currentHumanControllers) {
+        if (humanCount == 0) {
+            // Create FControlGamePlayback in game thread to allow pausing
+            playbackControl = new FControlGamePlayback(currentHumanControllers.get(0));
+            playbackControl.setGame(currentGame);
+            currentGame.subscribeToEvents(playbackControl);
+        }
+        // Actually start the game!
+        match.startGame(currentGame, startGameHook);
+        // this function waits?
+        if (endGameHook != null){
+            endGameHook.run();
+        }
+
+        // Flush any buffered game events to remote clients so they receive
+        // GameEventGameOutcome and GameEventGameFinished before we proceed.
+        for (final PlayerControllerHuman humanController : currentHumanControllers) {
+            if (humanController.getGui() instanceof forge.gamemodes.net.server.RemoteClientGuiGame ngg) {
+                final forge.gui.control.GameEventForwarder forwarder = ngg.getForwarder();
+                if (forwarder != null) {
+                    forwarder.flush();
+                }
+            }
+        }
+
+        // After game is over...
+        isMatchOver = match.isMatchOver();
+        if (humanCount == 0) {
+            // ... if no human players, let AI decide next game
+            if (currentGame.getRules().getGameType() == GameType.Constructed) {
+                // Dramatic interlude to signal end of game.
+                FThreads.delayInEDT(3000, () -> {
+                    if (isMatchOver) {
+                        // Leave match-end overview open for spectator.
+                    } else {
+                        addNextGameDecision(null, NextGameDecision.CONTINUE);
+                    }
+                });
+            } else if (isMatchOver) {
+                addNextGameDecision(null, NextGameDecision.QUIT);
+            } else {
+                addNextGameDecision(null, NextGameDecision.CONTINUE);
+            }
+        }
+    }
+
+    private void handleGameTaskFailure(final Game currentGame,
+            final List<PlayerControllerHuman> currentHumanControllers, final Throwable failure) {
+        final MatchGameFailureHandler failureHandler = new MatchGameFailureHandler(
+                () -> clearHumanInputs(currentHumanControllers),
+                error -> BugReporter.reportException(error,
+                        Localizer.getInstance().getMessageorUseDefault(
+                                "lblMatchClosedAfterUnexpectedError",
+                                "The match was closed after an unexpected error to prevent a stale input state.")),
+                () -> scheduleFailedGameShutdown(currentGame));
+        failureHandler.handle(failure);
+    }
+
+    private static void clearHumanInputs(final List<PlayerControllerHuman> controllers) {
+        Throwable firstFailure = null;
+        for (final PlayerControllerHuman controller : controllers) {
+            try {
+                controller.getInputQueue().clearInputs();
+            } catch (final RuntimeException | Error cleanupFailure) {
+                if (firstFailure == null) {
+                    firstFailure = cleanupFailure;
+                } else if (firstFailure != cleanupFailure) {
+                    firstFailure.addSuppressed(cleanupFailure);
+                }
+            }
+        }
+        if (firstFailure instanceof RuntimeException) {
+            throw (RuntimeException) firstFailure;
+        }
+        if (firstFailure instanceof Error) {
+            throw (Error) firstFailure;
+        }
+    }
+
+    private void scheduleFailedGameShutdown(final Game failedGame) {
+        FThreads.invokeInEdtNowOrLater(() -> {
+            if (game != failedGame) {
+                return;
+            }
+            endCurrentGame();
+            markMatchOverAndNotifyOnce();
+        });
+    }
+
+    private void markMatchOverAndNotifyOnce() {
+        isMatchOver = true;
+        if (matchOverCallbackInvoked) {
+            return;
+        }
+        matchOverCallbackInvoked = true;
+        if (onMatchOver != null) {
+            onMatchOver.run();
+        }
     }
 
     private LobbySlot getLobbySlot(LobbyPlayer lobbyPlayer) {
@@ -530,10 +598,7 @@ public class HostedMatch {
         if (decision == NextGameDecision.QUIT) {
             FThreads.invokeInEdtNowOrLater(() -> {
                 endCurrentGame();
-                isMatchOver = true;
-                if (onMatchOver != null) {
-                    onMatchOver.run();
-                }
+                markMatchOverAndNotifyOnce();
             });
             return; // if any player chooses quit, quit the match
         }
