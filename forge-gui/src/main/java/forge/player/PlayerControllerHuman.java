@@ -580,13 +580,8 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
 
             cost.decreaseGenericMana(willPay);
             return true;
-        } else if (sa.getHostCard().getGame().EXPERIMENTAL_RESTORE_SNAPSHOT) {
-            // Let's roll it back!
-            return false;
-        } else {
-            System.out.println("Assist rollback may not work well without experimental restore snapshot enabled");
-            return false;
         }
+        return false;
     }
 
     @Override

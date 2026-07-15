@@ -160,7 +160,7 @@ public class HostedMatch {
         SoundSystem.instance.setBackgroundMusic(this.matchPlaylist == null ? MusicPlaylist.MATCH : this.matchPlaylist);
 
         game = match.createGame();
-        game.EXPERIMENTAL_RESTORE_SNAPSHOT = FModel.getPreferences().getPrefBoolean(FPref.MATCH_EXPERIMENTAL_RESTORE);
+        disableExperimentalSnapshotRestore(game);
         game.AI_TIMEOUT = FModel.getPreferences().getPrefInt(FPref.MATCH_AI_TIMEOUT);
         // Android API 31 and above can use completeOnTimeout -> CompletableFuture:
         //https://developer.android.com/reference/java/util/concurrent/CompletableFuture#completeOnTimeout(T,%20long,%20java.util.concurrent.TimeUnit)
@@ -402,6 +402,10 @@ public class HostedMatch {
         if (prefs.getPrefBoolean(FPref.UI_PAUSE_WHILE_MINIMIZED) && playbackControl != null) {
             playbackControl.getInput().pause();
         }
+    }
+
+    static void disableExperimentalSnapshotRestore(final Game game) {
+        game.EXPERIMENTAL_RESTORE_SNAPSHOT = false;
     }
 
     public void resume() {
