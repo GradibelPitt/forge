@@ -1,0 +1,10 @@
+Name:污染者玛法里奥
+ManaCost:1 B G
+Types:Legendary Planeswalker Malfurion
+Loyalty:3
+S:Mode$ Continuous | Affected$ Permanent.Self+counters_GE1_LOYALTY | Condition$ PlayerTurn | AddType$ Creature & Beast | RemoveCardTypes$ True | SetPower$ 3 | SetToughness$ 3 | AddKeyword$ Trample | Description$ 于你的回合中，只要玛法里奥上有一个或数个忠诚指示物，他便是3/3野兽生物，且具有践踏异能。
+A:AB$ PutCounter | Cost$ AddCounter<1/LOYALTY> | Planeswalker$ True | CounterType$ P1P1 | CounterNum$ 1 | TargetMin$ 0 | TargetMax$ 1 | ValidTgts$ Beast | TgtPrompt$ 选择至多一个目标野兽 | SpellDescription$ 在至多一个目标野兽上放置一个+1/+1指示物。
+A:AB$ Charm | Cost$ SubCounter<2/LOYALTY> | Planeswalker$ True | Choices$ DBInsect,DBSpider | SpellDescription$ 选择一项～派出一个0/3绿色，具有延势异能的昆虫衍生生物；或派出一个1/1黑色，具有死触异能的蜘蛛衍生生物。
+SVar:DBInsect:DB$ Token | TokenScript$ g_0_3_insect_reach | TokenOwner$ You | SpellDescription$ 派出一个0/3绿色，具有延势异能的昆虫衍生生物。
+SVar:DBSpider:DB$ Token | TokenScript$ b_1_1_spider_deathtouch | TokenOwner$ You | SpellDescription$ 派出一个1/1黑色，具有死触异能的蜘蛛衍生生物。
+Oracle:于你的回合中，只要玛法里奥上有一个或数个忠诚指示物，他便是3/3野兽生物，且具有践踏异能。\n[+1]：在至多一个目标野兽上放置一个+1/+1指示物。\n[-2]：选择一项～\n• 派出一个0/3绿色，具有延势异能的昆虫衍生生物。\n• 派出一个1/1黑色，具有死触异能的蜘蛛衍生生物。

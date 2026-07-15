@@ -1,0 +1,7 @@
+Name:蜘蛛衍生物
+ManaCost:no cost
+Colors:black
+Types:Creature Spider
+PT:1/1
+K:Deathtouch
+Oracle:死触
