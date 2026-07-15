@@ -1,0 +1,8 @@
+[metadata]
+Code=JF99
+Name=鸡飞99
+Date=2026-07-15
+Type=Custom_Set
+
+[cards]
+1 M 亚西克瑞非体质 @Custom

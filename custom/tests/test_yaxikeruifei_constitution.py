@@ -7,8 +7,10 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 CARD = ROOT / "cards" / "colorless" / "亚西克瑞非体质.txt"
-EDITION = ROOT / "editions" / "Placeholder_Set.txt"
-ART = ROOT / "cards" / "pictures" / "PH01" / "亚西克瑞非体质.artcrop.jpg"
+PH01_EDITION = ROOT / "editions" / "Placeholder_Set.txt"
+JF99_EDITION = ROOT / "editions" / "JiFei99_Set.txt"
+ART = ROOT / "cards" / "pictures" / "JF99" / "亚西克瑞非体质.artcrop.jpg"
+OLD_ART = ROOT / "cards" / "pictures" / "PH01" / "亚西克瑞非体质.artcrop.jpg"
 BACKUP = (
     ROOT
     / "tools"
@@ -59,14 +61,20 @@ class YaxikeruifeiConstitutionContractTest(unittest.TestCase):
         self.assertIn("Shuffle$ True", text)
         self.assertNotIn("SorcerySpeed$ True", text)
 
-    def test_edition_art_backup_and_chinese_text(self):
-        self.assertIn(
-            "63 M 亚西克瑞非体质 @Custom",
-            EDITION.read_text(encoding="utf-8"),
+    def test_jifei99_edition_art_backup_and_chinese_text(self):
+        edition = JF99_EDITION.read_text(encoding="utf-8")
+        self.assertIn("Code=JF99", edition)
+        self.assertIn("Name=鸡飞99", edition)
+        self.assertIn("Type=Custom_Set", edition)
+        self.assertIn("1 M 亚西克瑞非体质 @Custom", edition)
+        self.assertNotIn(
+            "亚西克瑞非体质",
+            PH01_EDITION.read_text(encoding="utf-8"),
         )
         self.assertTrue(BACKUP.is_file(), BACKUP)
         self.assertEqual(BACKUP_SHA256, sha256(BACKUP))
         self.assertTrue(ART.is_file(), ART)
+        self.assertFalse(OLD_ART.exists(), OLD_ART)
         with Image.open(ART) as image:
             self.assertEqual("RGB", image.mode)
             self.assertEqual("JPEG", image.format)
