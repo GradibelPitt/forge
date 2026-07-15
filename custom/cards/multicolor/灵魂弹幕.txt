@@ -1,6 +1,6 @@
 Name:灵魂弹幕
 ManaCost:2 B R
 Types:Sorcery
-K:Madness:B R
+K:Madness:R
 A:SP$ DealDamage | ValidTgts$ Any | TgtPrompt$ Select any number of targets to distribute damage to | NumDmg$ 4 | TargetMin$ 0 | TargetMax$ 4 | DividedAsYouChoose$ 4 | SpellDescription$ 灵魂弹幕对任意数量的目标造成共4点伤害，你可以任意分配。
-Oracle:灵魂弹幕对任意数量的目标造成共4点伤害，你可以任意分配。\n疯魔{B}{R}
+Oracle:灵魂弹幕对任意数量的目标造成共4点伤害，你可以任意分配。\n疯魔{R}

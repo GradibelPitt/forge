@@ -11,13 +11,14 @@ ZH_CN = ROOT.parent / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 
 class SoulBarrageContractTest(unittest.TestCase):
-    def test_card_is_a_red_black_sorcery_with_black_red_madness(self):
+    def test_card_is_a_red_black_sorcery_with_red_madness(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:灵魂弹幕", text)
         self.assertIn("ManaCost:2 B R", text)
         self.assertIn("Types:Sorcery", text)
-        self.assertIn("K:Madness:B R", text)
+        self.assertIn("K:Madness:R", text)
+        self.assertNotIn("K:Madness:B R", text)
 
     def test_card_deals_four_damage_divided_as_chosen_among_any_targets(self):
         text = CARD.read_text(encoding="utf-8")
@@ -34,7 +35,7 @@ class SoulBarrageContractTest(unittest.TestCase):
         self.assertTrue(ART.is_file())
 
     def test_zh_cn_display_text_matches_the_requested_description(self):
-        expected = r"灵魂弹幕|灵魂弹幕|法术|灵魂弹幕对任意数量的目标造成共4点伤害，你可以任意分配。\n疯魔{B}{R}"
+        expected = r"灵魂弹幕|灵魂弹幕|法术|灵魂弹幕对任意数量的目标造成共4点伤害，你可以任意分配。\n疯魔{R}"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
 

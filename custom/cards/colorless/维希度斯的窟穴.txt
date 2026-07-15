@@ -1,9 +1,9 @@
 Name:维希度斯的窟穴
-ManaCost:no cost
-Types:Land
-R:Event$ Moved | ValidCard$ Card.Self | Destination$ Battlefield | ReplaceWith$ LandTapped | ReplacementResult$ Updated | Description$ CARDNAME enters tapped with two depletion counters on it.
-SVar:LandTapped:DB$ Tap | Defined$ Self | ETB$ True | SubAbility$ DBAddCounter
+ManaCost:B R
+Types:Artifact
+R:Event$ Moved | ValidCard$ Card.Self | Destination$ Battlefield | ReplaceWith$ DBAddCounter | ReplacementResult$ Updated | Description$ CARDNAME enters with two depletion counters on it.
 SVar:DBAddCounter:DB$ PutCounter | Defined$ Self | ETB$ True | CounterType$ DEPLETION | CounterNum$ 2
-A:AB$ Draw | Cost$ T SubCounter<1/DEPLETION> Discard<1/Card> | NumCards$ 2 | Defined$ You | SubAbility$ DBSac | SpellDescription$ Draw two cards. If there are no depletion counters on CARDNAME, sacrifice it.
+A:AB$ Discard | Cost$ T SubCounter<1/DEPLETION> | Defined$ You | NumCards$ 1 | Mode$ TgtChoose | SubAbility$ DBDraw | PlayerTurn$ True | SorcerySpeed$ True | SpellDescription$ 弃一张牌，抽两张牌。如果此地上没有消耗指示物，则将它牺牲。只能于你的回合中起动且只能于法术时机起动。
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 2 | SubAbility$ DBSac
 SVar:DBSac:DB$ Sacrifice | SacValid$ Self | ConditionPresent$ Card.Self+counters_EQ0_DEPLETION
-Oracle:CARDNAME enters tapped with two depletion counters on it.\n{T}, Remove a depletion counter from CARDNAME, Discard a card: Draw two cards. If there are no depletion counters on CARDNAME, sacrifice it.
+Oracle:此神器进场时上面有两个消耗指示物。\n{T}，从此神器上移去一个消耗指示物：弃一张牌，抽两张牌。如果此地上没有消耗指示物，则将它牺牲。只能于你的回合中起动且只能于法术时机起动。

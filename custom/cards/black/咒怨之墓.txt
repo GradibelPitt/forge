@@ -1,8 +1,9 @@
 Name:咒怨之墓
-ManaCost:BP
+ManaCost:0
+Colors:black
 Types:Sorcery
-A:SP$ CardDiscover | Defined$ You | Source$ Library | SourceController$ You | ValidCards$ Card | OptionCount$ 3 | Destination$ Hand | RememberChosen$ True | SubAbility$ DelayedDiscard | SpellDescription$ 发现你牌堆中的一张牌，在你的回合结束时，弃掉以此法获得的且仍然在你手牌中的牌。
+A:SP$ CardDiscover | Cost$ 0 ExileFromGrave<3/Card/cards> | Defined$ You | Source$ Library | SourceController$ You | ValidCards$ Card | OptionCount$ 3 | Destination$ Hand | RememberChosen$ True | SubAbility$ DelayedDiscard | SpellDescription$ 发现你牌堆中的一张牌，在你的回合结束时，弃掉以此法获得的且仍然在你手牌中的牌。
 SVar:DelayedDiscard:DB$ DelayedTrigger | Mode$ Phase | Phase$ End of Turn | ValidPlayer$ You | RememberObjects$ Remembered | Execute$ DiscardRemembered | SubAbility$ Cleanup | TriggerDescription$ 在你的回合结束时，弃掉以此法获得的且仍然在你手牌中的牌。
 SVar:DiscardRemembered:DB$ Discard | Defined$ You | Mode$ Defined | DefinedCards$ ValidHand Card.IsTriggerRemembered
 SVar:Cleanup:DB$ Cleanup | ClearRemembered$ True
-Oracle:发现你牌堆中的一张牌，在你的回合结束时，弃掉以此法获得的且仍然在你手牌中的牌。
+Oracle:咒怨之墓是黑色。\n从你的坟墓场放逐三张牌，以作为施放此咒语的额外费用。\n发现你牌堆中的一张牌，在你的回合结束时，弃掉以此法获得的且仍然在你手牌中的牌。

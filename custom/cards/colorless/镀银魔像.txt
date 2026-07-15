@@ -2,5 +2,5 @@ Name:镀银魔像
 ManaCost:2 B
 Types:Artifact Creature Golem
 PT:3/3
-K:Madness:B
-Oracle:疯魔{B}
+K:Madness:0 ExileFromGrave<3/Card.Other/other cards>
+Oracle:疯魔{0}，从你的坟墓场放逐三张其他牌。
