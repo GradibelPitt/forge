@@ -1,0 +1,9 @@
+Name:潮池学徒
+ManaCost:U
+Types:Creature Naga
+PT:2/1
+T:Mode$ SpellCast | ValidCard$ Instant,Sorcery | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigConjure | TriggerDescription$ Whenever you cast an instant or sorcery spell, conjure a duplicate of that card into exile.
+SVar:TrigConjure:DB$ MakeCard | Conjure$ True | DefinedName$ TriggeredCardLKICopy | Zone$ Exile | ImprintMade$ True
+A:AB$ ChangeZone | Cost$ T Sac<1/CARDNAME> | ValidTgts$ Instant.IsImprinted,Sorcery.IsImprinted | TgtZone$ Exile | TgtPrompt$ Select target instant or sorcery card exiled with CARDNAME | Origin$ Exile | Destination$ Hand | SpellDescription$ Return target card exiled with CARDNAME to your hand.
+AI:RemoveDeck:All
+Oracle:Whenever you cast an instant or sorcery spell, conjure a duplicate of that card into exile.\n{T}, Sacrifice CARDNAME: Return target card exiled with CARDNAME to your hand.
