@@ -26,6 +26,7 @@ import forge.gui.interfaces.IGuiGame;
 import forge.item.PaperCard;
 import forge.util.Lang;
 import forge.util.Localizer;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -42,8 +43,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GameActionUtilRollbackIntegrationTest {
+    private static IGuiBase previousGui;
+
     @BeforeAll
     static void initializeLocalizer() {
+        previousGui = GuiBase.getInterface();
         Lang.createInstance("en-US");
         final String languages = Paths.get("..", "forge-gui", "res", "languages")
                 .toAbsolutePath().normalize().toString();
@@ -62,6 +66,11 @@ class GameActionUtilRollbackIntegrationTest {
                     }
                     return defaultValue(method.getReturnType());
                 }));
+    }
+
+    @AfterAll
+    static void restoreGui() {
+        GuiBase.setInterface(previousGui);
     }
 
     @Test
