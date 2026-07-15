@@ -10,7 +10,7 @@ ART_BACKUP = (
     ROOT
     / "tools"
     / "card-artwork"
-    / "codex-clipboard-d18d4e1b-0dd0-4b82-9d41-f7f11127f17d.png"
+    / "codex-clipboard-98a839dd-98c9-4c2b-86c9-ff0844e206c4.png"
 )
 ZH_CN = ROOT.parent / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
@@ -76,7 +76,7 @@ class ShadowreaperAnduinContractTest(unittest.TestCase):
 
         self.assertTrue(ART.is_file(), ART)
         with Image.open(ART) as image:
-            self.assertEqual((512, 374), image.size)
+            self.assertEqual((1440, 1052), image.size)
             self.assertEqual("RGB", image.mode)
             self.assertAlmostEqual(1.37, image.width / image.height, places=2)
 
