@@ -58,8 +58,10 @@ class DeathstalkerRexxarContractTest(unittest.TestCase):
         )
         self.assertIn("Duration$ UntilEndOfTurn", text)
         self.assertIn(
-            "RememberObjects$ ValidExile Creature.ExiledWithSource", text
+            "RememberObjects$ ValidExile Creature.Beast", text
         )
+        self.assertNotIn("ExiledWithSource", text)
+        self.assertNotIn("ExiledByYou", text)
         self.assertIn("StaticAbilities$ GrantMutate", text)
         self.assertIn(
             "SVar:GrantMutate:Mode$ Continuous | Affected$ Creature.IsRemembered | "
@@ -125,7 +127,7 @@ class DeathstalkerRexxarContractTest(unittest.TestCase):
             "死亡猎手雷克萨|死亡猎手雷克萨|传奇鹏洛客～雷克萨|"
             "利用合变异能来施放的生物咒语减少{2}来施放。\\n"
             "当雷克萨进场时，由对手操控的生物得-2/-2直到回合结束。\\n"
-            "+1：所有以雷克萨放逐的生物牌获得合变异能直到回合结束。其合变费用"
+            "+1：放逐区的所有野兽牌获得合变异能直到回合结束。其合变费用"
             "等同于其法术力费用。派出一个1/1黑绿双色的灵俑／野兽衍生生物，且具有"
             "「每当此生物合变时，在其上放置一个+1/+1指示物。」\\n"
             "-2：发现两个野兽并将它们放逐。于这些牌持续放逐的时段内，你可以使用它们，"
