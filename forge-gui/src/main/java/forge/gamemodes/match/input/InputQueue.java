@@ -68,15 +68,50 @@ public class InputQueue extends Observable implements IHasForgeLog {
     public final void clearInputs() {
         netLog.trace("clearInputs() called, stack size = {}", inputStack.size());
         int count = 0;
+        Throwable failure = null;
         InputSynchronized inp;
         while ((inp = inputStack.peek()) != null) {
             netLog.trace("Stopping input #{}: {}", count, inp.getClass().getSimpleName());
-            inp.stop();
+            try {
+                inp.stop();
+            } catch (final RuntimeException | Error ex) {
+                failure = preserveFirstFailure(failure, ex);
+            }
+
+            try {
+                if (inputStack.peek() == inp) {
+                    inputStack.pop();
+                    inp.relaseLatchWhenGameIsOver();
+                }
+            } catch (final RuntimeException | Error ex) {
+                failure = preserveFirstFailure(failure, ex);
+            }
             count++;
         }
         netLog.trace("clearInputs() done, stopped {} inputs", count);
 
-        updateObservers();
+        try {
+            updateObservers();
+        } catch (final RuntimeException | Error ex) {
+            failure = preserveFirstFailure(failure, ex);
+        }
+
+        if (failure instanceof RuntimeException) {
+            throw (RuntimeException) failure;
+        }
+        if (failure instanceof Error) {
+            throw (Error) failure;
+        }
+    }
+
+    private static Throwable preserveFirstFailure(final Throwable first, final Throwable next) {
+        if (first == null) {
+            return next;
+        }
+        if (first != next) {
+            first.addSuppressed(next);
+        }
+        return first;
     }
 
     public final Input getActualInput(final PlayerControllerHuman controller) {

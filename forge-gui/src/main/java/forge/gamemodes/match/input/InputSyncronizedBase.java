@@ -51,7 +51,11 @@ public abstract class InputSyncronizedBase extends InputBase implements InputSyn
 
         try {
             // ensure input won't accept any user actions.
-            FThreads.invokeInEdtNowOrLater(this::setFinished);
+            if (FThreads.isGuiThread()) {
+                setFinished();
+            } else {
+                FThreads.invokeInEdtAndWait(this::setFinished);
+            }
         } catch (final RuntimeException | Error ex) {
             failure = preserveFirstFailure(failure, ex);
         }
