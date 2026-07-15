@@ -47,6 +47,7 @@ import javax.swing.SwingUtilities;
 import com.google.common.collect.Multiset;
 
 import forge.CachedCardImage;
+import forge.ImageCache;
 import forge.StaticData;
 import forge.card.CardEdition;
 import forge.card.CardStateName;
@@ -129,6 +130,11 @@ public class CardPanel extends SkinnedPanel implements CardContainer, IDisposabl
     private String zoneBannerText;
     private Color zoneBannerColor;
     private CachedCardImage cachedImage;
+    private String lastImageKey;
+    private int lastImageWidth = -1;
+    private int lastImageHeight = -1;
+    private long lastImageCacheGeneration = -1;
+    private boolean lastImageResolved;
     private int groupCount;
     private int hotkeyDigit; // 1..9 paints a numbered badge for Ctrl+digit selection; 0 hides
     private Font badgeFont;
@@ -239,6 +245,11 @@ public class CardPanel extends SkinnedPanel implements CardContainer, IDisposabl
 
         if (card == null)  {
             cachedImage = null;
+            lastImageKey = null;
+            lastImageWidth = -1;
+            lastImageHeight = -1;
+            lastImageCacheGeneration = -1;
+            lastImageResolved = false;
             setImage(null);
             return;
         }
@@ -247,14 +258,29 @@ public class CardPanel extends SkinnedPanel implements CardContainer, IDisposabl
         final float screenScale = GuiBase.getInterface().getScreenScale();
         int imageWidth = Math.round(imagePanel.getWidth() * screenScale);
         int imageHeight = Math.round(imagePanel.getHeight() * screenScale);
+        final String imageKey = card.getCurrentState().getImageKey(matchUI.getLocalPlayers());
+        final long imageCacheGeneration = ImageCache.getCacheGeneration();
+        if (!CardImageRefreshPolicy.shouldRefresh(lastImageKey, lastImageWidth, lastImageHeight,
+                lastImageCacheGeneration, imageKey, imageWidth, imageHeight, imageCacheGeneration,
+                lastImageResolved && imagePanel.hasImage())) {
+            return;
+        }
+
+        lastImageKey = imageKey;
+        lastImageWidth = imageWidth;
+        lastImageHeight = imageHeight;
+        lastImageCacheGeneration = imageCacheGeneration;
         cachedImage = new CachedCardImage(card, matchUI.getLocalPlayers(), imageWidth, imageHeight) {
             @Override
             public void onImageFetched() {
-                if (cachedImage != null) {
-                    setImage(cachedImage.getImage());
+                markImageResolved();
+                if (cachedImage == this) {
+                    lastImageResolved = true;
+                    setImage(getImage());
                 }
             }
         };
+        lastImageResolved = cachedImage.isImageResolved();
         setImage(cachedImage.getImage());
     }
 
@@ -1095,6 +1121,9 @@ public class CardPanel extends SkinnedPanel implements CardContainer, IDisposabl
         imagePanel.setImage(null);
         imagePanel = null;
         card = null;
+        cachedImage = null;
+        lastImageKey = null;
+        lastImageResolved = false;
     }
 
     public static CardPanel getDragAnimationPanel() {

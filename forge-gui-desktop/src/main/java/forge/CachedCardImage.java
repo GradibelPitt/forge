@@ -13,6 +13,7 @@ public abstract class CachedCardImage implements ImageFetcher.Callback {
     final Iterable<PlayerView> viewers;
     final int width;
     final int height;
+    private boolean imageResolved;
 
     static final SwingImageFetcher fetcher = new SwingImageFetcher();
 
@@ -23,6 +24,7 @@ public abstract class CachedCardImage implements ImageFetcher.Callback {
         this.height = height;
         if (ImageCache.isSupportedImageSize(width, height)) {
             BufferedImage image = ImageCache.getImageNoDefault(card, viewers, width, height);
+            imageResolved = image != null;
             if (image == null) {
                 String key = card.getCurrentState().getImageKey(viewers);
                 Logger.debug("Fetch due to missing key: " + key + " for " + card);
@@ -33,6 +35,14 @@ public abstract class CachedCardImage implements ImageFetcher.Callback {
 
     public BufferedImage getImage() {
         return ImageCache.getImage(card, viewers, width, height);
+    }
+
+    public final boolean isImageResolved() {
+        return imageResolved;
+    }
+
+    protected final void markImageResolved() {
+        imageResolved = true;
     }
 
     public abstract void onImageFetched();

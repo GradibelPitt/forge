@@ -59,7 +59,7 @@ public final class FImageUtil {
         BufferedImage image = ImageCache.getOriginalImage(card.getImageKey(), true, card.getCard());
         final int foilIndex = card.getFoilIndex();
         if (image != null && foilIndex > 0) {
-            image = getImageWithFoilEffect(image, foilIndex);
+            image = applyFoilEffect(image, foilIndex);
         }
         return image;
     }
@@ -126,7 +126,7 @@ public final class FImageUtil {
                     img = ImageIO.read(xlhqFile);
                     final int foilIndex = state.getFoilIndex();
                     if (img != null && foilIndex > 0) {
-                        img = FImageUtil.getImageWithFoilEffect(img, foilIndex);
+                        img = FImageUtil.applyFoilEffect(img, foilIndex);
                     }
                     return img;
                 } catch (IOException ex) {
@@ -140,7 +140,7 @@ public final class FImageUtil {
     /**
      * Applies a foil effect to a card image.
      */
-    private static BufferedImage getImageWithFoilEffect(BufferedImage plainImage, int foilIndex) {
+    public static BufferedImage applyFoilEffect(BufferedImage plainImage, int foilIndex) {
         if (!FModel.getPreferences().getPrefBoolean(ForgePreferences.FPref.UI_OVERLAY_FOIL_EFFECT)) {
             return plainImage;
         }

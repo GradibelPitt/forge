@@ -29,6 +29,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import javax.imageio.ImageIO;
 
@@ -77,6 +79,7 @@ public class ImageCache {
     // short prefixes to save memory
 
     private static final Set<String> _missingIconKeys = new HashSet<>();
+    private static final AtomicLong CACHE_GENERATION = new AtomicLong();
     private static final LoadingCache<String, BufferedImage> _CACHE = CacheBuilder.newBuilder()
             .maximumSize(FModel.getPreferences().getPrefInt((FPref.UI_IMAGE_CACHE_MAXIMUM)))
             .expireAfterAccess(15, TimeUnit.MINUTES)
@@ -135,6 +138,16 @@ public class ImageCache {
         _CACHE.invalidateAll();
         _missingIconKeys.clear();
         ImageKeys.clearMissingCards();
+        CACHE_GENERATION.incrementAndGet();
+    }
+
+    public static long getCacheGeneration() {
+        return CACHE_GENERATION.get();
+    }
+
+    public static BufferedImage getOrCreateProcessedImage(final String key,
+            final Supplier<BufferedImage> processor) {
+        return ProcessedImageCache.getOrCreate(_CACHE.asMap(), "__PROCESSED__#" + key, true, processor);
     }
 
     /**
@@ -317,7 +330,10 @@ public class ImageCache {
                 radius = (int)(-145.0 * (width * width) / 8774751.0 + 287215.0 * width / 2924917.0 + 8911915.0 / 8774751.0);
             }
             //System.out.println(setCode + " - " + original.getWidth() + " - " + radius);
-            original = makeRoundedCorner(original, radius);
+            final BufferedImage unrounded = original;
+            original = ProcessedImageCache.getOrCreate(_CACHE.asMap(),
+                    ProcessedImageCache.roundedKey(imageKey, radius), true,
+                    () -> makeRoundedCorner(unrounded, radius));
         }
 
         // if image has white corners, get try to crop it out
@@ -394,7 +410,8 @@ public class ImageCache {
         boolean isPlaceholder = orgImgs.getRight();
         if (original == null) { return null; }
 
-        if (original == _defaultImage) {
+        final boolean isDefaultImage = original == _defaultImage;
+        if (isDefaultImage) {
             // Don't put the default image in the cache under the key for the card.
             // Instead, cache it under its own key, to avoid duplication of the
             // default image and to remove the need to invalidate the cache when
@@ -422,11 +439,11 @@ public class ImageCache {
             int destWidth  = (int)(original.getWidth()  * bestFitScale);
             int destHeight = (int)(original.getHeight() * bestFitScale);
 
-            ResampleOp resampler = new ResampleOp(destWidth, destHeight);
+            ResampleOp resampler = ImageScalingPolicy.createResampler(destWidth, destHeight);
             result = resampler.filter(original, null);
         }
 
-        if (!isPlaceholder) {
+        if (ImageScalingPolicy.shouldCacheScaledImage(isPlaceholder, isDefaultImage)) {
             _CACHE.put(resizedKey, result);
         }
         return result;

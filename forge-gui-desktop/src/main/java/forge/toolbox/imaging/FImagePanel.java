@@ -31,6 +31,7 @@ import javax.swing.Timer;
 import com.mortennobel.imagescaling.DimensionConstrain;
 import com.mortennobel.imagescaling.ResampleOp;
 
+import forge.ImageScalingPolicy;
 import forge.gui.GuiBase;
 
 /**
@@ -228,7 +229,7 @@ public class FImagePanel extends JPanel {
             if (isResampleEnabled) {
                 isResampleEnabled = false;
                 DimensionConstrain constrain = DimensionConstrain.createRelativeDimension((float)this.imageScale);
-                ResampleOp resampler = new ResampleOp(constrain);
+                ResampleOp resampler = ImageScalingPolicy.createResampler(constrain);
                 this.scaledImage = resampler.filter(sourceImage, null);
             }
         } else {
