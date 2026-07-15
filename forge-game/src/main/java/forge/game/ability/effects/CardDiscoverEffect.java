@@ -94,12 +94,20 @@ public class CardDiscoverEffect extends SpellAbilityEffect {
             moveParams.put(AbilityKey.LastStateGraveyard, sa.getLastStateGraveyard());
             final Card moved = game.getAction().moveTo(player.getZone(destination), chosen, sa, moveParams);
             if (moved != null && moved.getZone() != null) {
-                rememberChosen(host, sa.hasParam("RememberChosen"), moved);
+                recordMovedCard(host, sa, destination, moved, sa.hasParam("RememberChosen"));
                 final CardZoneTable table = new CardZoneTable();
                 table.put(origin, moved.getZone().getZoneType(), moved);
                 table.triggerChangesZoneAll(game, sa);
             }
         }
+    }
+
+    static void recordMovedCard(final Card host, final SpellAbility sa,
+            final ZoneType destination, final Card moved, final boolean shouldRemember) {
+        if (ZoneType.Exile.equals(destination)) {
+            handleExiledWith(moved, sa);
+        }
+        rememberChosen(host, shouldRemember, moved);
     }
 
     static void rememberChosen(final Card host, final boolean shouldRemember, final Card chosen) {
