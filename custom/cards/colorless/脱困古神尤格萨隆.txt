@@ -1,5 +1,5 @@
 Name:脱困古神尤格萨隆
-ManaCost:15
+ManaCost:10
 Types:Legendary Creature God
 PT:7/5
 K:Fear
