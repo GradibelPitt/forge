@@ -59,3 +59,4 @@ Type=Custom_Set
 60 R 小鬼骑士 @Custom
 61 C 骨网之卵 @Custom
 62 C 加拉克苏斯之拳 @Custom
+63 M 亚西克瑞非体质 @Custom

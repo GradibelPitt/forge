@@ -1,0 +1,9 @@
+Name:亚西克瑞非体质
+ManaCost:0
+Types:Enchantment
+R:Event$ GameLoss | ActiveZones$ Battlefield | ValidPlayer$ You | Layer$ CantHappen | CheckSVar$ Count$YourLifeTotal | SVarCompare$ GE1 | Description$ As long as your life total is 1 or more, you can't lose the game and your opponents can't win the game.
+R:Event$ GameWin | ActiveZones$ Battlefield | ValidPlayer$ Opponent | Layer$ CantHappen | CheckSVar$ Count$YourLifeTotal | SVarCompare$ GE1 | Secondary$ True | Description$ As long as your life total is 1 or more, you can't lose the game and your opponents can't win the game.
+T:Mode$ NewGame | TriggerZones$ Hand,Library | ResolveBeforeFirstTurn$ True | Execute$ CreateLibraryAccess | Static$ True | TriggerDescription$ At the beginning of the game, prepare CARDNAME's library ability.
+SVar:CreateLibraryAccess:DB$ Effect | Name$ 亚西克瑞非体质 Library Access | EffectOwner$ You | Abilities$ EnterFromLibrary | Duration$ Permanent | Unique$ True | ConditionPresent$ Card.IsCommander+YouOwn | PresentZone$ Command | ConditionCompare$ GE1
+SVar:EnterFromLibrary:AB$ ChangeZone | Cost$ 0 | ActivationZone$ Command | CheckSVar$ Count$ColorsColorIdentity | SVarCompare$ EQ0 | IsPresent$ Card.named亚西克瑞非体质+YouOwn | PresentZone$ Library | PresentCompare$ GE1 | GameActivationLimit$ 1 | Origin$ Library | Destination$ Battlefield | ChangeType$ Card.named亚西克瑞非体质+YouOwn | ChangeNum$ 1 | Reveal$ True | Shuffle$ True | SpellDescription$ Reveal a card named 亚西克瑞非体质 from your library and put it onto the battlefield, then shuffle. Activate only if each of your commanders has a colorless color identity and only once each game.
+Oracle:只要你的总生命为1或更多，你便不会输掉游戏，且你的对手不会赢得游戏。\n只要你的每位指挥官的颜色标识均为无色，你可以于你能施放瞬间的时机，从你的牌库中展示此牌并将它放进战场。若你如此作，洗牌。每盘游戏只能如此作一次。
