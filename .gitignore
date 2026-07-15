@@ -99,3 +99,9 @@ __pycache__
 .claude
 # EDHREC commander matrix tool intermediates
 forge-gui/tools/build
+
+# Local Forge DIY working artifacts
+/custom/tmp/
+/custom/tmp_*.png
+/custom/tmp_*.jpg
+/forge-gui-desktop/*.args
