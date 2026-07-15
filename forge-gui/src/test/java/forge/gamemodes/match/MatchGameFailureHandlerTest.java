@@ -12,25 +12,23 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MatchGameFailureHandlerTest {
     @Test
-    void nonFatalFailureClearsInputsReportsAndSchedulesShutdownInOrder() {
+    void nonFatalFailureClearsInputsAndSchedulesFinalizerInOrder() {
         final RuntimeException failure = new RuntimeException("game failed");
         final List<String> calls = new ArrayList<>();
         final MatchGameFailureHandler handler = new MatchGameFailureHandler(
                 () -> calls.add("cleanup"),
-                reported -> {
-                    assertSame(failure, reported);
-                    calls.add("report");
-                },
-                secondary -> calls.add("secondary"),
-                () -> calls.add("shutdown"));
+                scheduled -> {
+                    assertSame(failure, scheduled);
+                    calls.add("schedule-finalizer");
+                });
 
         handler.handle(failure);
 
-        assertEquals(List.of("cleanup", "report", "shutdown"), calls);
+        assertEquals(List.of("cleanup", "schedule-finalizer"), calls);
     }
 
     @Test
-    void cleanupFailureStillReportsOriginalAndSchedulesShutdown() {
+    void cleanupFailureIsSuppressedBeforeFinalizerIsScheduled() {
         final RuntimeException failure = new RuntimeException("game failed");
         final RuntimeException cleanupFailure = new RuntimeException("cleanup failed");
         final List<String> calls = new ArrayList<>();
@@ -39,109 +37,97 @@ class MatchGameFailureHandlerTest {
                     calls.add("cleanup");
                     throw cleanupFailure;
                 },
-                reported -> {
-                    assertSame(failure, reported);
-                    assertEquals(List.of(cleanupFailure), List.of(reported.getSuppressed()));
-                    calls.add("report");
-                },
-                secondary -> calls.add("secondary"),
-                () -> calls.add("shutdown"));
+                scheduled -> {
+                    assertSame(failure, scheduled);
+                    assertEquals(List.of(cleanupFailure), List.of(scheduled.getSuppressed()));
+                    calls.add("schedule-finalizer");
+                });
 
         handler.handle(failure);
 
-        assertEquals(List.of("cleanup", "report", "shutdown"), calls);
-        assertEquals(List.of(cleanupFailure), List.of(failure.getSuppressed()));
+        assertEquals(List.of("cleanup", "schedule-finalizer"), calls);
     }
 
     @Test
-    void reporterFailureStillSchedulesShutdown() {
+    void finalizerSchedulingFailureReachesFallbackReporterExactlyOnce() {
         final RuntimeException failure = new RuntimeException("game failed");
-        final RuntimeException reporterFailure = new RuntimeException("report failed");
-        final List<String> calls = new ArrayList<>();
-        final AtomicInteger primaryReporterInvocations = new AtomicInteger();
-        final AtomicInteger fallbackReporterInvocations = new AtomicInteger();
+        final RuntimeException schedulingFailure = new RuntimeException("scheduling failed");
+        final AtomicInteger fallbackReports = new AtomicInteger();
         final MatchGameFailureHandler handler = new MatchGameFailureHandler(
-                () -> calls.add("cleanup"),
-                reported -> {
-                    primaryReporterInvocations.incrementAndGet();
-                    calls.add("report");
-                    throw reporterFailure;
-                },
-                secondary -> calls.add("secondary"),
-                () -> calls.add("shutdown"));
+                () -> { },
+                scheduled -> {
+                    throw schedulingFailure;
+                });
 
         final RuntimeException thrown;
         try {
             handler.handle(failure);
             throw new AssertionError("Expected the original failure to reach the fallback reporter");
         } catch (final RuntimeException uncaughtFailure) {
-            fallbackReporterInvocations.incrementAndGet();
+            fallbackReports.incrementAndGet();
             thrown = uncaughtFailure;
         }
 
         assertSame(failure, thrown);
-        assertEquals(List.of(reporterFailure), List.of(failure.getSuppressed()));
-        assertEquals(List.of("cleanup", "report", "shutdown"), calls);
-        assertEquals(1, primaryReporterInvocations.get());
-        assertEquals(1, fallbackReporterInvocations.get());
-    }
-
-    @Test
-    void shutdownSchedulingFailureIsSuppressedAndSurfacedWithoutRepeatingPrimaryReport() {
-        final RuntimeException failure = new RuntimeException("game failed");
-        final RuntimeException schedulingFailure = new RuntimeException("scheduling failed");
-        final List<String> calls = new ArrayList<>();
-        final AtomicInteger primaryReporterInvocations = new AtomicInteger();
-        final AtomicInteger fallbackReporterInvocations = new AtomicInteger();
-        final MatchGameFailureHandler handler = new MatchGameFailureHandler(
-                () -> calls.add("cleanup"),
-                reported -> {
-                    primaryReporterInvocations.incrementAndGet();
-                    calls.add("report");
-                },
-                secondary -> {
-                    assertSame(schedulingFailure, secondary);
-                    calls.add("secondary");
-                },
-                () -> {
-                    calls.add("shutdown");
-                    throw schedulingFailure;
-                });
-
-        try {
-            handler.handle(failure);
-        } catch (final RuntimeException uncaughtFailure) {
-            fallbackReporterInvocations.incrementAndGet();
-        }
-
         assertEquals(List.of(schedulingFailure), List.of(failure.getSuppressed()));
-        assertEquals(List.of("cleanup", "report", "shutdown", "secondary"), calls);
-        assertEquals(1, primaryReporterInvocations.get());
-        assertEquals(0, fallbackReporterInvocations.get());
+        assertEquals(1, fallbackReports.get());
     }
 
     @Test
-    void fatalVmFailuresAreRethrownUntouchedWithoutCleanupOrReporting() {
-        final List<Error> fatalFailures = List.of(
-                new TestVirtualMachineError(),
-                new ThreadDeath(),
-                new LinkageError("linkage failed"));
-
-        for (final Error failure : fatalFailures) {
+    void fatalPrimaryFailuresAreRethrownUntouchedWithoutCallbacks() {
+        for (final Error failure : fatalFailures()) {
             final List<String> calls = new ArrayList<>();
             final MatchGameFailureHandler handler = new MatchGameFailureHandler(
                     () -> calls.add("cleanup"),
-                    reported -> calls.add("report"),
-                    secondary -> calls.add("secondary"),
-                    () -> calls.add("shutdown"));
+                    scheduled -> calls.add("schedule-finalizer"));
 
-            final Throwable thrown = assertThrows(Throwable.class,
-                    () -> handler.handle(failure));
+            final Throwable thrown = assertThrows(Throwable.class, () -> handler.handle(failure));
 
             assertSame(failure, thrown);
             assertEquals(List.of(), calls);
-            assertEquals(0, failure.getSuppressed().length);
         }
+    }
+
+    @Test
+    void fatalCleanupFailuresEscapeUntouchedWithoutScheduling() {
+        for (final Error fatalCleanup : fatalFailures()) {
+            final List<String> calls = new ArrayList<>();
+            final MatchGameFailureHandler handler = new MatchGameFailureHandler(
+                    () -> {
+                        calls.add("cleanup");
+                        throw fatalCleanup;
+                    },
+                    scheduled -> calls.add("schedule-finalizer"));
+
+            final Throwable thrown = assertThrows(Throwable.class,
+                    () -> handler.handle(new RuntimeException("game failed")));
+
+            assertSame(fatalCleanup, thrown);
+            assertEquals(List.of("cleanup"), calls);
+        }
+    }
+
+    @Test
+    void fatalSchedulingFailuresEscapeUntouched() {
+        for (final Error fatalScheduling : fatalFailures()) {
+            final List<String> calls = new ArrayList<>();
+            final MatchGameFailureHandler handler = new MatchGameFailureHandler(
+                    () -> calls.add("cleanup"),
+                    scheduled -> {
+                        calls.add("schedule-finalizer");
+                        throw fatalScheduling;
+                    });
+
+            final Throwable thrown = assertThrows(Throwable.class,
+                    () -> handler.handle(new RuntimeException("game failed")));
+
+            assertSame(fatalScheduling, thrown);
+            assertEquals(List.of("cleanup", "schedule-finalizer"), calls);
+        }
+    }
+
+    private static List<Error> fatalFailures() {
+        return List.of(new TestVirtualMachineError(), new ThreadDeath(), new LinkageError("linkage failed"));
     }
 
     private static final class TestVirtualMachineError extends VirtualMachineError {

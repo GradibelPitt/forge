@@ -284,44 +284,41 @@ public class HostedMatch {
             p.updateOpponentsForView();
         }
 
-        resetActiveControllerTracking(game, humanControllers);
+        final MatchGameTaskContext taskContext = new MatchGameTaskContext(
+                game, match, humanCount, startGameHook, endGameHook, humanControllers);
+        resetActiveControllerTracking(taskContext.game(), taskContext.humanControllers());
 
         // It's important to run match in a different thread to allow GUI inputs to be invoked from inside game. 
         // Game is set on pause while gui player takes decisions
-        game.getAction().invoke(() -> {
-            // Capture the current game in a local so this lambda keeps operating on the
-            // game it started even if another thread (e.g. the EDT handling a player's
-            // "quit"/"continue" decision via addNextGameDecision -> endCurrentGame())
-            // concurrently clears the `game` field while match.startGame() is wrapping up.
-            final Game currentGame = game;
-            final List<PlayerControllerHuman> currentHumanControllers = Lists.newArrayList(humanControllers);
-
+        taskContext.game().getAction().invoke(() -> {
             try {
-                runGameTask(currentGame, currentHumanControllers);
+                runGameTask(taskContext);
             } catch (final RuntimeException | Error failure) {
-                handleGameTaskFailure(currentGame, failure);
+                handleGameTaskFailure(taskContext.game(), failure);
             }
         });
     }
 
-    private void runGameTask(final Game currentGame,
-            final List<PlayerControllerHuman> currentHumanControllers) {
-        if (humanCount == 0) {
+    private void runGameTask(final MatchGameTaskContext taskContext) {
+        if (game != taskContext.game()) {
+            return;
+        }
+        if (taskContext.humanCount() == 0) {
             // Create FControlGamePlayback in game thread to allow pausing
-            playbackControl = new FControlGamePlayback(currentHumanControllers.get(0));
-            playbackControl.setGame(currentGame);
-            currentGame.subscribeToEvents(playbackControl);
+            playbackControl = new FControlGamePlayback(taskContext.humanControllers().get(0));
+            playbackControl.setGame(taskContext.game());
+            taskContext.game().subscribeToEvents(playbackControl);
         }
         // Actually start the game!
-        match.startGame(currentGame, startGameHook);
+        taskContext.match().startGame(taskContext.game(), taskContext.startGameHook());
         // this function waits?
-        if (endGameHook != null){
-            endGameHook.run();
+        if (taskContext.endGameHook() != null) {
+            taskContext.endGameHook().run();
         }
 
         // Flush any buffered game events to remote clients so they receive
         // GameEventGameOutcome and GameEventGameFinished before we proceed.
-        for (final PlayerControllerHuman humanController : currentHumanControllers) {
+        for (final PlayerControllerHuman humanController : taskContext.humanControllers()) {
             if (humanController.getGui() instanceof forge.gamemodes.net.server.RemoteClientGuiGame ngg) {
                 final forge.gui.control.GameEventForwarder forwarder = ngg.getForwarder();
                 if (forwarder != null) {
@@ -331,19 +328,26 @@ public class HostedMatch {
         }
 
         // After game is over...
-        isMatchOver = match.isMatchOver();
-        if (humanCount == 0) {
+        final boolean currentMatchIsOver = taskContext.match().isMatchOver();
+        if (game != taskContext.game()) {
+            return;
+        }
+        isMatchOver = currentMatchIsOver;
+        if (taskContext.humanCount() == 0) {
             // ... if no human players, let AI decide next game
-            if (currentGame.getRules().getGameType() == GameType.Constructed) {
+            if (taskContext.game().getRules().getGameType() == GameType.Constructed) {
                 // Dramatic interlude to signal end of game.
                 FThreads.delayInEDT(3000, () -> {
-                    if (isMatchOver) {
+                    if (game != taskContext.game()) {
+                        return;
+                    }
+                    if (currentMatchIsOver) {
                         // Leave match-end overview open for spectator.
                     } else {
                         addNextGameDecision(null, NextGameDecision.CONTINUE);
                     }
                 });
-            } else if (isMatchOver) {
+            } else if (currentMatchIsOver) {
                 addNextGameDecision(null, NextGameDecision.QUIT);
             } else {
                 addNextGameDecision(null, NextGameDecision.CONTINUE);
@@ -354,12 +358,7 @@ public class HostedMatch {
     private void handleGameTaskFailure(final Game currentGame, final Throwable failure) {
         final MatchGameFailureHandler failureHandler = new MatchGameFailureHandler(
                 () -> clearHumanInputs(activeControllerTracker.snapshotForFailure(currentGame)),
-                error -> BugReporter.reportException(error,
-                        Localizer.getInstance().getMessageorUseDefault(
-                                "lblMatchClosedAfterUnexpectedError",
-                                "The match was closed after an unexpected error to prevent a stale input state.")),
-                HostedMatch::logSecondaryMatchFailure,
-                () -> scheduleFailedGameShutdown(currentGame));
+                error -> scheduleFailedGameFinalizer(currentGame, error));
         failureHandler.handle(failure);
     }
 
@@ -389,14 +388,16 @@ public class HostedMatch {
         }
     }
 
-    private void scheduleFailedGameShutdown(final Game failedGame) {
-        FThreads.invokeInEdtNowOrLater(() -> {
-            if (game != failedGame) {
-                return;
-            }
-            endCurrentGame();
-            markMatchOverAndNotifyOnce();
-        });
+    private void scheduleFailedGameFinalizer(final Game failedGame, final Throwable failure) {
+        FThreads.invokeInEdtNowOrLater(() -> new MatchGameFailureFinalizer(
+                () -> game == failedGame,
+                this::endCurrentGame,
+                this::markMatchOverAndNotifyOnce,
+                error -> BugReporter.reportException(error,
+                        Localizer.getInstance().getMessageorUseDefault(
+                                "lblMatchClosedAfterUnexpectedError",
+                                "The match was closed after an unexpected error to prevent a stale input state.")),
+                HostedMatch::logSecondaryMatchFailure).finish(failure));
     }
 
     private void markMatchOverAndNotifyOnce() {

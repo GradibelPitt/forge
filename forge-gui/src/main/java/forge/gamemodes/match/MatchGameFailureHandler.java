@@ -4,20 +4,15 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * Fails a match closed when its long-lived game task terminates unexpectedly.
+ * Cleans up game-thread inputs and hands a nonfatal match failure to an EDT finalizer.
  */
 final class MatchGameFailureHandler {
     private final Runnable inputCleanup;
-    private final Consumer<Throwable> reporter;
-    private final Consumer<Throwable> secondaryFailureSink;
-    private final Runnable shutdownScheduler;
+    private final Consumer<Throwable> finalizerScheduler;
 
-    MatchGameFailureHandler(final Runnable inputCleanup, final Consumer<Throwable> reporter,
-            final Consumer<Throwable> secondaryFailureSink, final Runnable shutdownScheduler) {
+    MatchGameFailureHandler(final Runnable inputCleanup, final Consumer<Throwable> finalizerScheduler) {
         this.inputCleanup = Objects.requireNonNull(inputCleanup);
-        this.reporter = Objects.requireNonNull(reporter);
-        this.secondaryFailureSink = Objects.requireNonNull(secondaryFailureSink);
-        this.shutdownScheduler = Objects.requireNonNull(shutdownScheduler);
+        this.finalizerScheduler = Objects.requireNonNull(finalizerScheduler);
     }
 
     void handle(final Throwable failure) {
@@ -27,32 +22,20 @@ final class MatchGameFailureHandler {
         try {
             inputCleanup.run();
         } catch (final Throwable cleanupFailure) {
+            rethrowFatalFailure(cleanupFailure);
             preserveSecondaryFailure(failure, cleanupFailure);
         }
 
-        boolean reportSucceeded = false;
         try {
-            reporter.accept(failure);
-            reportSucceeded = true;
-        } catch (final Throwable reporterFailure) {
-            preserveSecondaryFailure(failure, reporterFailure);
-        }
-
-        try {
-            shutdownScheduler.run();
+            finalizerScheduler.accept(failure);
         } catch (final Throwable schedulingFailure) {
+            rethrowFatalFailure(schedulingFailure);
             preserveSecondaryFailure(failure, schedulingFailure);
-            if (reportSucceeded) {
-                surfaceSecondaryFailure(schedulingFailure);
-            }
-        }
-
-        if (!reportSucceeded) {
             rethrowUnchecked(failure);
         }
     }
 
-    private static void rethrowFatalFailure(final Throwable failure) {
+    static void rethrowFatalFailure(final Throwable failure) {
         if (failure instanceof VirtualMachineError) {
             throw (VirtualMachineError) failure;
         }
@@ -64,19 +47,15 @@ final class MatchGameFailureHandler {
         }
     }
 
-    private static void preserveSecondaryFailure(final Throwable failure, final Throwable secondaryFailure) {
-        if (secondaryFailure != failure) {
-            failure.addSuppressed(secondaryFailure);
-        }
+    static boolean isFatalFailure(final Throwable failure) {
+        return failure instanceof VirtualMachineError
+                || failure instanceof ThreadDeath
+                || failure instanceof LinkageError;
     }
 
-    private void surfaceSecondaryFailure(final Throwable secondaryFailure) {
-        try {
-            secondaryFailureSink.accept(secondaryFailure);
-        } catch (final Throwable sinkFailure) {
-            preserveSecondaryFailure(sinkFailure, secondaryFailure);
-            rethrowFatalFailure(sinkFailure);
-            rethrowUnchecked(sinkFailure);
+    static void preserveSecondaryFailure(final Throwable failure, final Throwable secondaryFailure) {
+        if (secondaryFailure != failure) {
+            failure.addSuppressed(secondaryFailure);
         }
     }
 
