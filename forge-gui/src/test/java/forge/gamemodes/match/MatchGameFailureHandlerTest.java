@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -20,6 +21,7 @@ class MatchGameFailureHandlerTest {
                     assertSame(failure, reported);
                     calls.add("report");
                 },
+                secondary -> calls.add("secondary"),
                 () -> calls.add("shutdown"));
 
         handler.handle(failure);
@@ -42,6 +44,7 @@ class MatchGameFailureHandlerTest {
                     assertEquals(List.of(cleanupFailure), List.of(reported.getSuppressed()));
                     calls.add("report");
                 },
+                secondary -> calls.add("secondary"),
                 () -> calls.add("shutdown"));
 
         handler.handle(failure);
@@ -55,41 +58,66 @@ class MatchGameFailureHandlerTest {
         final RuntimeException failure = new RuntimeException("game failed");
         final RuntimeException reporterFailure = new RuntimeException("report failed");
         final List<String> calls = new ArrayList<>();
+        final AtomicInteger primaryReporterInvocations = new AtomicInteger();
+        final AtomicInteger fallbackReporterInvocations = new AtomicInteger();
         final MatchGameFailureHandler handler = new MatchGameFailureHandler(
                 () -> calls.add("cleanup"),
                 reported -> {
+                    primaryReporterInvocations.incrementAndGet();
                     calls.add("report");
                     throw reporterFailure;
                 },
+                secondary -> calls.add("secondary"),
                 () -> calls.add("shutdown"));
 
-        final RuntimeException thrown = assertThrows(RuntimeException.class,
-                () -> handler.handle(failure));
+        final RuntimeException thrown;
+        try {
+            handler.handle(failure);
+            throw new AssertionError("Expected the original failure to reach the fallback reporter");
+        } catch (final RuntimeException uncaughtFailure) {
+            fallbackReporterInvocations.incrementAndGet();
+            thrown = uncaughtFailure;
+        }
 
         assertSame(failure, thrown);
         assertEquals(List.of(reporterFailure), List.of(failure.getSuppressed()));
         assertEquals(List.of("cleanup", "report", "shutdown"), calls);
+        assertEquals(1, primaryReporterInvocations.get());
+        assertEquals(1, fallbackReporterInvocations.get());
     }
 
     @Test
-    void shutdownSchedulingFailureIsSuppressedAndOriginalFailureIsRethrown() {
+    void shutdownSchedulingFailureIsSuppressedAndSurfacedWithoutRepeatingPrimaryReport() {
         final RuntimeException failure = new RuntimeException("game failed");
         final RuntimeException schedulingFailure = new RuntimeException("scheduling failed");
         final List<String> calls = new ArrayList<>();
+        final AtomicInteger primaryReporterInvocations = new AtomicInteger();
+        final AtomicInteger fallbackReporterInvocations = new AtomicInteger();
         final MatchGameFailureHandler handler = new MatchGameFailureHandler(
                 () -> calls.add("cleanup"),
-                reported -> calls.add("report"),
+                reported -> {
+                    primaryReporterInvocations.incrementAndGet();
+                    calls.add("report");
+                },
+                secondary -> {
+                    assertSame(schedulingFailure, secondary);
+                    calls.add("secondary");
+                },
                 () -> {
                     calls.add("shutdown");
                     throw schedulingFailure;
                 });
 
-        final RuntimeException thrown = assertThrows(RuntimeException.class,
-                () -> handler.handle(failure));
+        try {
+            handler.handle(failure);
+        } catch (final RuntimeException uncaughtFailure) {
+            fallbackReporterInvocations.incrementAndGet();
+        }
 
-        assertSame(failure, thrown);
         assertEquals(List.of(schedulingFailure), List.of(failure.getSuppressed()));
-        assertEquals(List.of("cleanup", "report", "shutdown"), calls);
+        assertEquals(List.of("cleanup", "report", "shutdown", "secondary"), calls);
+        assertEquals(1, primaryReporterInvocations.get());
+        assertEquals(0, fallbackReporterInvocations.get());
     }
 
     @Test
@@ -104,6 +132,7 @@ class MatchGameFailureHandlerTest {
             final MatchGameFailureHandler handler = new MatchGameFailureHandler(
                     () -> calls.add("cleanup"),
                     reported -> calls.add("report"),
+                    secondary -> calls.add("secondary"),
                     () -> calls.add("shutdown"));
 
             final Throwable thrown = assertThrows(Throwable.class,

@@ -64,6 +64,8 @@ public class HostedMatch {
     private FControlGamePlayback playbackControl = null;
     private final MatchUiEventVisitor visitor = new MatchUiEventVisitor();
     private final Map<PlayerControllerHuman, NextGameDecision> nextGameDecisions = Maps.newHashMap();
+    private final ActiveControllerTracker<PlayerControllerHuman> activeControllerTracker =
+            new ActiveControllerTracker<>();
     private boolean isMatchOver = false;
     private boolean matchOverCallbackInvoked = false;
     public int subGameCount = 0;
@@ -282,6 +284,8 @@ public class HostedMatch {
             p.updateOpponentsForView();
         }
 
+        activeControllerTracker.reset(game, humanControllers);
+
         // It's important to run match in a different thread to allow GUI inputs to be invoked from inside game. 
         // Game is set on pause while gui player takes decisions
         game.getAction().invoke(() -> {
@@ -295,7 +299,7 @@ public class HostedMatch {
             try {
                 runGameTask(currentGame, currentHumanControllers);
             } catch (final RuntimeException | Error failure) {
-                handleGameTaskFailure(currentGame, currentHumanControllers, failure);
+                handleGameTaskFailure(currentGame, failure);
             }
         });
     }
@@ -347,16 +351,21 @@ public class HostedMatch {
         }
     }
 
-    private void handleGameTaskFailure(final Game currentGame,
-            final List<PlayerControllerHuman> currentHumanControllers, final Throwable failure) {
+    private void handleGameTaskFailure(final Game currentGame, final Throwable failure) {
         final MatchGameFailureHandler failureHandler = new MatchGameFailureHandler(
-                () -> clearHumanInputs(currentHumanControllers),
+                () -> clearHumanInputs(activeControllerTracker.snapshotForFailure(currentGame)),
                 error -> BugReporter.reportException(error,
                         Localizer.getInstance().getMessageorUseDefault(
                                 "lblMatchClosedAfterUnexpectedError",
                                 "The match was closed after an unexpected error to prevent a stale input state.")),
+                HostedMatch::logSecondaryMatchFailure,
                 () -> scheduleFailedGameShutdown(currentGame));
         failureHandler.handle(failure);
+    }
+
+    private static void logSecondaryMatchFailure(final Throwable secondaryFailure) {
+        System.err.println("A secondary failure occurred while closing a failed match:");
+        secondaryFailure.printStackTrace(System.err);
     }
 
     private static void clearHumanInputs(final List<PlayerControllerHuman> controllers) {
@@ -436,9 +445,11 @@ public class HostedMatch {
 
     public void endCurrentGame() {
         if (game == null) { return; }
+        final Game endingGame = game;
         boolean isMatchOver = game.getView().isMatchOver();
 
         game = null;
+        activeControllerTracker.clear(endingGame);
 
         for (final PlayerControllerHuman humanController : humanControllers) {
             if (humanController.getGui() instanceof forge.gamemodes.net.server.RemoteClientGuiGame ngg) {
@@ -516,6 +527,8 @@ public class HostedMatch {
             subGameCount++;
 
             final GameView gameView = event.subgame().getView();
+            activeControllerTracker.replaceActive(getRootGame(event.subgame()),
+                    getHumanControllersForGame(event.subgame()));
 
             Runnable switchGameView = () -> {
                 for (final Player p : event.subgame().getPlayers()) {
@@ -549,6 +562,8 @@ public class HostedMatch {
         @Override
         public Void visit(final GameEventSubgameEnd event) {
             final GameView gameView = event.maingame().getView();
+            activeControllerTracker.replaceActive(getRootGame(event.maingame()),
+                    getHumanControllersForGame(event.maingame()));
             Runnable switchGameView = () -> {
                 for (final Player p : event.maingame().getPlayers()) {
                     if (p.getController() instanceof PlayerControllerHuman humanController) {
@@ -592,6 +607,24 @@ public class HostedMatch {
                 e.printStackTrace();
             }
         }
+    }
+
+    private static Game getRootGame(final Game nestedGame) {
+        Game rootGame = nestedGame;
+        while (rootGame.getMaingame() != null) {
+            rootGame = rootGame.getMaingame();
+        }
+        return rootGame;
+    }
+
+    private static List<PlayerControllerHuman> getHumanControllersForGame(final Game targetGame) {
+        final List<PlayerControllerHuman> controllers = Lists.newArrayList();
+        for (final Player player : targetGame.getPlayers()) {
+            if (player.getController() instanceof PlayerControllerHuman humanController) {
+                controllers.add(humanController);
+            }
+        }
+        return controllers;
     }
 
     private void addNextGameDecision(final PlayerControllerHuman controller, final NextGameDecision decision) {
