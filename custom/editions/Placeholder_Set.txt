@@ -55,3 +55,4 @@ Type=Custom_Set
 56 M 暗影收割者安度因 @Custom
 57 M 天灾领主加尔鲁什 @Custom
 58 M 死亡猎手雷克萨 @Custom
+59 M 污染者玛法里奥 @Custom
