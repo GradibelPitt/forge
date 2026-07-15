@@ -48,6 +48,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.function.Consumer;
 
 public class HostedMatch {
     private Match match;
@@ -368,11 +369,16 @@ public class HostedMatch {
     }
 
     private static void clearHumanInputs(final List<PlayerControllerHuman> controllers) {
+        runControllerInputCleanups(controllers, controller -> controller.getInputQueue().clearInputs());
+    }
+
+    static <T> void runControllerInputCleanups(final Iterable<T> controllers, final Consumer<T> cleanup) {
         Throwable firstFailure = null;
-        for (final PlayerControllerHuman controller : controllers) {
+        for (final T controller : controllers) {
             try {
-                controller.getInputQueue().clearInputs();
+                cleanup.accept(controller);
             } catch (final RuntimeException | Error cleanupFailure) {
+                MatchGameFailureHandler.rethrowFatalFailure(cleanupFailure);
                 if (firstFailure == null) {
                     firstFailure = cleanupFailure;
                 } else if (firstFailure != cleanupFailure) {
