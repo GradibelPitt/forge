@@ -65,6 +65,7 @@ public class GameState {
         private int speed = 0;
         private String precast = null;
         private String putOnStack = null;
+        private String spellRules = "";
         private final Map<ZoneType, String> cardTexts = new EnumMap<>(ZoneType.class);
     }
     private final List<PlayerState> playerStates = new ArrayList<>();
@@ -147,6 +148,9 @@ public class GameState {
             if (!p.persistentMana.isEmpty()) {
                 sb.append(TextUtil.concatNoSpace(prefix + "persistentmana=", p.persistentMana, "\n"));
             }
+            if (!p.spellRules.isEmpty()) {
+                sb.append(TextUtil.concatNoSpace(prefix + "spellrules=", p.spellRules, "\n"));
+            }
             appendCards(p.cardTexts, prefix, sb);
         }
         return sb.toString();
@@ -169,6 +173,7 @@ public class GameState {
             p.manaPool = processManaPool(player.getManaPool());
             p.numRingTemptedYou = player.getNumRingTemptedYou();
             p.speed = player.getSpeed();
+            p.spellRules = player.getSpellRuleRegistry().toStateString();
             playerStates.add(p);
         }
 
@@ -574,6 +579,8 @@ public class GameState {
             getPlayerState(categoryName).manaPool = categoryValue;
         } else if (categoryName.endsWith("persistentmana")) {
             getPlayerState(categoryName).persistentMana = categoryValue;
+        } else if (categoryName.endsWith("spellrules")) {
+            getPlayerState(categoryName).spellRules = categoryValue;
         } else {
             System.err.println("Unknown key: " + categoryName);
         }
@@ -1145,6 +1152,7 @@ public class GameState {
 
         p.getCommanders().clear();
         p.clearTheRing();
+        p.getSpellRuleRegistry().restoreFromStateString(state.spellRules);
 
         Map<ZoneType, CardCollectionView> playerCards = new EnumMap<>(ZoneType.class);
         for (Entry<ZoneType, String> kv : state.cardTexts.entrySet()) {

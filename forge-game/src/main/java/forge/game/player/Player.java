@@ -88,6 +88,8 @@ public class Player extends GameEntity implements Comparable<Player> {
     private int lifeGainedTimesThisTurn;
     private int lifeGainedByTeamThisTurn;
     private final FriendlyDamageTracker friendlyDamageTracker = new FriendlyDamageTracker();
+    private final PlayerSpellRuleRegistry spellRuleRegistry =
+            new PlayerSpellRuleRegistry(this);
     private int maxHandSize = 7;
     private int startingHandSize = 7;
     private boolean unlimitedHandSize = false;
@@ -238,6 +240,10 @@ public class Player extends GameEntity implements Comparable<Player> {
 
     public final AchievementTracker getAchievementTracker() {
         return achievementTracker;
+    }
+
+    public final PlayerSpellRuleRegistry getSpellRuleRegistry() {
+        return spellRuleRegistry;
     }
 
     private String chooseName(String originalName) {

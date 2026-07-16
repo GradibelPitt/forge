@@ -46,30 +46,25 @@ class RenounceDarknessContractTest(unittest.TestCase):
         self.assertIn("ReplacementValid$ Card.nonBlack+nonColorless", ability)
         self.assertIn("MatchManaValue$ True", ability)
         self.assertNotIn("RememberNames$", ability)
-        self.assertIn("SubAbility$ CreateHarmonyEmblem", ability)
+        self.assertIn("SubAbility$ GrantHarmonyRule", ability)
         self.assertNotIn("CardDiscover", text)
         self.assertNotIn("RepeatEach", text)
 
-    def test_permanent_emblem_grants_all_colored_spells_both_bonuses(self):
+    def test_permanent_player_rule_grants_all_colored_spells_both_bonuses(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn(
-            "SVar:CreateHarmonyEmblem:DB$ Effect | Name$ Emblem — 弃暗投明 | "
-            "EffectOwner$ You | StaticAbilities$ HarmonyColored,ReduceColored | "
+            "SVar:GrantHarmonyRule:DB$ GrantSpellRule | Defined$ You | "
+            "RuleKey$ RenounceDarkness.ColoredSpells | "
+            "ValidCards$ Card.nonColorless | ValidSA$ Spell | "
+            "ReduceGeneric$ 2 | ManaConversion$ AnyType->AnyColor | "
             "Duration$ Permanent",
             text,
         )
-        self.assertIn(
-            "SVar:HarmonyColored:Mode$ ManaConvert | ValidPlayer$ You | "
-            "ValidCard$ Card.nonColorless | ValidSA$ Spell | "
-            "ManaConversion$ AnyType->AnyColor",
-            text,
-        )
-        self.assertIn(
-            "SVar:ReduceColored:Mode$ ReduceCost | Type$ Spell | "
-            "ValidCard$ Card.nonColorless | Activator$ You | Amount$ 2",
-            text,
-        )
+        self.assertNotIn("Stacking$", text)
+        self.assertNotIn("DB$ Effect", text)
+        self.assertNotIn("Mode$ ManaConvert", text)
+        self.assertNotIn("Mode$ ReduceCost", text)
         self.assertNotIn("sharesNameWith NamedCards", text)
 
     def test_registration_art_and_localization(self):

@@ -110,6 +110,7 @@ public enum ApiType {
     GameDrawn (GameDrawEffect.class),
     GenericChoice (ChooseGenericEffect.class),
     Goad (GoadEffect.class),
+    GrantSpellRule (GrantSpellRuleEffect.class),
     Haunt (HauntEffect.class),
     HealDamage (HealDamageEffect.class),
     Heist (HeistEffect.class),

@@ -743,6 +743,15 @@ public class GameAction {
         return moveTo(zoneTo, c, null, cause, params);
     }
 
+    /**
+     * Moves a card to an exact position in an ordered zone while preserving the
+     * normal replacement, LKI, event, and trigger path.
+     */
+    public final Card moveTo(final Zone zoneTo, final Card c, final int position,
+            final SpellAbility cause, final Map<AbilityKey, Object> params) {
+        return moveTo(zoneTo, c, Integer.valueOf(position), cause, params);
+    }
+
     public final Card moveTo(final ZoneType name, final Card c, SpellAbility cause, Map<AbilityKey, Object> params) {
         return moveTo(name, c, 0, cause, params);
     }

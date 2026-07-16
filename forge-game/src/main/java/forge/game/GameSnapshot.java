@@ -186,6 +186,8 @@ public class GameSnapshot {
         newPlayer.setMaxHandSize(origPlayer.getMaxHandSize());
         newPlayer.setUnlimitedHandSize(origPlayer.isUnlimitedHandSize());
         newPlayer.setCrankCounter(origPlayer.getCrankCounter());
+        newPlayer.getSpellRuleRegistry().copyFrom(
+                origPlayer.getSpellRuleRegistry());
         // TODO creatureAttackedThisTurn
 
         // Copy mana pool

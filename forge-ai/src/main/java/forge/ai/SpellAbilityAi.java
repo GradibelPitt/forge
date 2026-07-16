@@ -53,7 +53,9 @@ public abstract class SpellAbilityAi {
 
     public final AiAbilityDecision canPlayWithSubs(final Player aiPlayer, final SpellAbility sa) {
         AiAbilityDecision decision = canPlay(aiPlayer, sa);
-        if (!decision.willingToPlay() && !"PlayForSub".equals(sa.getParam("AILogic"))) {
+        if (!decision.willingToPlay()
+                && (!"PlayForSub".equals(sa.getParam("AILogic"))
+                || !allowAiLogicBypass(aiPlayer, sa))) {
             return decision;
         }
         final AbilitySub subAb = sa.getSubAbility();
@@ -162,6 +164,16 @@ public abstract class SpellAbilityAi {
     }
 
     /**
+     * Allows legacy AILogic values to continue evaluation after this API's
+     * own decision rejected the root ability. APIs with strict beneficiary
+     * checks can disable only that narrow bypass without changing other AI.
+     */
+    protected boolean allowAiLogicBypass(final Player ai,
+            final SpellAbility sa) {
+        return true;
+    }
+
+    /**
      * The rest of the logic not covered by the canPlayAI template is defined here
      */
     protected AiAbilityDecision checkApiLogic(final Player ai, final SpellAbility sa) {
@@ -189,7 +201,9 @@ public abstract class SpellAbilityAi {
 
     public final AiAbilityDecision doTriggerNoCostWithSubs(final Player aiPlayer, final SpellAbility sa, final boolean mandatory) {
         AiAbilityDecision decision = doTriggerNoCost(aiPlayer, sa, mandatory);
-        if (!decision.willingToPlay() && !"Always".equals(sa.getParam("AILogic"))) {
+        if (!decision.willingToPlay()
+                && (!"Always".equals(sa.getParam("AILogic"))
+                || !allowAiLogicBypass(aiPlayer, sa))) {
             return decision;
         }
         final AbilitySub subAb = sa.getSubAbility();

@@ -62,6 +62,15 @@ Creates creature or artifact tokens.
   A:SP$ Token | TokenAmount$ 1 | TokenName$ Goblin | TokenTypes$ Creature Goblin | TokenColors$ Red | TokenPower$ 1 | TokenToughness$ 1 | TokenKeywords$ Haste | SpellDescription$ Create a 1/1 red Goblin creature token with haste.
   ```
 
+### 8. `GrantSpellRule`
+Registers a source-independent spell cost or mana-payment rule on a player for the current game.
+- **Parameters**: `Defined$`, `RuleKey$`, `ValidCards$`, `ValidSA$`, `ReduceGeneric$`, `ManaConversion$`, `Duration$`, optional `Stacking$`
+- **Constraints**: at least one of `ReduceGeneric$` or `ManaConversion$` must have an effect; every whitespace-separated mana-conversion pair must select at least one source mana type and at least one destination mana type. `Duration$ Permanent` is explicit and required (missing or other values fail before registration); card and spell restrictions use the source-independent safe subset documented in `KEYWORDS.md`. Multi-player grants preflight every deduplicated target before committing any registry mutation.
+- **Example**:
+  ```text
+  SVar:GrantRule:DB$ GrantSpellRule | Defined$ You | RuleKey$ Example.ColoredSpells | ValidCards$ Card.nonColorless | ValidSA$ Spell | ReduceGeneric$ 2 | ManaConversion$ AnyType->AnyColor | Duration$ Permanent
+  ```
+
 ---
 
 ## 📜 Full List of Valid `ApiType` Values
@@ -89,6 +98,7 @@ These must be written exactly as spelled (case-insensitive in Forge but capitali
 - `Block`
 - `Bond`
 - `Branch`
+- `CardDiscover`
 - `Camouflage`
 - `ChangeCombatants`
 - `ChangeSpeed`
@@ -159,6 +169,7 @@ These must be written exactly as spelled (case-insensitive in Forge but capitali
 - `GameDrawn`
 - `GenericChoice`
 - `Goad`
+- `GrantSpellRule`
 - `Haunt`
 - `Heist`
 - `Investigate`
@@ -246,6 +257,7 @@ These must be written exactly as spelled (case-insensitive in Forge but capitali
 - `TapAll`
 - `TapOrUntap`
 - `TapOrUntapAll`
+- `TakeFatigue`
 - `TimeTravel`
 - `Token`
 - `TwoPiles`

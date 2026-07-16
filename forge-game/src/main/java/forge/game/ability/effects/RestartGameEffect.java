@@ -73,6 +73,7 @@ public class RestartGameEffect extends SpellAbilityEffect {
             p.clearTheRing();
             p.setBlessing(false, null);
             p.clearController();
+            p.getSpellRuleRegistry().clear();
 
             CardCollection newLibrary = new CardCollection(p.getCardsIn(restartZones, false));
             if (leaveZone != null) {

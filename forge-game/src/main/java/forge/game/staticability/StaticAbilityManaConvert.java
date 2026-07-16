@@ -12,7 +12,8 @@ public class StaticAbilityManaConvert {
 
     public static boolean manaConvert(ManaConversionMatrix matrix, Player p, Card card, SpellAbility sa) {
         final Game game = p.getGame();
-        boolean changed = false;
+        boolean changed = p.getSpellRuleRegistry()
+                .applyManaConversion(matrix, card, sa);
         for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.ManaConvert)) {

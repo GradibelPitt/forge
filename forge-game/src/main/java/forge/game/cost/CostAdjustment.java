@@ -221,7 +221,7 @@ public class CostAdjustment {
             if (sa.hasParam("ReduceAmount") && num > 0) {
                 cost.subtractManaCost(new ManaCost(Strings.repeat(cst + " ", num)));
             } else {
-                sumGeneric += num;
+                sumGeneric = saturatingAdd(sumGeneric, num);
             }
         }
         if (sa.isPowerUp() && host.enteredThisTurn()) {
@@ -229,10 +229,16 @@ public class CostAdjustment {
             cost.subtractManaCost(host.getManaCost());
         }
 
+        if (sa.isSpell()) {
+            sumGeneric = saturatingAdd(sumGeneric, activator.getSpellRuleRegistry()
+                    .getGenericReduction(host, sa));
+        }
+
         while (!reduceAbilities.isEmpty()) {
             StaticAbility choice = activator.getController().chooseSingleStaticAbility(reduceAbilities);
             reduceAbilities.remove(choice);
-            sumGeneric += applyReduceCostAbility(choice, sa, cost, sumGeneric);
+            sumGeneric = saturatingAdd(sumGeneric,
+                    applyReduceCostAbility(choice, sa, cost, sumGeneric));
         }
         // need to reduce generic extra because of 2 hybrid mana
         cost.decreaseGenericMana(sumGeneric);
@@ -539,6 +545,17 @@ public class CostAdjustment {
         }
         manaCost.decreaseShard(shard, 1);
         return true;
+    }
+
+    private static int saturatingAdd(final int left, final int right) {
+        final long result = (long) left + right;
+        if (result > Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        if (result < Integer.MIN_VALUE) {
+            return Integer.MIN_VALUE;
+        }
+        return (int) result;
     }
 
     private static boolean checkRequirement(final SpellAbility sa, final StaticAbility st) {

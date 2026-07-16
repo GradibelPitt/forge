@@ -82,8 +82,18 @@
 ## ReplaceCards（批量数据库牌池替换）
 
 - **Status:** 已实现为引擎级 Ability API，供“弃暗投明”等隐藏区批量替换效果使用。
-- **DSL:** `DB$ ReplaceCards`，配合 `Defined$`、`Zones$`、`ValidCards$`、`ReplacementValid$` 与 `MatchManaValue$ True`；只有需要记录替换名称的其他效果才使用可选的 `RememberNames$ True`。
-- **Performance:** 复用 `CardDiscoverCandidateFilter` 的轻量 `PaperCard` 过滤；静态候选条件按数据库实例、数据库大小和过滤表达式缓存为法术力值桶。首次建立只遍历一次数据库，不为未选候选创建游戏内 `Card`；同一数据库上的后续结算直接复用缓存，每张被替换牌只做对应桶的常数时间随机索引。
-- **Global grants:** “弃暗投明”的永久指挥区徽记直接以 `Card.nonColorless` 匹配有色咒语，并提供 `ManaConvert` 与 `ReduceCost`；这条费用路径不依赖动态名称上下文。`RememberNames$ True` 与 `Card.sharesNameWith NamedCards` 仍作为引擎能力保留给其他需要按替换名称追踪的效果。
+- **DSL:** `DB$ ReplaceCards`，配合 `Defined$`、`Zones$`、`ValidCards$`、`ReplacementValid$` 与必须显式写为 `True` 的 `MatchManaValue$ True`；当前 `Zones$` 只接受 `Hand`／`Library`。缺失、`False` 或其他区域会在任何区域或名称记录副作用前拒绝。只有需要记录替换名称的其他效果才使用可选的 `RememberNames$ True`。
+- **Performance:** 复用 `CardDiscoverCandidateFilter` 的轻量 `PaperCard` 过滤；静态候选条件按数据库实例、数据库大小和过滤表达式缓存为法术力值桶。首次建立只遍历一次数据库，不为未选候选创建游戏内 `Card`；同一数据库上的后续结算直接复用缓存。每个玩家区域只做一次线性计划扫描并记录匹配牌的稳定位置，随后每张牌只做对应法术力值桶的常数时间随机索引；没有逐牌区域 `indexOf`、额外位置定位扫描或重复 CardDb 扫描。有序手牌只为排除“同 ID 不同对象”做身份成员校验。这里不宣称整个执行严格为 O(k)：Forge 有序区底层列表的标准移除／插入本身仍可能是 O(n)。
+- **Global grants:** “弃暗投明”在替换完成后使用 `GrantSpellRule` 向施法者注册玩家级永久规则；不创建指挥区徽记，也不依赖任何牌继续存在。`RememberNames$ True` 与 `Card.sharesNameWith NamedCards` 仍作为引擎能力保留给其他需要按替换名称追踪的效果。
 - **Java implementation:** `ApiType.ReplaceCards`、`ability/effects/ReplaceCardsEffect.java`、`CardDiscoverCandidateFilter.java`、`Card.java` 与 `CardProperty.java`。
-- **Tests:** `ReplaceCardsEffectTest` 验证缓存只扫描一次、按法术力值分桶和牌名去重；`CardDiscoverEffectTest` 验证颜色条件可在轻量层精确过滤；`tests/test_renounce_darkness.py` 固定卡牌脚本与徽记契约。
+- **Tests:** `ReplaceCardsEffectTest` 验证缓存只扫描一次、按法术力值分桶和牌名去重；`CardDiscoverEffectTest` 验证颜色条件可在轻量层精确过滤；`tests/test_renounce_darkness.py` 固定卡牌脚本与玩家规则契约。
+
+## GrantSpellRule（玩家级永久施法规则）
+
+- **Status:** 已实现为对局内玩家状态，供不应依赖永久物、徽记或区域扫描的全局施法修改使用。
+- **DSL:** `DB$ GrantSpellRule`；`Defined$` 选择获得规则的牌手，`RuleKey$` 是稳定键。首版 `ValidCards$` 只接受来源无关的安全子集（`Card`/牌类别加颜色或 `nonColorless` 等颜色条件），`ValidSA$` 只接受 `Spell`、`Instant` 或 `Sorcery`；依赖 `Self`、记忆对象、SVar 或来源牌的既有过滤器会在登记时拒绝。`ReduceGeneric$` 只减少通用费用，`ManaConversion$` 复用并预校验现有颜色转换表达式。`Duration$ Permanent` 必须显式填写，表示持续到本局结束；缺失或其他值会在结算前拒绝，绝不静默创建永久规则。`Stacking$ True` 为每次结算登记独立实例；省略时相同稳定键与相同内容幂等，冲突内容会被拒绝。多玩家效果会先去重并预检所有目标，只有全部可登记时才统一提交，避免部分玩家生效后中断。
+- **Hot paths:** 减费直接接入 `CostAdjustment.adjust`，调和直接接入 `StaticAbilityManaConvert.manaConvert`，包括 AI 估算路径。注册表查询自身每次只遍历该牌手已登记的少量规则，不新增或依赖战场、指挥区、其他区域或卡牌数据库扫描；为兼容其他卡牌，原有静态异能来源区域扫描保持不变。
+- **AI safety:** `GrantSpellRule` 与 `ReplaceCards` 使用专用保守决策；AI 只接受当前已证明安全、且确实新增规则的自用“弃暗投明”链及正向自用规则，拒绝 `Opponent`／`AllPlayers`、动态或非法规则、幂等无新增规则以及没有正向后续的随机替换。纯调和的 `Stacking$ True` 会用真实 `ManaConversionMatrix` 比较已有支付用途是否覆盖请求，并只采用可证明的牌／法术范围蕴含；首次使用允许，已有更宽范围和用途时拒绝，无法证明覆盖时保守允许。带正数通用减费的叠加规则仍可继续累积。`AILogic$ PlayForSub`／`Always` 不能绕过这两类 API 的受益者检查，但强制触发仍遵循引擎原有语义。决策只遍历该玩家的小型规则表，不扫描区域或全局卡牌数据库。
+- **Lifecycle:** 回合清理不删除；普通游戏快照和开发者 `GameState` 导出／恢复会复制规则；重启游戏时清空；真正的子游戏创建新牌手注册表且不影响主游戏规则，避免跨局或跨子游戏泄漏。
+- **Java implementation:** `PlayerSpellRule`、`PlayerSpellRuleRegistry`、`GrantSpellRuleEffect`、`ApiType.GrantSpellRule`，以及 `Player`、`CostAdjustment`、`StaticAbilityManaConvert` 的接入点。
+- **Tests:** `PlayerSpellRuleRegistryTest` 覆盖玩家隔离、稳定键幂等、显式叠加、无承载牌、颜色支付、只减通用费、无色排除、清理与复制生命周期。
