@@ -464,6 +464,10 @@ public class FSkin {
         }
 
         private void updateColor() {
+            if (WarmwoodTheme.isSkinName(preferredName)) {
+                color = WarmwoodTheme.colorFor(this);
+                return;
+            }
             int[] tempCoords = skinProp.getCoords();
             x0 = tempCoords[0];
             y0 = tempCoords[1];
@@ -1134,6 +1138,36 @@ public class FSkin {
     private static int defaultFontSize = 12;
     private static boolean loaded = false;
 
+    public static boolean isWarmwood() {
+        return WarmwoodTheme.isSkinName(preferredName);
+    }
+
+    private static String resolvePreferredDirectory(final String skinDirectoryName) {
+        if (skinDirectoryName.isEmpty() || "default".equalsIgnoreCase(skinDirectoryName)) {
+            return ForgeConstants.DEFAULT_SKINS_DIR;
+        }
+        final String builtInDir = ForgeConstants.BASE_SKINS_DIR + skinDirectoryName + File.separator;
+        if (new File(builtInDir).isDirectory()) {
+            return builtInDir;
+        }
+        return ForgeConstants.CACHE_SKINS_DIR + skinDirectoryName + File.separator;
+    }
+
+    private static String resolvePreferredFile(final String fileName) {
+        final File preferred = new File(preferredDir, fileName);
+        if (preferred.isFile()) {
+            return preferred.getPath();
+        }
+        final int extensionIndex = fileName.lastIndexOf('.');
+        if (extensionIndex > 0) {
+            final File preferredPng = new File(preferredDir, fileName.substring(0, extensionIndex) + ".png");
+            if (preferredPng.isFile()) {
+                return preferredPng.getPath();
+            }
+        }
+        return new File(ForgeConstants.DEFAULT_SKINS_DIR, fileName).getPath();
+    }
+
     public static void changeSkin(final String skinName) {
         final ForgePreferences prefs = FModel.getPreferences();
         if (skinName.equals(prefs.getPref(FPref.UI_SKIN))) { return; }
@@ -1184,16 +1218,12 @@ public class FSkin {
 
         // Non-default (preferred) skin name and dir.
         preferredName = skinName.toLowerCase().replace(' ', '_');
-        preferredDir = preferredName.equalsIgnoreCase("default") || preferredName.isEmpty() ? ForgeConstants.DEFAULT_SKINS_DIR : ForgeConstants.CACHE_SKINS_DIR + preferredName + "/";
+        preferredDir = resolvePreferredDirectory(preferredName);
 
         if (onInit) {
-            final File f = new File(preferredDir + ForgeConstants.SPLASH_BG_FILE);
+            final File f = new File(resolvePreferredFile(ForgeConstants.SPLASH_BG_FILE));
             if (!f.exists()) {
-                if (skinName.equals("default")) {
-                    throw new RuntimeException(String.format("Cannot find default skin at %s", f.getAbsolutePath()));
-                }
-                loadLight("default", true);
-                return;
+                throw new RuntimeException(String.format("Cannot find default skin at %s", f.getAbsolutePath()));
             }
 
             final BufferedImage img;
@@ -1253,7 +1283,7 @@ public class FSkin {
         // Grab and test various sprite files.
         final String defaultDir = ForgeConstants.DEFAULT_SKINS_DIR;
         final File f1 = new File(defaultDir + ForgeConstants.SPRITE_ICONS_FILE);
-        final File f2 = new File(preferredDir + ForgeConstants.SPRITE_ICONS_FILE);
+        final File f2 = new File(resolvePreferredFile(ForgeConstants.SPRITE_ICONS_FILE));
         final File f3 = new File(defaultDir + ForgeConstants.SPRITE_FOILS_FILE);
         final File f4 = new File(defaultDir + ForgeConstants.SPRITE_AVATARS_FILE);
         final File f5 = new File(preferredDir + ForgeConstants.SPRITE_AVATARS_FILE);
@@ -1334,12 +1364,12 @@ public class FSkin {
         if (onInit) { //set default font size only once onInit
             defaultFontSize = FModel.getPreferences().getPrefInt(FPref.UI_DEFAULT_FONT_SIZE);
         }
-        SkinFont.setBaseFont(GuiUtils.newFont(preferredDir + ForgeConstants.FONT_FILE));
+        SkinFont.setBaseFont(GuiUtils.newFont(resolvePreferredFile(ForgeConstants.FONT_FILE)));
 
         // Put various images into map (except sprite and splash).
         // Exceptions handled inside method.
-        SkinIcon.setIcon(FSkinProp.BG_TEXTURE, preferredDir + ForgeConstants.TEXTURE_BG_FILE);
-        SkinIcon.setIcon(FSkinProp.BG_MATCH, preferredDir + ForgeConstants.MATCH_BG_FILE);
+        SkinIcon.setIcon(FSkinProp.BG_TEXTURE, resolvePreferredFile(ForgeConstants.TEXTURE_BG_FILE));
+        SkinIcon.setIcon(FSkinProp.BG_MATCH, resolvePreferredFile(ForgeConstants.MATCH_BG_FILE));
         //daynight bg
         SkinIcon.setIcon(FSkinProp.BG_DAY, defaultDir + ForgeConstants.MATCH_BG_DAY_FILE);
         SkinIcon.setIcon(FSkinProp.BG_NIGHT, defaultDir + ForgeConstants.MATCH_BG_NIGHT_FILE);
@@ -1487,23 +1517,36 @@ public class FSkin {
     public static List<String> getSkinDirectoryNames() {
         final List<String> mySkins = new ArrayList<>();
 
-        final File dir = new File(ForgeConstants.CACHE_SKINS_DIR);
-        final String[] children = dir.list();
-        if (children == null) {
-            System.err.println("FSkin > can't find skins directory!");
-        } else {
-            for (String aChildren : children) {
-                if (aChildren.equalsIgnoreCase(".svn")) {
-                    continue;
-                }
-                if (aChildren.equalsIgnoreCase(".DS_Store")) {
-                    continue;
-                }
-                mySkins.add(aChildren);
-            }
-        }
+        addSkinDirectories(mySkins, new File(ForgeConstants.BASE_SKINS_DIR), true);
+        addSkinDirectories(mySkins, new File(ForgeConstants.CACHE_SKINS_DIR), false);
 
         return mySkins;
+    }
+
+    private static void addSkinDirectories(final List<String> skins, final File root, final boolean skipDefault) {
+        final File[] children = root.listFiles(File::isDirectory);
+        if (children == null) {
+            return;
+        }
+        for (final File child : children) {
+            final String name = child.getName();
+            if ((skipDefault && "default".equalsIgnoreCase(name)) || ".svn".equalsIgnoreCase(name)
+                    || ".DS_Store".equalsIgnoreCase(name)) {
+                continue;
+            }
+            if (!containsIgnoreCase(skins, name)) {
+                skins.add(name);
+            }
+        }
+    }
+
+    private static boolean containsIgnoreCase(final List<String> values, final String value) {
+        for (final String candidate : values) {
+            if (candidate.equalsIgnoreCase(value)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static List<String> getAllSkins() {
@@ -1685,7 +1728,11 @@ public class FSkin {
         private final Color FORE_COLOR = getColor(Colors.CLR_TEXT).color;
         private final Color BACK_COLOR = getColor(Colors.CLR_THEME2).color;
         private final Color HIGHLIGHT_COLOR = BACK_COLOR.brighter();
-        private final Border LINE_BORDER = BorderFactory.createLineBorder(FORE_COLOR.darker(), 1);
+        private final Border LINE_BORDER = isWarmwood()
+                ? BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(WarmwoodTheme.CREVICE, 2),
+                        BorderFactory.createLineBorder(WarmwoodTheme.BRASS, 1))
+                : BorderFactory.createLineBorder(FORE_COLOR.darker(), 1);
         private final Border EMPTY_BORDER = BorderFactory.createEmptyBorder(2, 2, 2, 2);
 
         /**
@@ -1809,6 +1856,31 @@ public class FSkin {
         }
 
         private void setTextEditLookAndFeel() {
+            if (isWarmwood()) {
+                final Color field = WarmwoodTheme.getFieldColor(false);
+                final Border fieldBorder = BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(WarmwoodTheme.CREVICE, 2),
+                        BorderFactory.createLineBorder(WarmwoodTheme.BRASS, 1));
+                for (final String component : new String[] {"TextField", "FormattedTextField", "PasswordField",
+                        "TextArea", "TextPane", "EditorPane"}) {
+                    UIManager.put(component + ".background", field);
+                    UIManager.put(component + ".foreground", WarmwoodTheme.TEXT);
+                    UIManager.put(component + ".caretForeground", WarmwoodTheme.TEXT);
+                    UIManager.put(component + ".selectionBackground", WarmwoodTheme.WOOD_MID);
+                    UIManager.put(component + ".selectionForeground", WarmwoodTheme.TEXT);
+                    UIManager.put(component + ".border", fieldBorder);
+                }
+                UIManager.put("Table.background", field);
+                UIManager.put("Table.foreground", WarmwoodTheme.TEXT);
+                UIManager.put("Table.gridColor", WarmwoodTheme.FRAME_SHADOW);
+                UIManager.put("Table.selectionBackground", WarmwoodTheme.WOOD_MID);
+                UIManager.put("Table.selectionForeground", WarmwoodTheme.TEXT);
+                UIManager.put("TableHeader.background", WarmwoodTheme.FRAME_SHADOW);
+                UIManager.put("TableHeader.foreground", WarmwoodTheme.TEXT);
+                UIManager.put("ScrollBar.background", WarmwoodTheme.CREVICE);
+                UIManager.put("ScrollBar.track", WarmwoodTheme.FRAME_SHADOW);
+                UIManager.put("ScrollBar.thumb", WarmwoodTheme.METAL_EDGE);
+            }
             // Set up correct Mac keyboard shortcuts for text editing - to use the Command key
             // rather than Control, which is what we get by default.
             if (OperatingSystem.isMac()) {

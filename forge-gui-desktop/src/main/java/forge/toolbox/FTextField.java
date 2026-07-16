@@ -120,6 +120,23 @@ public class FTextField extends SkinnedTextField implements ITextField {
     }
 
     @Override
+    protected void paintComponent(final Graphics g) {
+        if (!FSkin.isWarmwood()) {
+            super.paintComponent(g);
+            return;
+        }
+
+        final Graphics2D g2d = (Graphics2D) g.create();
+        WarmwoodTheme.paintInsetField(g2d, getWidth(), getHeight(), hasFocus());
+        g2d.dispose();
+
+        final boolean wasOpaque = isOpaque();
+        setOpaque(false);
+        super.paintComponent(g);
+        setOpaque(wasOpaque);
+    }
+
+    @Override
     public void paint(final Graphics g) {
         super.paint(g);
         if (this.ghostText != null && this.isEmpty() && (this.showGhostTextWithFocus || !this.hasFocus())) {

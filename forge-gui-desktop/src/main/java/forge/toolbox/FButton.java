@@ -237,12 +237,34 @@ public class FButton extends SkinnedButton implements ILocalRepaint, IButton {
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         g2d.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
 
+        w = getWidth();
+        h = getHeight();
+
+        if (FSkin.isWarmwood()) {
+            final WarmwoodTheme.ButtonState state;
+            if (!isEnabled()) {
+                state = WarmwoodTheme.ButtonState.DISABLED;
+            }
+            else if (getModel().isPressed()) {
+                state = WarmwoodTheme.ButtonState.PRESSED;
+            }
+            else if (isToggled()) {
+                state = WarmwoodTheme.ButtonState.TOGGLED;
+            }
+            else if (hovered || isFocusOwner()) {
+                state = WarmwoodTheme.ButtonState.HOVER;
+            }
+            else {
+                state = WarmwoodTheme.ButtonState.NORMAL;
+            }
+            WarmwoodTheme.paintButton(g2d, w, h, state);
+            super.paintComponent(g);
+            return;
+        }
+
         if (!isEnabled()) {
             g2d.setComposite(this.disabledComposite);
         }
-
-        w = getWidth();
-        h = getHeight();
 
         FSkin.drawImage(g2d, imgL, 0, 0, this.h, this.h);
         FSkin.drawImage(g2d, imgM, this.h, 0, this.w - (2 * this.h), this.h);

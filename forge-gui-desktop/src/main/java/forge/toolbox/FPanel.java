@@ -236,6 +236,16 @@ public class FPanel extends FPanelBase implements ILocalRepaint {
         final Graphics2D g2d = (Graphics2D) graphics0.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+        if (FSkin.isWarmwood() && borderToggle && !foregroundStretch) {
+            WarmwoodTheme.paintPanel(g2d, pnlW, pnlH, cornerDiameter, backgroundTexture,
+                    backgroundTextureOverlay);
+            if (foregroundImage != null) {
+                drawForegroundScaled(g2d);
+            }
+            g2d.dispose();
+            return;
+        }
+
         // Draw background as required
         if (foregroundStretch && foregroundImage != null) {
             drawForegroundStretched(g2d);
@@ -245,6 +255,12 @@ public class FPanel extends FPanelBase implements ILocalRepaint {
         }
         else {
             drawBackgroundTexture(g2d);
+        }
+
+        if (FSkin.isWarmwood() && !borderToggle) {
+            g2d.setColor(new Color(WarmwoodTheme.CREVICE.getRed(), WarmwoodTheme.CREVICE.getGreen(),
+                    WarmwoodTheme.CREVICE.getBlue(), 126));
+            g2d.fillRect(0, 0, pnlW, pnlH);
         }
 
         // Draw foreground as required

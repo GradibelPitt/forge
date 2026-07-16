@@ -610,6 +610,11 @@ public class FLabel extends SkinnedLabel implements ILocalRepaint, IButton {
     }
 
     private static void paintFocus(final Graphics2D g, final int w, final int h) {
+        if (FSkin.isWarmwood()) {
+            g.setColor(WarmwoodTheme.BRASS);
+            g.drawRoundRect(1, 1, w - 3, h - 3, 8, 8);
+            return;
+        }
         FSkin.setGraphicsColor(g, clrHover);
         g.drawRect(0, 0, w - 2, h - 2);
         FSkin.setGraphicsColor(g, l30);
@@ -617,6 +622,10 @@ public class FLabel extends SkinnedLabel implements ILocalRepaint, IButton {
     }
 
     private static void paintPressed(final Graphics2D g, final int w, final int h) {
+        if (FSkin.isWarmwood()) {
+            WarmwoodTheme.paintButton(g, w, h, WarmwoodTheme.ButtonState.PRESSED);
+            return;
+        }
         FSkin.setGraphicsGradientPaint(g, 0, h, d50, 0, 0, d10);
         g.fillRect(0, 0, w - 1, h - 1);
 
@@ -627,6 +636,10 @@ public class FLabel extends SkinnedLabel implements ILocalRepaint, IButton {
     }
 
     private static void paintUp(final Graphics2D g, final int w, final int h) {
+        if (FSkin.isWarmwood()) {
+            WarmwoodTheme.paintButton(g, w, h, WarmwoodTheme.ButtonState.NORMAL);
+            return;
+        }
         FSkin.setGraphicsGradientPaint(g, 0, h, d10, 0, 0, l20);
         g.fillRect(0, 0, w, h);
 
@@ -637,6 +650,10 @@ public class FLabel extends SkinnedLabel implements ILocalRepaint, IButton {
     }
 
     private static void paintBorder(final Graphics2D g, final int w, final int h) {
+        if (FSkin.isWarmwood()) {
+            WarmwoodTheme.paintButton(g, w, h, WarmwoodTheme.ButtonState.NORMAL);
+            return;
+        }
         FSkin.setGraphicsColor(g, l10);
         g.drawRect(0, 0, w - 2, h - 2);
         FSkin.setGraphicsColor(g, l30);
@@ -644,6 +661,10 @@ public class FLabel extends SkinnedLabel implements ILocalRepaint, IButton {
     }
 
     private static void paintDown(final Graphics2D g, final int w, final int h) {
+        if (FSkin.isWarmwood()) {
+            WarmwoodTheme.paintButton(g, w, h, WarmwoodTheme.ButtonState.TOGGLED);
+            return;
+        }
         FSkin.setGraphicsGradientPaint(g, 0, h, d30, 0, 0, l10);
         g.fillRect(0, 0, w - 1, h - 1);
 

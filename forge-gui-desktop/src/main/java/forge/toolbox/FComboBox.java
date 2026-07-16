@@ -117,7 +117,18 @@ public class FComboBox<E> extends SkinnedComboBox<E> implements IComboBox<E> {
 
     @Override
     protected void paintComponent(final Graphics g) {
+        final boolean warmwood = FSkin.isWarmwood();
+        final boolean wasOpaque = isOpaque();
+        if (warmwood) {
+            final Graphics2D background = (Graphics2D) g.create();
+            WarmwoodTheme.paintInsetField(background, getWidth(), getHeight(), hasFocus());
+            background.dispose();
+            setOpaque(false);
+        }
         super.paintComponent(g);
+        if (warmwood) {
+            setOpaque(wasOpaque);
+        }
         final Graphics2D g2d = (Graphics2D)g;
         g2d.setPaint(getForeground());
         int shapeWidth = 8;
