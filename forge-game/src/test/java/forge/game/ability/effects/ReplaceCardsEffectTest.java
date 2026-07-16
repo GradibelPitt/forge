@@ -8,22 +8,40 @@ import forge.game.GameType;
 import forge.game.Match;
 import forge.game.card.Card;
 import forge.game.player.Player;
+import forge.game.spellability.SpellAbility;
+import forge.game.staticability.StaticAbility;
+import forge.game.staticability.StaticAbilityManaConvert;
+import forge.game.zone.ZoneType;
 import forge.item.PaperCard;
+import forge.util.Lang;
+import forge.util.Localizer;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ReplaceCardsEffectTest {
+    @BeforeClass
+    public void initializeLocalization() {
+        Lang.createInstance("en-US");
+        final String languages = Paths.get("..", "forge-gui", "res", "languages")
+                .toAbsolutePath().normalize().toString();
+        Localizer.getInstance().initialize("en-US", languages);
+    }
+
     private static PaperCard paper(final String name, final String manaCost) {
         return new PaperCard(CardRules.fromScript(Arrays.asList(
                 "Name:" + name,
                 "ManaCost:" + manaCost,
                 "Types:Sorcery",
+                "A:SP$ Draw | NumCards$ 1 | SpellDescription$ Test.",
                 "Oracle:Test card."
         )), "TST", CardRarity.Common);
     }
@@ -100,5 +118,50 @@ public class ReplaceCardsEffectTest {
 
         Assert.assertTrue(futureCopy.isValid("Card.sharesNameWith NamedCards",
                 player, emblem, null));
+    }
+
+    @Test
+    public void coloredSpellEmblemFiltersMatchTheActualCostPaths() {
+        final GameRules rules = new GameRules(GameType.Constructed);
+        final Game game = new Game(List.of(), rules,
+                new Match(rules, List.of(), "ReplaceCards colored emblem test"));
+        final Player player = new Player("Controller", game, 1);
+        game.getPlayers().add(player);
+        player.setTeam(1);
+
+        final Card emblem = new Card(game.nextCardId(), game);
+        emblem.setName("Emblem — Renounce Darkness");
+        emblem.setOwner(player);
+        emblem.setController(player, game.getNextTimestamp());
+        emblem.setEmblem(true);
+        emblem.setZone(player.getZone(ZoneType.Command));
+
+        final StaticAbility harmony = emblem.addStaticAbility(
+                "Mode$ ManaConvert | ValidPlayer$ You | ValidCard$ Card.nonColorless "
+                        + "| ValidSA$ Spell | ManaConversion$ AnyType->AnyColor");
+        harmony.setActiveZone(EnumSet.of(ZoneType.Command));
+        final StaticAbility reduction = emblem.addStaticAbility(
+                "Mode$ ReduceCost | Type$ Spell | ValidCard$ Card.nonColorless "
+                        + "| Activator$ You | Amount$ 2");
+        reduction.setActiveZone(EnumSet.of(ZoneType.Command));
+
+        final Card colored = Card.fromPaperCard(paper("Colored Seven", "5 W W"), player);
+        final SpellAbility coloredSpell = colored.getSpellAbilities().getFirst();
+        coloredSpell.setActivatingPlayer(player);
+        final Card colorless = Card.fromPaperCard(paper("Colorless Seven", "7"), player);
+        final SpellAbility colorlessSpell = colorless.getSpellAbilities().getFirst();
+        colorlessSpell.setActivatingPlayer(player);
+
+        Assert.assertTrue(harmony.matchesValidParam("ValidCard", colored));
+        Assert.assertTrue(harmony.matchesValidParam("ValidPlayer", player));
+        Assert.assertTrue(harmony.matchesValidParam("ValidSA", coloredSpell));
+        Assert.assertTrue(StaticAbilityManaConvert.checkManaConvert(
+                harmony, player, colored, coloredSpell));
+        Assert.assertTrue(reduction.matchesValidParam("ValidCard", colored));
+        Assert.assertTrue(reduction.matchesValidParam("Activator", player));
+        Assert.assertFalse(harmony.matchesValidParam("ValidCard", colorless));
+        Assert.assertFalse(reduction.matchesValidParam("ValidCard", colorless));
+        Assert.assertFalse(StaticAbilityManaConvert.checkManaConvert(
+                harmony, player, colorless, colorlessSpell));
     }
 }

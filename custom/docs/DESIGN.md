@@ -54,11 +54,11 @@ Boarding 按实体 ID 记录本回合受过伤害的不同友方角色。在完�
 
 当前状态为已实现、自动测试通过并部署，尚待客户端对局实测。
 
-## Batch database replacement and permanent same-name grants
+## Batch database replacement and permanent colored-spell grants
 
 “弃暗投明”使用独立 `ReplaceCards` API 一次性处理手牌与牌库。替换过程先快照符合条件的牌，再从缓存的同法术力值候选桶中随机选择；原牌直接停止存在，新牌进入原区域，牌库中的相对位置保持不变。候选缓存只保存 `PaperCard`，避免循环调用发现、重复扫描全数据库或批量实例化游戏对象。
 
-替换出的牌名在本次结算内去重，并复制到一个永久指挥区徽记。徽记通过 `Card.sharesNameWith NamedCards` 按哈希名称集合持续匹配当前与未来出现的同名牌；调和使用 `ManaConversion$ AnyType->AnyColor`，减费使用 `ReduceCost Amount$ 2`。徽记是实现细节，不写入用户给定的卡面描述。
+替换完成后创建一个永久指挥区徽记。客户端实测发现动态 `NamedCards` 条件没有进入施放费用计算后，按用户批准的稳定方案改为直接匹配 `Card.nonColorless`：你的所有有色咒语获得 `ManaConversion$ AnyType->AnyColor`，并由 `ReduceCost Amount$ 2` 减少通用费用。徽记是实现细节，用户给定的卡面描述保持不变。
 
 ## Card-specific decisions
 

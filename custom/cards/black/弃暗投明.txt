@@ -1,8 +1,8 @@
 Name:弃暗投明
 ManaCost:B
 Types:Sorcery
-A:SP$ ReplaceCards | Defined$ You | Zones$ Hand,Library | ValidCards$ Card.Black | ReplacementValid$ Card.nonBlack+nonColorless | MatchManaValue$ True | RememberNames$ True | SubAbility$ CreateHarmonyEmblem | SpellDescription$ 将你手牌和牌库中的每张黑色牌替换为一张随机选择的、总法术力值相同、非黑色且非无色的牌，这些牌以及与其同名的牌永久获得调和（你可以用任意颜色的法术力支付此咒语的法术力费用）和“此咒语的施放费用减少{2}”
-SVar:CreateHarmonyEmblem:DB$ Effect | Name$ Emblem — 弃暗投明 | EffectOwner$ You | StaticAbilities$ HarmonyByName,ReduceByName | Duration$ Permanent
-SVar:HarmonyByName:Mode$ ManaConvert | ValidPlayer$ You | ValidCard$ Card.sharesNameWith NamedCards | ValidSA$ Spell | ManaConversion$ AnyType->AnyColor
-SVar:ReduceByName:Mode$ ReduceCost | Type$ Spell | ValidCard$ Card.sharesNameWith NamedCards | Activator$ You | Amount$ 2
+A:SP$ ReplaceCards | Defined$ You | Zones$ Hand,Library | ValidCards$ Card.Black | ReplacementValid$ Card.nonBlack+nonColorless | MatchManaValue$ True | SubAbility$ CreateHarmonyEmblem | SpellDescription$ 将你手牌和牌库中的每张黑色牌替换为一张随机选择的、总法术力值相同、非黑色且非无色的牌，这些牌以及与其同名的牌永久获得调和（你可以用任意颜色的法术力支付此咒语的法术力费用）和“此咒语的施放费用减少{2}”
+SVar:CreateHarmonyEmblem:DB$ Effect | Name$ Emblem — 弃暗投明 | EffectOwner$ You | StaticAbilities$ HarmonyColored,ReduceColored | Duration$ Permanent
+SVar:HarmonyColored:Mode$ ManaConvert | ValidPlayer$ You | ValidCard$ Card.nonColorless | ValidSA$ Spell | ManaConversion$ AnyType->AnyColor
+SVar:ReduceColored:Mode$ ReduceCost | Type$ Spell | ValidCard$ Card.nonColorless | Activator$ You | Amount$ 2
 Oracle:将你手牌和牌库中的每张黑色牌替换为一张随机选择的、总法术力值相同、非黑色且非无色的牌，这些牌以及与其同名的牌永久获得调和（你可以用任意颜色的法术力支付此咒语的法术力费用）和“此咒语的施放费用减少{2}”
