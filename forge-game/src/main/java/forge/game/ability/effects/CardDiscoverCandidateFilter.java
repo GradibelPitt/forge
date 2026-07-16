@@ -2,6 +2,7 @@ package forge.game.ability.effects;
 
 import forge.card.CardRules;
 import forge.card.CardType;
+import forge.card.MagicColor;
 import forge.game.CardTraitBase;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
@@ -31,22 +32,26 @@ final class CardDiscoverCandidateFilter {
         private final Predicate<PaperCard> predicate;
         private final boolean complete;
         private final boolean constrained;
+        private final boolean contextIndependent;
 
         private Clause(final Predicate<PaperCard> predicate, final boolean complete,
-                final boolean constrained) {
+                final boolean constrained, final boolean contextIndependent) {
             this.predicate = predicate;
             this.complete = complete;
             this.constrained = constrained;
+            this.contextIndependent = contextIndependent;
         }
     }
 
     private final Predicate<PaperCard> predicate;
     private final Capability capability;
+    private final boolean contextIndependent;
 
     private CardDiscoverCandidateFilter(final Predicate<PaperCard> predicate,
-            final Capability capability) {
+            final Capability capability, final boolean contextIndependent) {
         this.predicate = predicate;
         this.capability = capability;
+        this.contextIndependent = contextIndependent;
     }
 
     static CardDiscoverCandidateFilter compile(final String restrictions,
@@ -54,11 +59,13 @@ final class CardDiscoverCandidateFilter {
         final List<Predicate<PaperCard>> alternatives = new ArrayList<>();
         boolean allComplete = true;
         boolean allConstrained = true;
+        boolean allContextIndependent = true;
         for (final String restriction : restrictions.split(",")) {
             final Clause alternative = compileAlternative(restriction.trim(), source, spellAbility);
             alternatives.add(alternative.predicate);
             allComplete &= alternative.complete;
             allConstrained &= alternative.constrained;
+            allContextIndependent &= alternative.contextIndependent;
         }
         final Capability capability = allComplete ? Capability.STATIC_EXACT
                 : allConstrained ? Capability.STATIC_PREFILTER_DYNAMIC_FINAL
@@ -70,7 +77,7 @@ final class CardDiscoverCandidateFilter {
                 }
             }
             return false;
-        }, capability);
+        }, capability, allContextIndependent);
     }
 
     boolean matches(final PaperCard paperCard) {
@@ -83,6 +90,10 @@ final class CardDiscoverCandidateFilter {
 
     Capability getCapability() {
         return capability;
+    }
+
+    boolean isContextIndependent() {
+        return contextIndependent;
     }
 
     private static Clause compileAlternative(final String restriction,
@@ -103,14 +114,15 @@ final class CardDiscoverCandidateFilter {
             result = new Clause(
                     paperCard -> prior.test(paperCard) && propertyClause.predicate.test(paperCard),
                     result.complete && propertyClause.complete,
-                    result.constrained || propertyClause.constrained);
+                    result.constrained || propertyClause.constrained,
+                    result.contextIndependent && propertyClause.contextIndependent);
         }
         return result;
     }
 
     private static Clause compileBase(final String base) {
         if (base.equals("Card") || base.equals("card")) {
-            return new Clause(paperCard -> true, true, false);
+            return new Clause(paperCard -> true, true, false, true);
         }
         if (base.equals("Spell")) {
             return exactClause(paperCard -> {
@@ -131,12 +143,24 @@ final class CardDiscoverCandidateFilter {
             final CardTraitBase spellAbility) {
         if (property.startsWith("cmc") && property.length() > 5
                 && isComparison(property.substring(3, 5))) {
-            final Integer rightSide = evaluateAmount(property.substring(5), source, spellAbility);
+            final String amountExpression = property.substring(5);
+            final Integer rightSide = evaluateAmount(amountExpression, source, spellAbility);
             if (rightSide != null) {
-                return exactClause(paperCard -> Expressions.compare(
-                        paperCard.getRules().getManaCost().getCMC(), property, rightSide));
+                return new Clause(paperCard -> Expressions.compare(
+                        paperCard.getRules().getManaCost().getCMC(), property, rightSide),
+                        true, true, amountExpression.matches("-?\\d+"));
             }
             return unknownClause();
+        }
+        final String positiveColor = normalizeColor(property);
+        if (positiveColor != null) {
+            return exactClause(paperCard -> matchesColor(paperCard, positiveColor));
+        }
+        if (property.startsWith("non")) {
+            final String excludedColor = normalizeColor(property.substring(3));
+            if (excludedColor != null) {
+                return exactClause(paperCard -> !matchesColor(paperCard, excludedColor));
+            }
         }
         if (property.startsWith("non") && isKnownType(property.substring(3))) {
             final String excludedType = property.substring(3);
@@ -169,6 +193,22 @@ final class CardDiscoverCandidateFilter {
                 || operator.equals("M2");
     }
 
+    private static String normalizeColor(final String property) {
+        for (final String color : MagicColor.Constant.COLORS_AND_COLORLESS) {
+            if (color.equalsIgnoreCase(property)) {
+                return color;
+            }
+        }
+        return null;
+    }
+
+    private static boolean matchesColor(final PaperCard paperCard, final String color) {
+        if (MagicColor.Constant.COLORLESS.equals(color)) {
+            return paperCard.getRules().getColor().isColorless();
+        }
+        return paperCard.getRules().getColor().hasAnyColor(MagicColor.fromName(color));
+    }
+
     private static boolean isKnownType(final String type) {
         return CardType.isACardType(type) || CardType.isASupertype(type)
                 || CardType.isACreatureType(type) || CardType.isALandType(type)
@@ -179,10 +219,10 @@ final class CardDiscoverCandidateFilter {
     }
 
     private static Clause exactClause(final Predicate<PaperCard> predicate) {
-        return new Clause(predicate, true, true);
+        return new Clause(predicate, true, true, true);
     }
 
     private static Clause unknownClause() {
-        return new Clause(paperCard -> true, false, false);
+        return new Clause(paperCard -> true, false, false, false);
     }
 }

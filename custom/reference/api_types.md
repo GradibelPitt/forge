@@ -207,6 +207,7 @@ These must be written exactly as spelled (case-insensitive in Forge but capitali
 - `RemoveCounter`
 - `RemoveCounterAll`
 - `RemoveFromCombat`
+- `ReplaceCards`
 - `RemoveFromGame`
 - `RemoveFromMatch`
 - `ReorderZone`

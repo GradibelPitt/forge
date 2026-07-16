@@ -29,7 +29,7 @@ VALID_API_TYPES = {
     "peekandreveal", "permanentcreature", "permanentnoncreature", "phases", "planeswalk", "play", 
     "playlandvariant", "poison", "preventdamage", "proliferate", "protection", "protectionall", 
     "pump", "pumpall", "putcounter", "putcounterall", "radiation", "rearrangetopoflibrary", "regenerate", 
-    "regeneration", "removecounter", "removecounterall", "removefromcombat", "removefromgame", "removefrommatch", 
+    "regeneration", "removecounter", "removecounterall", "removefromcombat", "replacecards", "removefromgame", "removefrommatch",
     "reorderzone", "repeat", "repeateach", "replacecounter", "replaceeffect", "replacemana", "replacedamage", 
     "replacetoken", "replacesplitdamage", "restartgame", "reveal", "revealhand", "reverseturnorder", 
     "ringtemptsyou", "rolldice", "rollplanardice", "runchaos", "sacrifice", "sacrificeall", "scry", 

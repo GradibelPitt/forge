@@ -170,6 +170,29 @@ public class CardDiscoverEffectTest {
     }
 
     @Test
+    public void lightweightFilterRecognizesColoredAndNonblackClauses() {
+        final CardDiscoverCandidateFilter black = CardDiscoverCandidateFilter.compile(
+                "Card.Black", named(1, "Source"), null);
+        final CardDiscoverCandidateFilter nonblackColored = CardDiscoverCandidateFilter.compile(
+                "Card.nonBlack+nonColorless", named(1, "Source"), null);
+
+        Assert.assertTrue(black.isComplete());
+        Assert.assertTrue(black.matches(new PaperCard(CardRules.fromScript(Arrays.asList(
+                "Name:Black Spell", "ManaCost:B", "Types:Sorcery", "Oracle:Test."
+        )), "TST", CardRarity.Common)));
+        Assert.assertTrue(nonblackColored.isComplete());
+        Assert.assertTrue(nonblackColored.matches(new PaperCard(CardRules.fromScript(Arrays.asList(
+                "Name:White Spell", "ManaCost:W", "Types:Sorcery", "Oracle:Test."
+        )), "TST", CardRarity.Common)));
+        Assert.assertFalse(nonblackColored.matches(new PaperCard(CardRules.fromScript(Arrays.asList(
+                "Name:Black Spell", "ManaCost:B", "Types:Sorcery", "Oracle:Test."
+        )), "TST", CardRarity.Common)));
+        Assert.assertFalse(nonblackColored.matches(new PaperCard(CardRules.fromScript(Arrays.asList(
+                "Name:Colorless Spell", "ManaCost:1", "Types:Sorcery", "Oracle:Test."
+        )), "TST", CardRarity.Common)));
+    }
+
+    @Test
     public void unknownDynamicClauseIsConservativelyDeferred() {
         final CardDiscoverCandidateFilter filter = CardDiscoverCandidateFilter.compile(
                 "Creature.YouCtrl", named(1, "Source"), null);

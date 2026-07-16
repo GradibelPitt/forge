@@ -307,6 +307,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     private List<String> chosenColors;
     private ColorSet markedColor;
     private List<String> chosenName = new ArrayList<>();
+    private transient Set<String> chosenNameLookup;
     private Integer chosenNumber;
     private Player chosenPlayer;
     private Player promisedGift;
@@ -2358,12 +2359,24 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     }
     public final void setNamedCards(final List<String> s) {
         chosenName = s;
+        chosenNameLookup = null;
         view.updateNamedCard(this);
     }
 
     public final void addNamedCard(final String s) {
         chosenName.add(s);
+        chosenNameLookup = null;
         view.updateNamedCard(this);
+    }
+
+    public final boolean hasNamedCardName(final String name) {
+        if (name == null || name.isEmpty()) {
+            return false;
+        }
+        if (chosenNameLookup == null) {
+            chosenNameLookup = new HashSet<>(chosenName);
+        }
+        return chosenNameLookup.contains(name);
     }
 
     public boolean hasNamedCard() {

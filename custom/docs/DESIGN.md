@@ -54,6 +54,12 @@ Boarding 按实体 ID 记录本回合受过伤害的不同友方角色。在完�
 
 当前状态为已实现、自动测试通过并部署，尚待客户端对局实测。
 
+## Batch database replacement and permanent same-name grants
+
+“弃暗投明”使用独立 `ReplaceCards` API 一次性处理手牌与牌库。替换过程先快照符合条件的牌，再从缓存的同法术力值候选桶中随机选择；原牌直接停止存在，新牌进入原区域，牌库中的相对位置保持不变。候选缓存只保存 `PaperCard`，避免循环调用发现、重复扫描全数据库或批量实例化游戏对象。
+
+替换出的牌名在本次结算内去重，并复制到一个永久指挥区徽记。徽记通过 `Card.sharesNameWith NamedCards` 按哈希名称集合持续匹配当前与未来出现的同名牌；调和使用 `ManaConversion$ AnyType->AnyColor`，减费使用 `ReduceCost Amount$ 2`。徽记是实现细节，不写入用户给定的卡面描述。
+
 ## Card-specific decisions
 
 - **破链灾星霍格：** `{4}{R}{R}{R}{R}` 10/10 传奇豺狼人，Superreach，按注册主牌构筑清单复制其他传奇永久物并授予传奇规则徽记。

@@ -61,3 +61,4 @@ Type=Custom_Set
 62 C 加拉克苏斯之拳 @Custom
 63 C 潮池学徒 @Custom
 64 R 符文秘银杖 @Custom
+65 R 弃暗投明 @Custom

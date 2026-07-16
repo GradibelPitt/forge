@@ -78,3 +78,12 @@
 - **Java implementation:** `forge-game/.../ability/ApiType.java` 注册，`ability/effects/CardDiscoverEffect.java` 实现；不修改 Forge 已有 MTG `DiscoverEffect`。
 - **Tests:** `forge-game/src/test/java/forge/game/ability/effects/CardDiscoverEffectTest.java`；`tests/test_airborne_bandit.py`。
 - **Edge cases:** 条件必须复用 `ValidCards$`/`Card.isValid`；同名不同版本不重复；不足三个显示实际数量；数据库来源创建新牌，牌库来源移动实际对象且不洗牌。
+
+## ReplaceCards（批量数据库牌池替换）
+
+- **Status:** 已实现为引擎级 Ability API，供“弃暗投明”等隐藏区批量替换效果使用。
+- **DSL:** `DB$ ReplaceCards`，配合 `Defined$`、`Zones$`、`ValidCards$`、`ReplacementValid$`、`MatchManaValue$ True` 与 `RememberNames$ True`。
+- **Performance:** 复用 `CardDiscoverCandidateFilter` 的轻量 `PaperCard` 过滤；静态候选条件按数据库实例、数据库大小和过滤表达式缓存为法术力值桶。首次建立只遍历一次数据库，不为未选候选创建游戏内 `Card`；同一数据库上的后续结算直接复用缓存，每张被替换牌只做对应桶的常数时间随机索引。
+- **Global name grants:** `RememberNames$ True` 将实际替换结果的内部牌名去重记录在来源牌上；永久 `Effect` 会复制这些牌名。`Card.sharesNameWith NamedCards` 使用来源牌的哈希名称集合，使指挥区徽记可持续向当前及未来出现的同名牌提供 `ManaConvert`、`ReduceCost` 等静态效果。
+- **Java implementation:** `ApiType.ReplaceCards`、`ability/effects/ReplaceCardsEffect.java`、`CardDiscoverCandidateFilter.java`、`Card.java` 与 `CardProperty.java`。
+- **Tests:** `ReplaceCardsEffectTest` 验证缓存只扫描一次、按法术力值分桶和牌名去重；`CardDiscoverEffectTest` 验证颜色条件可在轻量层精确过滤；`tests/test_renounce_darkness.py` 固定卡牌脚本与徽记契约。
