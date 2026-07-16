@@ -1,10 +1,9 @@
 Name:维希度斯的窟穴
 ManaCost:B R
 Types:Artifact
-K:Durability:2
-T:Mode$ Drawn | ValidCard$ Card.YouCtrl | TriggerZones$ Battlefield | Execute$ TrigMithril | TriggerDescription$ Whenever you draw a card, put a mithril counter on CARDNAME.
-SVar:TrigMithril:DB$ PutCounter | Defined$ Self | CounterType$ MITHRIL | CounterNum$ 1
-A:AB$ AnimateAll | Cost$ T SubCounter<4/MITHRIL> | Zone$ Hand | Duration$ Perpetual | ValidCards$ Card.YouOwn+nonLand | staticAbilities$ ReduceCost | SubAbility$ DBRemoveDurability | SpellDescription$ Spells in your hand perpetually cost {1} less to cast. Remove a durability counter from CARDNAME.
-SVar:ReduceCost:Mode$ ReduceCost | ValidCard$ Card.Self | Type$ Spell | Amount$ 1 | EffectZone$ All | Description$ This spell costs {1} less to cast.
-SVar:DBRemoveDurability:DB$ RemoveCounter | Defined$ Self | CounterType$ DURABILITY | CounterNum$ 1
-Oracle:Durability 2 (This permanent enters with two durability counters on it. When the last durability counter is removed from it, sacrifice it.)\nWhenever you draw a card, put a mithril counter on CARDNAME.\n{T}, Remove four mithril counters from CARDNAME: Spells in your hand perpetually cost {1} less to cast. Remove a durability counter from CARDNAME.
+R:Event$ Moved | ValidCard$ Card.Self | Destination$ Battlefield | ReplaceWith$ DBAddCounter | ReplacementResult$ Updated | Description$ CARDNAME enters with two depletion counters on it.
+SVar:DBAddCounter:DB$ PutCounter | Defined$ Self | ETB$ True | CounterType$ DEPLETION | CounterNum$ 2
+A:AB$ Discard | Cost$ T SubCounter<1/DEPLETION> | Defined$ You | NumCards$ 1 | Mode$ TgtChoose | SubAbility$ DBDraw | PlayerTurn$ True | SorcerySpeed$ True | SpellDescription$ 弃一张牌，抽两张牌。如果此地上没有消耗指示物，则将它牺牲。只能于你的回合中起动且只能于法术时机起动。
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 2 | SubAbility$ DBSac
+SVar:DBSac:DB$ Sacrifice | SacValid$ Self | ConditionPresent$ Card.Self+counters_EQ0_DEPLETION
+Oracle:此神器进场时上面有两个消耗指示物。\n{T}，从此神器上移去一个消耗指示物：弃一张牌，抽两张牌。如果此地上没有消耗指示物，则将它牺牲。只能于你的回合中起动且只能于法术时机起动。

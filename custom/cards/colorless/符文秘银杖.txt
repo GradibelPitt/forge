@@ -1,0 +1,10 @@
+Name:符文秘银杖
+ManaCost:3
+Types:Artifact
+K:Durability:2
+T:Mode$ Drawn | ValidCard$ Card.YouCtrl | TriggerZones$ Battlefield | Execute$ TrigMithril | TriggerDescription$ Whenever you draw a card, put a mithril counter on CARDNAME.
+SVar:TrigMithril:DB$ PutCounter | Defined$ Self | CounterType$ MITHRIL | CounterNum$ 1
+A:AB$ AnimateAll | Cost$ T SubCounter<4/MITHRIL> | Zone$ Hand | Duration$ Perpetual | ValidCards$ Card.YouOwn+nonLand | staticAbilities$ ReduceCost | SubAbility$ DBRemoveDurability | SpellDescription$ Spells in your hand perpetually cost {1} less to cast. Remove a durability counter from CARDNAME.
+SVar:ReduceCost:Mode$ ReduceCost | ValidCard$ Card.Self | Type$ Spell | Amount$ 1 | EffectZone$ All | Description$ This spell costs {1} less to cast.
+SVar:DBRemoveDurability:DB$ RemoveCounter | Defined$ Self | CounterType$ DURABILITY | CounterNum$ 1
+Oracle:Durability 2 (This permanent enters with two durability counters on it. When the last durability counter is removed from it, sacrifice it.)\nWhenever you draw a card, put a mithril counter on CARDNAME.\n{T}, Remove four mithril counters from CARDNAME: Spells in your hand perpetually cost {1} less to cast. Remove a durability counter from CARDNAME.
