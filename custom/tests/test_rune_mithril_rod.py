@@ -22,13 +22,13 @@ SOURCE_ORACLE = (
     "Durability 2 (This permanent enters with two durability counters on it. "
     "When the last durability counter is removed from it, sacrifice it.)\\n"
     "Whenever you draw a card, put a mithril counter on CARDNAME.\\n"
-    "{T}, Remove four mithril counters from CARDNAME: Spells in your hand perpetually cost {1} less to cast. "
+    "{T}, Remove two mithril counters from CARDNAME: Spells in your hand perpetually cost {1} less to cast. "
     "Remove a durability counter from CARDNAME."
 )
 ZH_ORACLE = (
     "耐久2（此永久物进战场时上面有两个耐久指示物。当最后一个耐久指示物从其上移去时，将它牺牲。）\\n"
     "每当你抓一张牌时，在符文秘银杖上放置一个秘银指示物。\\n"
-    "{T}，从符文秘银杖上移去四个秘银指示物：你手中的咒语牌永久地减少{1}来施放。"
+    "{T}，从符文秘银杖上移去两个秘银指示物：你手中的咒语牌永久地减少{1}来施放。"
     "从符文秘银杖上移去一个耐久指示物。"
 )
 
@@ -38,7 +38,7 @@ class RuneMithrilRodContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:符文秘银杖", text)
-        self.assertIn("ManaCost:3", text)
+        self.assertIn("ManaCost:1", text)
         self.assertIn("Types:Artifact", text)
         self.assertIn("K:Durability:2", text)
         self.assertIn(
@@ -52,7 +52,7 @@ class RuneMithrilRodContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn(
-            "A:AB$ AnimateAll | Cost$ T SubCounter<4/MITHRIL> | Zone$ Hand | "
+            "A:AB$ AnimateAll | Cost$ T SubCounter<2/MITHRIL> | Zone$ Hand | "
             "Duration$ Perpetual | ValidCards$ Card.YouOwn+nonLand | "
             "staticAbilities$ ReduceCost | SubAbility$ DBRemoveDurability",
             text,
