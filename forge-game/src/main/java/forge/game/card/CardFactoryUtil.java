@@ -1874,6 +1874,16 @@ public class CardFactoryUtil {
             parsedTrigger.setOverridingAbility(AbilityFactory.getAbility(effect, card));
 
             inst.addTrigger(parsedTrigger);
+        } else if (keyword.startsWith("Durability")) {
+            final String trigStr = "Mode$ CounterRemoved | TriggerZones$ Battlefield | ValidCard$ Card.Self " +
+                    "| NewCounterAmount$ 0 | CounterType$ DURABILITY | Secondary$ True " +
+                    "| TriggerDescription$ When the last durability counter is removed from CARDNAME, sacrifice it.";
+            final String effect = "DB$ Sacrifice | SacValid$ Self";
+
+            final Trigger parsedTrigger = TriggerHandler.parseTrigger(trigStr, card, intrinsic);
+            parsedTrigger.setOverridingAbility(AbilityFactory.getAbility(effect, card));
+
+            inst.addTrigger(parsedTrigger);
         } else if (keyword.startsWith("Vanishing")) {
             // Remove Time counter trigger
             final StringBuilder upkeepTrig = new StringBuilder();
@@ -2510,6 +2520,14 @@ public class CardFactoryUtil {
             ReplacementEffect cardre = createETBReplacement(card, ReplacementLayer.Other, effect, true, true, intrinsic, "Card.Self", "");
 
             inst.addReplacement(cardre);
+        } else if (keyword.startsWith("Durability:") && inst instanceof KeywordWithAmount durability) {
+            StringBuilder sb = new StringBuilder("etbCounter:DURABILITY:");
+            sb.append(durability.getAmount()).append(":no Condition:");
+            sb.append(durability.getTitle()).append(" (").append(inst.getReminderText()).append(")");
+
+            final ReplacementEffect re = makeEtbCounter(sb.toString(), card, intrinsic);
+
+            inst.addReplacement(re);
         } else if (keyword.startsWith("Vanishing:") && inst instanceof Vanishing vanishing) {
             // Vanishing could be added to a card, but this Effect should only be done when it has amount
 

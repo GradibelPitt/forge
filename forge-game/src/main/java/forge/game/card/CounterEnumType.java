@@ -135,6 +135,8 @@ public enum CounterEnumType implements CounterType {
 
     DUTY("DUTY", 232, 245, 245, CounterAiCategory.Positive),
 
+    DURABILITY("DURAB", 192, 192, 192, CounterAiCategory.Positive),
+
     ECHO("ECHO", 225, 180, 255, CounterAiCategory.Positive),
 
     EGG("EGG", 255, 245, 195, CounterAiCategory.Positive),
@@ -302,6 +304,8 @@ public enum CounterEnumType implements CounterType {
     MINING("MINNG", 184, 201, 207, CounterAiCategory.Positive),
 
     MIRE("MIRE", 153, 209, 199, CounterAiCategory.Positive),
+
+    MITHRIL("MITH", 210, 220, 230, CounterAiCategory.Positive),
 
     MUSIC("MUSIC", 255, 138, 255, CounterAiCategory.Negative),
 

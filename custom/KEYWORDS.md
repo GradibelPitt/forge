@@ -1,5 +1,13 @@
 # Forge DIY Keywords and Engine APIs
 
+## Durability
+
+- **Status:** 已实现为引擎级数值关键字。
+- **Player-facing behavior:** 具有耐久 N 的永久物进战场时上面有 N 个耐久指示物；当最后一个耐久指示物从其上移去时，将它牺牲。
+- **DSL:** `K:Durability:N`，例如 `K:Durability:2`。
+- **Java implementation:** `Keyword.java` 注册数值关键字；`CardFactoryUtil.java` 建立进场放置耐久指示物的替代式效应与最后一个耐久指示物被移去时的牺牲触发器；`CounterEnumType.java` 注册耐久与秘银指示物。
+- **Edge cases:** 耐久本身不会按回合自动移去指示物；只有其他费用或效应移去最后一个耐久指示物时才会触发牺牲。
+
 ## ColorChoice（有色费用择一减免）
 
 - **Status:** 已实现，供 `ReduceCost` 静态异能使用。
