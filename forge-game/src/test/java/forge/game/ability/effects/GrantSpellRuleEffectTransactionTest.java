@@ -155,6 +155,40 @@ public class GrantSpellRuleEffectTransactionTest {
         before.assertUnchanged(fixture.first);
     }
 
+    @Test
+    public void invalidHarmonyCombinationsFailBeforeAnyRegistryMutation() {
+        final Fixture fixture = new Fixture("invalid Harmony definitions");
+        final RegistryState before = RegistryState.capture(fixture.first);
+        final SpellAbility redundantConversion = grant(fixture,
+                "Defined$ You | RuleKey$ " + RULE_KEY + " "
+                        + "| Harmony$ True | HarmonyReduction$ 2 "
+                        + "| ManaConversion$ AnyType->AnyColor "
+                        + "| Duration$ Permanent");
+        final SpellAbility reductionWithoutHarmony = grant(fixture,
+                "Defined$ You | RuleKey$ " + RULE_KEY + " "
+                        + "| HarmonyReduction$ 2 | Duration$ Permanent");
+        final SpellAbility ambiguousLegacyReduction = grant(fixture,
+                "Defined$ You | RuleKey$ " + RULE_KEY + " "
+                        + "| Harmony$ True | HarmonyReduction$ 2 "
+                        + "| ReduceGeneric$ 2 | Duration$ Permanent");
+        final SpellAbility malformedFlag = grant(fixture,
+                "Defined$ You | RuleKey$ " + RULE_KEY + " "
+                        + "| Harmony$ Tru | Duration$ Permanent");
+
+        Assert.expectThrows(IllegalArgumentException.class,
+                redundantConversion::resolve);
+        before.assertUnchanged(fixture.first);
+        Assert.expectThrows(IllegalArgumentException.class,
+                reductionWithoutHarmony::resolve);
+        before.assertUnchanged(fixture.first);
+        Assert.expectThrows(IllegalArgumentException.class,
+                ambiguousLegacyReduction::resolve);
+        before.assertUnchanged(fixture.first);
+        Assert.expectThrows(IllegalArgumentException.class,
+                malformedFlag::resolve);
+        before.assertUnchanged(fixture.first);
+    }
+
     private static SpellAbility grant(final Fixture fixture,
                                       final String parameters) {
         final Card source = new Card(fixture.game.nextCardId(), fixture.game);

@@ -303,6 +303,15 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     private Player controller;
     private long controllerTimestamp;
     private NavigableMap<Long, Player> tempControllers = Maps.newTreeMap();
+    private Player harmonyKeywordOwner;
+    private CardState harmonyKeywordState;
+    private CardStateName harmonyKeywordStateName;
+    private long harmonyKeywordEpoch = Long.MIN_VALUE;
+    private long harmonyKeywordCharacteristicsRevision;
+    private long harmonyKeywordCachedCharacteristicsRevision = Long.MIN_VALUE;
+    private boolean harmonyKeywordGranted;
+    private boolean harmonyKeywordProjected;
+    private boolean harmonyKeywordViewProjected;
 
     private String originalText = "", text = "";
     private String chosenType = "";
@@ -463,8 +472,10 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     }
 
     public final void updateColorForView() {
+        invalidateHarmonyKeywordMatch();
         currentState.getView().updateColors(this);
         currentState.getView().updateHasChangeColors(hasChangedCardColors());
+        refreshHarmonyKeywordView();
     }
 
     public void updateAttackingForView() {
@@ -550,6 +561,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     }
 
     public void setOriginalStateAsFaceDown() {
+        invalidateHarmonyKeywordMatch();
         // For Ertai's Meddling a morph spell
         currentState = CardUtil.getFaceDownCharacteristic(this, CardStateName.Original);
         states.put(CardStateName.Original, currentState);
@@ -598,6 +610,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
             this.setCloaked(null);
         }
 
+        invalidateHarmonyKeywordMatch();
         currentStateName = state;
         currentState = getState(state);
 
@@ -639,6 +652,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         states.clear();
         states.putAll(map);
         rebuildIntrinsicStaticAbilityModes();
+        invalidateHarmonyKeywordMatch();
     }
 
     public final void addAlternateState(final CardStateName state, final boolean updateView) {
@@ -652,6 +666,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         if (states.remove(state) == null) {
             return;
         }
+        invalidateHarmonyKeywordMatch();
         if (state == currentStateName) {
             currentStateName = CardStateName.Original;
         }
@@ -2749,6 +2764,9 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
                     // need to get SpellDescription from Svar
                     String desc = AbilityFactory.getMapParams(getSVar(k[1])).get("SpellDescription");
                     sbLong.append(desc);
+                } else if (inst.getKeyword() == Keyword.HARMONY) {
+                    sbLong.append(inst.getTitle()).append("（")
+                            .append(inst.getReminderText()).append("）");
                 } else if (keyword.endsWith(".")) {
                     sbLong.append(keyword).append("\r\n");
                 } else {
@@ -3204,7 +3222,11 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
             final String keyword = inst.getOriginal();
 
             try {
-                if (keyword.equals("Ascend")  || keyword.equals("Changeling")
+                if (inst.getKeyword() == Keyword.HARMONY) {
+                    sbBefore.append(inst.getTitle()).append("（")
+                            .append(inst.getReminderText()).append("）");
+                    sbBefore.append("\r\n\r\n");
+                } else if (keyword.equals("Ascend")  || keyword.equals("Changeling")
                         || keyword.equals("Aftermath") || keyword.equals("Wither")
                         || keyword.equals("Convoke") || keyword.equals("Delve")
                         || keyword.equals("Improvise") || keyword.equals("Retrace")
@@ -3810,11 +3832,13 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
             throw new RuntimeException();
         }
         owner = owner0;
+        invalidateHarmonyKeywordMatch();
         view.updateOwner(this);
         view.updateController(this);
         if (game != null) {
             game.onCardControllerPotentiallyChanged(this);
         }
+        refreshHarmonyKeywordView();
     }
 
     public final Player getController() {
@@ -4224,6 +4248,10 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         changedCardColorsByText.clear();
         changedCardColorsCharacterDefining.clear();
         changedCardColors.clear();
+        if (changed) {
+            invalidateHarmonyKeywordMatch();
+        }
+
         return changed;
     }
 
@@ -5121,6 +5149,9 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         return hasKeyword(keyword, currentState);
     }
     public final boolean hasKeyword(Keyword key, CardState state) {
+        if (key == Keyword.HARMONY && state == currentState) {
+            synchronizeHarmonyKeywordCache();
+        }
         return state.hasKeyword(key);
     }
 
@@ -5131,6 +5162,11 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     public final boolean hasKeyword(String keyword, CardState state) {
         if (keyword.startsWith("HIDDEN")) {
             keyword = keyword.substring(7);
+        }
+
+        if (state == currentState
+                && Keyword.HARMONY.toString().equals(keyword)) {
+            synchronizeHarmonyKeywordCache();
         }
 
         // shortcut for hidden keywords
@@ -5149,6 +5185,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         getCurrentState().getView().updateKeywords(this, getCurrentState());
         // for Zilortha
         getView().updateLethalDamage(this);
+        markHarmonyKeywordViewProjected(getCurrentState());
     }
 
     public final void addChangedCardKeywords(final List<String> keywords, final List<String> removeKeywords,
@@ -5341,12 +5378,113 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
 
         keywords.applyChanges(getChangedCardKeywordsList(state));
 
+        // Player-scoped Harmony is a live game rule, not a mutation of the
+        // shared CardRules/PaperCard. Only the current face receives the
+        // visible keyword; a face switch rebuilds this cache normally.
         // remove Can't have keywords
         for (Keyword k : getCantHaveKeyword()) {
             keywords.removeAll(k);
         }
 
+        // Harmony is projected by a player-level game rule after card-layer
+        // keyword suppression. It is therefore a visible rule label, not a
+        // keyword that the affected card can lose or be forbidden from having.
+        if (state == currentState) {
+            harmonyKeywordProjected = hasOwnedHarmonyKeyword();
+            if (harmonyKeywordProjected) {
+                keywords.add(Keyword.HARMONY.toString());
+            }
+        }
+
         state.setCachedKeywords(keywords);
+    }
+
+    final void invalidateHarmonyKeywordMatch() {
+        harmonyKeywordCharacteristicsRevision++;
+        harmonyKeywordOwner = null;
+        harmonyKeywordState = null;
+        harmonyKeywordStateName = null;
+        harmonyKeywordEpoch = Long.MIN_VALUE;
+        harmonyKeywordCachedCharacteristicsRevision = Long.MIN_VALUE;
+    }
+
+    /**
+     * Rebuilds the visible keyword text only when the live player rule changes
+     * whether Harmony is projected onto this card. Hidden deck zones stay
+     * lazy; rules, costs, and mana conversion query the live value directly.
+     *
+     * @return whether this call rebuilt the current keyword view
+     */
+    public final boolean refreshHarmonyKeywordView() {
+        try {
+            return refreshHarmonyKeywordViewUnchecked();
+        } catch (final RuntimeException ex) {
+            final Player cardOwner = getOwner();
+            if (cardOwner != null) {
+                cardOwner.getSpellRuleRegistry()
+                        .recordHarmonyViewRefreshFailure(this, ex);
+            } else {
+                System.err.println("Failed to refresh Harmony view for card "
+                        + getId() + ": " + ex.getMessage());
+            }
+            return false;
+        }
+    }
+
+    private boolean refreshHarmonyKeywordViewUnchecked() {
+        final Zone zone = getZone();
+        if (zone == null || (zone.getZoneType().isHidden()
+                && !zone.is(ZoneType.Hand)
+                && !zone.is(ZoneType.ExtraHand))) {
+            return false;
+        }
+        final boolean granted = hasOwnedHarmonyKeyword();
+        if (harmonyKeywordViewProjected == granted) {
+            return false;
+        }
+        updateKeywords();
+        return true;
+    }
+
+    final void markHarmonyKeywordViewProjected(final CardState state) {
+        if (state == currentState) {
+            harmonyKeywordViewProjected = harmonyKeywordProjected;
+        }
+    }
+
+    private void synchronizeHarmonyKeywordCache() {
+        if (harmonyKeywordProjected != hasOwnedHarmonyKeyword()) {
+            updateKeywordsCache(currentState);
+        }
+    }
+
+    private boolean hasOwnedHarmonyKeyword() {
+        final Player cardOwner = getOwner();
+        if (cardOwner == null) {
+            harmonyKeywordOwner = null;
+            harmonyKeywordState = null;
+            harmonyKeywordStateName = null;
+            harmonyKeywordEpoch = Long.MIN_VALUE;
+            harmonyKeywordCachedCharacteristicsRevision = Long.MIN_VALUE;
+            harmonyKeywordGranted = false;
+            return false;
+        }
+        final long epoch = cardOwner.getSpellRuleRegistry().getHarmonyEpoch();
+        if (harmonyKeywordOwner != cardOwner || harmonyKeywordEpoch != epoch
+                || harmonyKeywordState != currentState
+                || harmonyKeywordStateName != currentStateName
+                || harmonyKeywordCachedCharacteristicsRevision
+                        != harmonyKeywordCharacteristicsRevision) {
+            harmonyKeywordOwner = cardOwner;
+            harmonyKeywordState = currentState;
+            harmonyKeywordStateName = currentStateName;
+            harmonyKeywordEpoch = epoch;
+            harmonyKeywordCachedCharacteristicsRevision =
+                    harmonyKeywordCharacteristicsRevision;
+            harmonyKeywordGranted = cardOwner.getSpellRuleRegistry()
+                    .grantsHarmony(this);
+        }
+        return harmonyKeywordGranted;
     }
     private void visitUnhiddenKeywords(CardState state, Visitor<KeywordInterface> visitor) {
         for (KeywordInterface kw : getUnhiddenKeywords(state)) {
@@ -6956,6 +7094,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         if (currentZone == zone) { return; }
         currentZone = zone;
         view.updateZone(this);
+        refreshHarmonyKeywordView();
     }
 
     public boolean isInZone(final ZoneType zone) {
@@ -8211,6 +8350,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         // clean is not needed?
         this.changedCardColors.putAll(in.changedCardColors);
         this.changedCardColorsCharacterDefining.putAll(in.changedCardColorsCharacterDefining);
+        invalidateHarmonyKeywordMatch();
 
         setChangedCardKeywords(in.getChangedCardKeywords());
         for (Table.Cell<Long, Long, List<String>> kw : in.hiddenExtrinsicKeywords.cellSet()) {

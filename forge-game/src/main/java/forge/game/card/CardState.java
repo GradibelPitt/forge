@@ -153,12 +153,14 @@ public class CardState implements GameObject, IHasSVars, ITranslatable {
 
     public void updateTypes() {
         this.changedType = getType().getTypeWithChanges(card.getChangedCardTypes());
+        card.invalidateHarmonyKeywordMatch();
         if (card.getCurrentState() == this && card.getGame() != null) {
             card.getGame().onCardTypePotentiallyChanged(card);
         }
     }
     public void updateTypesForView() {
         view.updateType(this);
+        card.refreshHarmonyKeywordView();
     }
 
     public final CardTypeView getType() {
@@ -283,11 +285,15 @@ public class CardState implements GameObject, IHasSVars, ITranslatable {
     }
     public final void addColor(final ColorSet color) {
         this.color = ColorSet.combine(this.color, color);
+        card.invalidateHarmonyKeywordMatch();
         view.updateColors(card);
+        card.refreshHarmonyKeywordView();
     }
     public final void setColor(final ColorSet color) {
         this.color = color;
+        card.invalidateHarmonyKeywordMatch();
         view.updateColors(card);
+        card.refreshHarmonyKeywordView();
     }
 
     public String getOracleText() {

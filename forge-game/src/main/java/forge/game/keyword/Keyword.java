@@ -99,6 +99,7 @@ public enum Keyword {
     GRAFT("Graft", KeywordWithAmount.class, false, "This permanent enters with {%d:+1/+1 counter} on it. Whenever another creature enters, you may move a +1/+1 counter from this permanent onto it."),
     GRAVESTORM("Gravestorm", SimpleKeyword.class, false, "When you cast this spell, copy it for each permanent that was put into a graveyard from the battlefield this turn. If the spell has any targets, you may choose new targets for any of the copies."),
     HARMONIZE("Harmonize", KeywordWithCost.class, false, "You may cast this card from your graveyard for its harmonize cost. You may tap a creature you control to reduce that cost by {X}, where X is its power. Then exile this spell."),
+    HARMONY("Harmony", HarmonyKeyword.class, true, "你可以用任意颜色的法术力支付此咒语的法术力费用"),
     HASTE("Haste", SimpleKeyword.class, true, "This creature can attack and {T} as soon as it comes under your control."),
     HAUNT("Haunt", SimpleKeyword.class, false, "When this is put into a graveyard from the battlefield, exile it haunting target creature."),
     HEXPROOF("Hexproof", Hexproof.class, true, "This can't be the target of %s spells or abilities your opponents control."),

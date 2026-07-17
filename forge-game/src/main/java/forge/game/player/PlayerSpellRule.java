@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
  * scanning battlefield or command-zone cards.</p>
  */
 public final class PlayerSpellRule {
+    public static final String HARMONY_MANA_CONVERSION = "AnyType->AnyColor";
     private static final Set<String> VALID_CARD_BASES = Set.of(
             "Card", "Spell", "Permanent", "Creature", "Artifact",
             "Enchantment", "Instant", "Sorcery", "Planeswalker", "Battle",
@@ -42,10 +43,20 @@ public final class PlayerSpellRule {
     private final String[] validSpellAbilities;
     private final int genericReduction;
     private final String manaConversion;
+    private final boolean harmony;
+    private final int harmonyReduction;
 
     PlayerSpellRule(final String key, final String validCard,
             final String validSpellAbility, final int genericReduction,
             final String manaConversion) {
+        this(key, validCard, validSpellAbility, genericReduction,
+                manaConversion, false, 0);
+    }
+
+    PlayerSpellRule(final String key, final String validCard,
+            final String validSpellAbility, final int genericReduction,
+            final String manaConversion, final boolean harmony,
+            final int harmonyReduction) {
         this.key = requireText(key, "key");
         validCards = splitRestrictions(validCard, "Card");
         validSpellAbilities = splitRestrictions(validSpellAbility, "Spell");
@@ -56,7 +67,26 @@ public final class PlayerSpellRule {
         }
         this.genericReduction = genericReduction;
         this.manaConversion = normalizeManaConversion(manaConversion);
-        if (genericReduction == 0 && this.manaConversion.isEmpty()) {
+        if (harmonyReduction < 0) {
+            throw new IllegalArgumentException(
+                    "harmonyReduction must not be negative");
+        }
+        if (!harmony && harmonyReduction != 0) {
+            throw new IllegalArgumentException(
+                    "harmonyReduction requires Harmony");
+        }
+        if (harmony && !this.manaConversion.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Harmony supplies its own mana conversion");
+        }
+        if (harmony && genericReduction != 0) {
+            throw new IllegalArgumentException(
+                    "Harmony uses HarmonyReduction, not ReduceGeneric");
+        }
+        this.harmony = harmony;
+        this.harmonyReduction = harmonyReduction;
+        if (genericReduction == 0 && this.manaConversion.isEmpty()
+                && !harmony) {
             throw new IllegalArgumentException(
                     "A player spell rule must modify cost or mana payment");
         }
@@ -80,6 +110,14 @@ public final class PlayerSpellRule {
 
     public String getManaConversion() {
         return manaConversion;
+    }
+
+    public boolean isHarmony() {
+        return harmony;
+    }
+
+    public int getHarmonyReduction() {
+        return harmonyReduction;
     }
 
     String[] getValidCardRestrictionsForCoverage() {
@@ -109,13 +147,54 @@ public final class PlayerSpellRule {
                 && sa.isValid(validSpellAbilities, player, null, sa);
     }
 
+    boolean grantsHarmony(final Player player, final Card card) {
+        if (!harmony || card == null || card.isCopiedSpell()
+                || card.getOwner() != player
+                || !card.isValid(validCards, player, null, null)) {
+            return false;
+        }
+        for (final String restriction : validSpellAbilities) {
+            if (("Spell".equals(restriction) && !card.isLand())
+                    || ("Instant".equals(restriction) && card.isInstant())
+                    || ("Sorcery".equals(restriction) && card.isSorcery())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     boolean applyManaConversion(final ManaConversionMatrix matrix,
             final Player player, final Card card, final SpellAbility sa) {
-        if (manaConversion.isEmpty() || !matches(player, card, sa)) {
+        if (harmony || manaConversion.isEmpty()
+                || !matches(player, card, sa)) {
             return false;
         }
         AbilityUtils.applyManaColorConversion(matrix, manaConversion);
         return true;
+    }
+
+    boolean applyOwnedHarmonyManaConversion(
+            final ManaConversionMatrix matrix, final Player player,
+            final Card card, final SpellAbility sa) {
+        if (!matchesOwnedHarmony(player, card, sa)) {
+            return false;
+        }
+        AbilityUtils.applyManaColorConversion(matrix,
+                HARMONY_MANA_CONVERSION);
+        return true;
+    }
+
+    boolean matchesOwnedHarmony(final Player player, final Card card,
+            final SpellAbility sa) {
+        return harmony && card != null && card.getOwner() == player
+                && sa != null && sa.isSpell()
+                && !sa.isCopied() && !card.isCopiedSpell()
+                && card.isValid(validCards, player, null, sa)
+                && sa.isValid(validSpellAbilities, player, null, sa);
+    }
+
+    private String getEffectiveManaConversion() {
+        return harmony ? HARMONY_MANA_CONVERSION : manaConversion;
     }
 
     private static String requireText(final String value, final String name) {
@@ -158,9 +237,9 @@ public final class PlayerSpellRule {
 
     private boolean coversManaConversion(final PlayerSpellRule requested) {
         final ManaConversionMatrix existingMatrix = conversionMatrix(
-                manaConversion);
+                getEffectiveManaConversion());
         final ManaConversionMatrix requestedMatrix = conversionMatrix(
-                requested.manaConversion);
+                requested.getEffectiveManaConversion());
         for (final byte source : MagicColor.WUBRGC) {
             final int existingUses = existingMatrix.getPossibleColorUses(source)
                     & 0xFF;
@@ -348,6 +427,8 @@ public final class PlayerSpellRule {
         }
         final PlayerSpellRule rule = (PlayerSpellRule) other;
         return genericReduction == rule.genericReduction
+                && harmony == rule.harmony
+                && harmonyReduction == rule.harmonyReduction
                 && key.equals(rule.key)
                 && Arrays.equals(validCards, rule.validCards)
                 && Arrays.equals(validSpellAbilities, rule.validSpellAbilities)
@@ -356,7 +437,8 @@ public final class PlayerSpellRule {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(key, genericReduction, manaConversion);
+        int result = Objects.hash(key, genericReduction, manaConversion,
+                harmony, harmonyReduction);
         result = 31 * result + Arrays.hashCode(validCards);
         result = 31 * result + Arrays.hashCode(validSpellAbilities);
         return result;

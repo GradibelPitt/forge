@@ -10,6 +10,7 @@ import forge.game.ability.AbilityFactory;
 import forge.game.card.Card;
 import forge.game.card.CardState;
 import forge.game.event.Event;
+import forge.game.keyword.Keyword;
 import forge.game.mana.Mana;
 import forge.game.mana.ManaCostBeingPaid;
 import forge.game.player.Player;
@@ -38,18 +39,20 @@ public class ManaPaymentPreviewTest extends AITest {
     private static final String RULE_KEY = "test:mana-preview-harmony";
 
     @Test
-    public void floatingPlayerRulePreviewIsPureAndPaysBlueWithRed() {
+    public void floatingHarmonyPreviewIsPureAndPaysReducedOneBlueBlueWithRed() {
         final Game game = initAndCreateGame();
         final Player payer = game.getPlayers().get(1);
-        final Card spellCard = spellCard(payer, "Preview Converted Spell",
-                "U");
+        final Card spellCard = spellCard(payer, "Preview Harmony Spell",
+                "1 U U");
         final SpellAbility spell = spellCard.getSpellAbilities().getFirst();
         spell.setActivatingPlayer(payer);
         payer.getSpellRuleRegistry().register(RULE_KEY,
-                "Card.nonColorless", "Spell", 0, "AnyType->AnyColor");
+                "Card.nonColorless", "Spell", 0, "", true, 2);
 
-        final ManaCostBeingPaid adjusted = new ManaCostBeingPaid(
-                new ManaCost("U"));
+        final ManaCostBeingPaid adjusted = ComputerUtilMana.calculateManaCost(
+                spell.getPayCosts(), spell, payer, true, 0, false);
+        Assert.assertEquals(adjusted.toString(), "{1}");
+        Assert.assertTrue(spellCard.hasKeyword(Keyword.HARMONY));
 
         final Card mountain = detachedCard(9_001, payer, "Preview Mountain");
         final Mana red = new Mana((byte) ManaAtom.RED, mountain, null, payer);
@@ -85,13 +88,43 @@ public class ManaPaymentPreviewTest extends AITest {
                 first.getFloatingManaUsed());
         Assert.assertEquals(second.getSources().get(0).getCardId(),
                 first.getSources().get(0).getCardId());
-        Assert.assertEquals(adjusted.toString(), "{U}");
+        Assert.assertEquals(adjusted.toString(), "{1}");
         assertPoolUnchanged(payer, poolBefore, matrixBefore, snowBefore);
         Assert.assertEquals(events.gameEvents.get(), 0);
         Assert.assertEquals(spell.getPayingMana(), payingBefore);
         Assert.assertEquals(spell.getXManaCostPaid(), xBefore);
         Assert.assertEquals(spell.getSpendPhyrexianMana(), phyrexianBefore);
         Assert.assertSame(spell.getActivatingPlayer(), activatorBefore);
+    }
+
+    @Test
+    public void borrowedSpellPreviewUsesOwnerHarmonyConversion() {
+        final Game game = initAndCreateGame();
+        final Player owner = game.getPlayers().get(0);
+        final Player payer = game.getPlayers().get(1);
+        final Card spellCard = spellCard(owner, "Borrowed Harmony Preview",
+                "U");
+        final SpellAbility spell = spellCard.getSpellAbilities().getFirst();
+        spell.setActivatingPlayer(payer);
+        owner.getSpellRuleRegistry().register(
+                RULE_KEY + ":borrowed-owner", "Card.nonColorless", "Spell",
+                0, "", true, 0);
+
+        final Card mountain = detachedCard(9_002, payer,
+                "Borrowed Preview Mountain");
+        payer.getManaPool().addMana(new Mana((byte) ManaAtom.RED, mountain,
+                null, payer));
+
+        final ManaPaymentPreview.Result preview = ManaPaymentPreview.preview(
+                new ManaCostBeingPaid(new ManaCost("U")), spell, payer,
+                false);
+
+        Assert.assertEquals(preview.getStatus(),
+                ManaPaymentPreview.Status.ADVISORY_PAYABLE);
+        Assert.assertEquals(preview.getFloatingManaUsed(), 1);
+        Assert.assertEquals(preview.getSources().get(0).getCardId(),
+                mountain.getId());
+        Assert.assertEquals(preview.getStaticModeSourcesVisited(), 0);
     }
 
     @Test
@@ -593,7 +626,7 @@ public class ManaPaymentPreviewTest extends AITest {
         payer.getManaPool().addMana(new Mana((byte) ManaAtom.RED, mountain,
                 null, payer));
         payer.getSpellRuleRegistry().register(RULE_KEY + ":effect",
-                "Card.nonColorless", "Spell", 0, "AnyType->AnyColor");
+                "Card.nonColorless", "Spell", 0, "", true, 2);
         final ManaCostBeingPaid blue = new ManaCostBeingPaid(
                 new ManaCost("U"));
         Assert.assertEquals(ManaPaymentPreview.preview(blue, spell, payer,

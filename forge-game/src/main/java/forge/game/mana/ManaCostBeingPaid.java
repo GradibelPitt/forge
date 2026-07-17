@@ -272,6 +272,53 @@ public class ManaCostBeingPaid {
         decreaseShard(ManaCostShard.GENERIC, manaToSubtract);
     }
 
+    /**
+     * Applies the DIY Harmony reduction. Each point first removes one
+     * non-X mana symbol with at least one colored payment option, in stable
+     * {@link ManaCostShard} declaration order. Any remainder removes only
+     * the same generic-reduction path used elsewhere by Forge. An unresolved
+     * X or COLORED_X symbol is preserved; once X has been chosen and expanded
+     * into payable amounts, that amount can be reduced normally. Snow and pure
+     * colorless are preserved.
+     *
+     * @param manaToSubtract maximum number of Harmony reduction points
+     */
+    public final void decreaseHarmonyMana(final int manaToSubtract) {
+        if (manaToSubtract <= 0) {
+            return;
+        }
+
+        int remaining = manaToSubtract;
+        for (final ManaCostShard shard : ManaCostShard.values()) {
+            if (remaining == 0) {
+                break;
+            }
+            if (shard == ManaCostShard.GENERIC
+                    || shard == ManaCostShard.X
+                    || shard == ManaCostShard.COLORED_X
+                    || shard.isSnow()
+                    || shard.getColorMask() == 0) {
+                continue;
+            }
+            final ShardCount count = unpaidShards.get(shard);
+            if (count == null) {
+                continue;
+            }
+            final int reducible = count.totalCount - count.xCount;
+            if (reducible <= 0) {
+                continue;
+            }
+            final int remove = Math.min(remaining, reducible);
+            decreaseShard(shard, remove);
+            remaining -= remove;
+        }
+
+        if (remaining == 0) {
+            return;
+        }
+        decreaseGenericMana(remaining);
+    }
+
     public final void decreaseShard(final ManaCostShard shard, final int manaToSubtract) {
         if (manaToSubtract <= 0) {
             return;

@@ -57,10 +57,12 @@ class RenounceDarknessContractTest(unittest.TestCase):
             "SVar:GrantHarmonyRule:DB$ GrantSpellRule | Defined$ You | "
             "RuleKey$ RenounceDarkness.ColoredSpells | "
             "ValidCards$ Card.nonColorless | ValidSA$ Spell | "
-            "ReduceGeneric$ 2 | ManaConversion$ AnyType->AnyColor | "
+            "Harmony$ True | HarmonyReduction$ 2 | "
             "Duration$ Permanent",
             text,
         )
+        self.assertNotIn("ReduceGeneric$", text)
+        self.assertNotIn("ManaConversion$", text)
         self.assertNotIn("Stacking$", text)
         self.assertNotIn("DB$ Effect", text)
         self.assertNotIn("Mode$ ManaConvert", text)

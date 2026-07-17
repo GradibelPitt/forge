@@ -1151,6 +1151,7 @@ public class CardView extends GameEntityView {
             }
             alternateState.getView().updateKeywords(c, alternateState);
         }
+        c.markHarmonyKeywordViewProjected(currentState);
     }
 
     public int getHiddenId() {

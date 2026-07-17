@@ -38,6 +38,28 @@ public class GrantSpellRuleEffect extends SpellAbilityEffect {
         final int genericReduction = sa.hasParam("ReduceGeneric")
                 ? AbilityUtils.calculateAmount(host, sa.getParam("ReduceGeneric"), sa) : 0;
         final String manaConversion = sa.getParamOrDefault("ManaConversion", "");
+        final String harmonyValue = sa.getParamOrDefault("Harmony", "False");
+        if (!"true".equalsIgnoreCase(harmonyValue)
+                && !"false".equalsIgnoreCase(harmonyValue)) {
+            throw new IllegalArgumentException(
+                    "GrantSpellRule Harmony must be True or False");
+        }
+        final boolean harmony = Boolean.parseBoolean(harmonyValue);
+        if (harmony && sa.hasParam("ManaConversion")) {
+            throw new IllegalArgumentException(
+                    "GrantSpellRule Harmony supplies its own mana conversion");
+        }
+        if (harmony && sa.hasParam("ReduceGeneric")) {
+            throw new IllegalArgumentException(
+                    "GrantSpellRule Harmony uses HarmonyReduction, not ReduceGeneric");
+        }
+        if (!harmony && sa.hasParam("HarmonyReduction")) {
+            throw new IllegalArgumentException(
+                    "GrantSpellRule HarmonyReduction requires Harmony$ True");
+        }
+        final int harmonyReduction = sa.hasParam("HarmonyReduction")
+                ? AbilityUtils.calculateAmount(host,
+                        sa.getParam("HarmonyReduction"), sa) : 0;
         final String stackingValue = sa.getParamOrDefault("Stacking", "False");
         if (!"true".equalsIgnoreCase(stackingValue)
                 && !"false".equalsIgnoreCase(stackingValue)) {
@@ -47,7 +69,8 @@ public class GrantSpellRuleEffect extends SpellAbilityEffect {
         final boolean stacking = Boolean.parseBoolean(stackingValue);
 
         PlayerSpellRuleRegistry.validateRuleDefinition(ruleKey, validCards,
-                validSpellAbilities, genericReduction, manaConversion);
+                validSpellAbilities, genericReduction, manaConversion,
+                harmony, harmonyReduction);
         final Set<Player> players = new LinkedHashSet<>();
         for (final Player player : getDefinedPlayersOrTargeted(sa)) {
             if (player == null || !player.isInGame()) {
@@ -58,28 +81,47 @@ public class GrantSpellRuleEffect extends SpellAbilityEffect {
 
         // Forge resolves effects on one game thread. Preflight every target
         // before the first write so a conflict cannot leave a partial grant.
+        final Set<Player> refreshPlayers = new LinkedHashSet<>();
         for (final Player player : players) {
             if (stacking) {
                 player.getSpellRuleRegistry().validateStackingRegistration(
                         ruleKey, validCards, validSpellAbilities,
-                        genericReduction, manaConversion);
+                        genericReduction, manaConversion, harmony,
+                        harmonyReduction);
+                if (harmony && (!player.getSpellRuleRegistry()
+                        .hasHarmonyCoverage(validCards, validSpellAbilities)
+                        || player.getSpellRuleRegistry()
+                                .hasPendingHarmonyViewRefresh())) {
+                    refreshPlayers.add(player);
+                }
             } else {
-                player.getSpellRuleRegistry().validateRegistration(ruleKey,
-                        validCards, validSpellAbilities, genericReduction,
-                        manaConversion);
+                final boolean addsRule = player.getSpellRuleRegistry()
+                        .wouldAddRegistration(ruleKey, validCards,
+                                validSpellAbilities, genericReduction,
+                                manaConversion, harmony, harmonyReduction);
+                if (harmony && ((addsRule && !player.getSpellRuleRegistry()
+                        .hasHarmonyCoverage(validCards, validSpellAbilities))
+                        || player.getSpellRuleRegistry()
+                                .hasPendingHarmonyViewRefresh())) {
+                    refreshPlayers.add(player);
+                }
             }
         }
 
         for (final Player player : players) {
             if (stacking) {
-                player.getSpellRuleRegistry().registerStacking(ruleKey,
+                player.getSpellRuleRegistry().registerStackingAfterPreflight(
+                        ruleKey,
                         validCards, validSpellAbilities, genericReduction,
-                        manaConversion);
+                        manaConversion, harmony, harmonyReduction);
             } else {
-                player.getSpellRuleRegistry().register(ruleKey,
+                player.getSpellRuleRegistry().registerAfterPreflight(ruleKey,
                         validCards, validSpellAbilities, genericReduction,
-                        manaConversion);
+                        manaConversion, harmony, harmonyReduction);
             }
+        }
+        for (final Player player : refreshPlayers) {
+            player.getSpellRuleRegistry().refreshCardViews();
         }
     }
 }

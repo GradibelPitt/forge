@@ -9,6 +9,7 @@ import forge.game.ability.AbilityUtils;
 import forge.game.ability.ApiType;
 import forge.game.card.Card;
 import forge.game.card.CardCollectionView;
+import forge.game.keyword.Keyword;
 import forge.game.mana.Mana;
 import forge.game.mana.ManaCostBeingPaid;
 import forge.game.player.PlaySpellAbility;
@@ -67,6 +68,8 @@ public class RenounceDarknessEndToEndTest extends AITest {
         assertEquivalentReplacement(handReplacement, handOriginal, handManaValue);
         assertEquivalentReplacement(
                 libraryReplacement, libraryOriginal, libraryManaValue);
+        Assert.assertTrue(handReplacement.hasKeyword(Keyword.HARMONY));
+        Assert.assertTrue(libraryReplacement.hasKeyword(Keyword.HARMONY));
         Assert.assertSame(libraryAfterFirstResolve.get(0), libraryBefore);
         Assert.assertSame(libraryAfterFirstResolve.get(2), libraryAfter);
         Assert.assertEquals(player.getSpellRuleRegistry().size(), 1);
@@ -88,7 +91,7 @@ public class RenounceDarknessEndToEndTest extends AITest {
         final Card ponder = addCardToZone("Ponder", player, ZoneType.Hand);
         final SpellAbility ponderSpell = ponder.getSpellAbilities().getFirst();
         ponderSpell.setActivatingPlayer(player);
-        addFloatingMana(player, ManaAtom.RED, "Mountain");
+        Assert.assertTrue(ponder.hasKeyword(Keyword.HARMONY));
 
         Assert.assertTrue(PlaySpellAbility.playSpellAbility(
                 player.getController(), player, ponderSpell));
@@ -96,9 +99,7 @@ public class RenounceDarknessEndToEndTest extends AITest {
         Assert.assertEquals(game.getStack().peekAbility()
                 .getHostCard().getName(), ponder.getName());
         Assert.assertEquals(player.getManaPool().totalMana(), 0);
-        Assert.assertEquals(game.getStack().peekAbility().getPayingMana().size(), 1);
-        Assert.assertEquals(game.getStack().peekAbility().getPayingMana()
-                .get(0).getColor(), (byte) ManaAtom.RED);
+        Assert.assertTrue(game.getStack().peekAbility().getPayingMana().isEmpty());
     }
 
     @Test
@@ -115,12 +116,13 @@ public class RenounceDarknessEndToEndTest extends AITest {
         final SpellAbility divinationSpell = divination
                 .getSpellAbilities().getFirst();
         divinationSpell.setActivatingPlayer(player);
-        addFloatingMana(player, ManaAtom.BLUE, "Island");
+        addFloatingMana(player, ManaAtom.RED, "Mountain");
         final ManaCostBeingPaid estimated = ComputerUtilMana.calculateManaCost(
                 divinationSpell.getPayCosts(), divinationSpell,
                 player, true, 0, false);
 
-        Assert.assertEquals(estimated.toString(), "{U}");
+        Assert.assertEquals(estimated.toString(), "{1}");
+        Assert.assertTrue(divination.hasKeyword(Keyword.HARMONY));
         Assert.assertTrue(PlaySpellAbility.playSpellAbility(
                 player.getController(), player, divinationSpell));
         Assert.assertFalse(game.getStack().isEmpty());
@@ -129,7 +131,7 @@ public class RenounceDarknessEndToEndTest extends AITest {
         Assert.assertEquals(player.getManaPool().totalMana(), 0);
         Assert.assertEquals(game.getStack().peekAbility().getPayingMana().size(), 1);
         Assert.assertEquals(game.getStack().peekAbility().getPayingMana()
-                .get(0).getColor(), (byte) ManaAtom.BLUE);
+                .get(0).getColor(), (byte) ManaAtom.RED);
     }
 
     @Test

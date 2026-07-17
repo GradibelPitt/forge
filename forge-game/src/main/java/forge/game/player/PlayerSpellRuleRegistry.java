@@ -3,17 +3,32 @@ package forge.game.player;
 import forge.game.card.Card;
 import forge.game.mana.ManaConversionMatrix;
 import forge.game.spellability.SpellAbility;
+import forge.game.zone.ZoneType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /** Stores source-independent spell rules for one player for the current game. */
 public final class PlayerSpellRuleRegistry {
+    private static final Set<ZoneType> HARMONY_EAGER_VIEW_ZONES =
+            Collections.unmodifiableSet(EnumSet.of(
+                    ZoneType.Hand, ZoneType.Graveyard, ZoneType.Battlefield,
+                    ZoneType.Exile, ZoneType.Command, ZoneType.Stack,
+                    ZoneType.Ante, ZoneType.Merged, ZoneType.Junkyard));
     private final Player owner;
     private final Map<String, PlayerSpellRule> rules = new LinkedHashMap<>();
     private long stackingSequence;
+    private long harmonyEpoch;
+    private int lastHarmonyViewRefreshCount;
+    private int lastHarmonyViewRefreshFailureCount;
+    private long harmonyViewScannedCardCount;
+    private boolean harmonyViewRefreshPending;
 
     PlayerSpellRuleRegistry(final Player owner) {
         this.owner = owner;
@@ -26,17 +41,50 @@ public final class PlayerSpellRuleRegistry {
     public PlayerSpellRule register(final String stableKey,
             final String validCard, final String validSpellAbility,
             final int genericReduction, final String manaConversion) {
+        return register(stableKey, validCard, validSpellAbility,
+                genericReduction, manaConversion, false, 0);
+    }
+
+    public PlayerSpellRule register(final String stableKey,
+            final String validCard, final String validSpellAbility,
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction) {
         final PlayerSpellRule candidate = new PlayerSpellRule(stableKey,
-                validCard, validSpellAbility, genericReduction, manaConversion);
-        return registerCandidate(candidate);
+                validCard, validSpellAbility, genericReduction, manaConversion,
+                harmony, harmonyReduction);
+        return registerCandidate(candidate, true);
+    }
+
+    /**
+     * Commits a registration already preflighted by a transactional effect.
+     * Card views are deliberately refreshed only after every target registry
+     * has committed, so view work cannot turn a multi-player grant into a
+     * partial registry update.
+     */
+    public PlayerSpellRule registerAfterPreflight(final String stableKey,
+            final String validCard, final String validSpellAbility,
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction) {
+        final PlayerSpellRule candidate = new PlayerSpellRule(stableKey,
+                validCard, validSpellAbility, genericReduction, manaConversion,
+                harmony, harmonyReduction);
+        return registerCandidate(candidate, false);
     }
 
     /** Validates a stable registration without mutating this registry. */
     public void validateRegistration(final String stableKey,
             final String validCard, final String validSpellAbility,
             final int genericReduction, final String manaConversion) {
+        validateRegistration(stableKey, validCard, validSpellAbility,
+                genericReduction, manaConversion, false, 0);
+    }
+
+    public void validateRegistration(final String stableKey,
+            final String validCard, final String validSpellAbility,
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction) {
         wouldAddRegistration(stableKey, validCard, validSpellAbility,
-                genericReduction, manaConversion);
+                genericReduction, manaConversion, harmony, harmonyReduction);
     }
 
     /**
@@ -46,8 +94,17 @@ public final class PlayerSpellRuleRegistry {
     public boolean wouldAddRegistration(final String stableKey,
             final String validCard, final String validSpellAbility,
             final int genericReduction, final String manaConversion) {
+        return wouldAddRegistration(stableKey, validCard, validSpellAbility,
+                genericReduction, manaConversion, false, 0);
+    }
+
+    public boolean wouldAddRegistration(final String stableKey,
+            final String validCard, final String validSpellAbility,
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction) {
         final PlayerSpellRule candidate = new PlayerSpellRule(stableKey,
-                validCard, validSpellAbility, genericReduction, manaConversion);
+                validCard, validSpellAbility, genericReduction, manaConversion,
+                harmony, harmonyReduction);
         validateCandidate(candidate);
         return !rules.containsKey(candidate.getKey());
     }
@@ -71,7 +128,34 @@ public final class PlayerSpellRuleRegistry {
                 : probe.getValidCardRestrictionsForCoverage()) {
             boolean covered = false;
             for (final PlayerSpellRule rule : rules.values()) {
-                if (rule.coversPaymentScope(probe,
+                if (!rule.isHarmony() && rule.coversPaymentScope(probe,
+                        requestedCardRestriction)) {
+                    covered = true;
+                    break;
+                }
+            }
+            if (!covered) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Reports whether an existing visible Harmony grant covers the requested
+     * safe card and spell scope. A plain mana-conversion rule is deliberately
+     * not treated as Harmony because it does not grant the visible keyword.
+     */
+    public boolean hasHarmonyCoverage(final String validCard,
+            final String validSpellAbility) {
+        final PlayerSpellRule probe = new PlayerSpellRule(
+                "harmony-coverage-probe", validCard, validSpellAbility,
+                0, "", true, 0);
+        for (final String requestedCardRestriction
+                : probe.getValidCardRestrictionsForCoverage()) {
+            boolean covered = false;
+            for (final PlayerSpellRule rule : rules.values()) {
+                if (rule.isHarmony() && rule.coversPaymentScope(probe,
                         requestedCardRestriction)) {
                     covered = true;
                     break;
@@ -88,16 +172,41 @@ public final class PlayerSpellRuleRegistry {
     public static void validateRuleDefinition(final String stableKey,
             final String validCard, final String validSpellAbility,
             final int genericReduction, final String manaConversion) {
-        new PlayerSpellRule(stableKey, validCard, validSpellAbility,
-                genericReduction, manaConversion);
+        validateRuleDefinition(stableKey, validCard, validSpellAbility,
+                genericReduction, manaConversion, false, 0);
     }
 
-    private PlayerSpellRule registerCandidate(final PlayerSpellRule candidate) {
+    public static void validateRuleDefinition(final String stableKey,
+            final String validCard, final String validSpellAbility,
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction) {
+        new PlayerSpellRule(stableKey, validCard, validSpellAbility,
+                genericReduction, manaConversion, harmony, harmonyReduction);
+    }
+
+    private PlayerSpellRule registerCandidate(final PlayerSpellRule candidate,
+            final boolean refreshViews) {
         validateCandidate(candidate);
         final PlayerSpellRule existing = rules.get(candidate.getKey());
         if (existing == null) {
+            final boolean expandsHarmonyVisibility = candidate.isHarmony()
+                    && !hasHarmonyCoverage(
+                            candidate.getValidCardRestriction(),
+                            candidate.getValidSpellAbilityRestriction());
             rules.put(candidate.getKey(), candidate);
+            if (expandsHarmonyVisibility) {
+                advanceHarmonyEpoch();
+            }
+            if (candidate.isHarmony() && refreshViews
+                    && (expandsHarmonyVisibility
+                            || harmonyViewRefreshPending)) {
+                refreshCardViews();
+            }
             return candidate;
+        }
+        if (candidate.isHarmony() && refreshViews
+                && harmonyViewRefreshPending) {
+            refreshCardViews();
         }
         return existing;
     }
@@ -114,10 +223,46 @@ public final class PlayerSpellRuleRegistry {
     public PlayerSpellRule registerStacking(final String baseKey,
             final String validCard, final String validSpellAbility,
             final int genericReduction, final String manaConversion) {
+        return registerStacking(baseKey, validCard, validSpellAbility,
+                genericReduction, manaConversion, false, 0);
+    }
+
+    public PlayerSpellRule registerStacking(final String baseKey,
+            final String validCard, final String validSpellAbility,
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction) {
         final PlayerSpellRule candidate = prepareStackingRegistration(baseKey,
-                validCard, validSpellAbility, genericReduction, manaConversion);
+                validCard, validSpellAbility, genericReduction, manaConversion,
+                harmony, harmonyReduction);
+        final boolean expandsHarmonyVisibility = candidate.isHarmony()
+                && !hasHarmonyCoverage(validCard, validSpellAbility);
         rules.put(candidate.getKey(), candidate);
         stackingSequence++;
+        if (expandsHarmonyVisibility) {
+            advanceHarmonyEpoch();
+        }
+        if (candidate.isHarmony() && (expandsHarmonyVisibility
+                || harmonyViewRefreshPending)) {
+            refreshCardViews();
+        }
+        return candidate;
+    }
+
+    /** See {@link #registerAfterPreflight}. */
+    public PlayerSpellRule registerStackingAfterPreflight(final String baseKey,
+            final String validCard, final String validSpellAbility,
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction) {
+        final PlayerSpellRule candidate = prepareStackingRegistration(baseKey,
+                validCard, validSpellAbility, genericReduction, manaConversion,
+                harmony, harmonyReduction);
+        final boolean expandsHarmonyVisibility = candidate.isHarmony()
+                && !hasHarmonyCoverage(validCard, validSpellAbility);
+        rules.put(candidate.getKey(), candidate);
+        stackingSequence++;
+        if (expandsHarmonyVisibility) {
+            advanceHarmonyEpoch();
+        }
         return candidate;
     }
 
@@ -125,13 +270,22 @@ public final class PlayerSpellRuleRegistry {
     public void validateStackingRegistration(final String baseKey,
             final String validCard, final String validSpellAbility,
             final int genericReduction, final String manaConversion) {
+        validateStackingRegistration(baseKey, validCard, validSpellAbility,
+                genericReduction, manaConversion, false, 0);
+    }
+
+    public void validateStackingRegistration(final String baseKey,
+            final String validCard, final String validSpellAbility,
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction) {
         prepareStackingRegistration(baseKey, validCard, validSpellAbility,
-                genericReduction, manaConversion);
+                genericReduction, manaConversion, harmony, harmonyReduction);
     }
 
     private PlayerSpellRule prepareStackingRegistration(final String baseKey,
             final String validCard, final String validSpellAbility,
-            final int genericReduction, final String manaConversion) {
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction) {
         if (baseKey == null || baseKey.trim().isEmpty()) {
             throw new IllegalArgumentException("baseKey must not be blank");
         }
@@ -141,7 +295,8 @@ public final class PlayerSpellRuleRegistry {
         final long nextSequence = stackingSequence + 1;
         final String uniqueKey = baseKey.trim() + "#" + nextSequence;
         final PlayerSpellRule candidate = new PlayerSpellRule(uniqueKey,
-                validCard, validSpellAbility, genericReduction, manaConversion);
+                validCard, validSpellAbility, genericReduction, manaConversion,
+                harmony, harmonyReduction);
         if (rules.containsKey(uniqueKey)) {
             throw new IllegalStateException(
                     "Player spell rule stacking key already exists: " + uniqueKey);
@@ -162,11 +317,64 @@ public final class PlayerSpellRuleRegistry {
         return (int) total;
     }
 
+    public int getHarmonyReduction(final Card card, final SpellAbility sa) {
+        long total = 0;
+        for (final PlayerSpellRule rule : rules.values()) {
+            if (rule.getHarmonyReduction() > 0
+                    && rule.matchesOwnedHarmony(owner, card, sa)) {
+                total += rule.getHarmonyReduction();
+                if (total >= Integer.MAX_VALUE) {
+                    return Integer.MAX_VALUE;
+                }
+            }
+        }
+        return (int) total;
+    }
+
+    /** Returns whether the card currently receives the visible Harmony keyword. */
+    public boolean grantsHarmony(final Card card) {
+        for (final PlayerSpellRule rule : rules.values()) {
+            if (rule.grantsHarmony(owner, card)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean hasHarmonyRules() {
+        for (final PlayerSpellRule rule : rules.values()) {
+            if (rule.isHarmony()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public long getHarmonyEpoch() {
+        return harmonyEpoch;
+    }
+
+    /** Returns whether a prior visible Harmony projection needs retrying. */
+    public boolean hasPendingHarmonyViewRefresh() {
+        return harmonyViewRefreshPending;
+    }
+
     public boolean applyManaConversion(final ManaConversionMatrix matrix,
             final Card card, final SpellAbility sa) {
         boolean changed = false;
         for (final PlayerSpellRule rule : rules.values()) {
             changed |= rule.applyManaConversion(matrix, owner, card, sa);
+        }
+        return changed;
+    }
+
+    public boolean applyOwnedHarmonyManaConversion(
+            final ManaConversionMatrix matrix, final Card card,
+            final SpellAbility sa) {
+        boolean changed = false;
+        for (final PlayerSpellRule rule : rules.values()) {
+            changed |= rule.applyOwnedHarmonyManaConversion(matrix, owner,
+                    card, sa);
         }
         return changed;
     }
@@ -180,8 +388,14 @@ public final class PlayerSpellRuleRegistry {
     }
 
     public void clear() {
+        final boolean refresh = hasHarmonyRules()
+                || harmonyViewRefreshPending;
         rules.clear();
         stackingSequence = 0;
+        if (refresh) {
+            advanceHarmonyEpoch();
+            refreshCardViews();
+        }
     }
 
     public void copyFrom(final PlayerSpellRuleRegistry source) {
@@ -189,11 +403,20 @@ public final class PlayerSpellRuleRegistry {
             throw new IllegalArgumentException("source registry must not be null");
         }
         if (source == this) {
+            if (harmonyViewRefreshPending) {
+                refreshCardViews();
+            }
             return;
         }
-        clear();
+        final boolean refresh = hasHarmonyRules()
+                || source.hasHarmonyRules() || harmonyViewRefreshPending;
+        rules.clear();
         rules.putAll(source.rules);
         stackingSequence = source.stackingSequence;
+        if (refresh) {
+            advanceHarmonyEpoch();
+            refreshCardViews();
+        }
     }
 
     /** Encodes the registry for developer snapshots and puzzle game states. */
@@ -209,7 +432,9 @@ public final class PlayerSpellRuleRegistry {
                     .append(encode(rule.getValidCardRestriction())).append(',')
                     .append(encode(rule.getValidSpellAbilityRestriction())).append(',')
                     .append(rule.getGenericReduction()).append(',')
-                    .append(encode(rule.getManaConversion()));
+                    .append(encode(rule.getManaConversion())).append(',')
+                    .append(rule.isHarmony()).append(',')
+                    .append(rule.getHarmonyReduction());
         }
         return result.toString();
     }
@@ -234,7 +459,7 @@ public final class PlayerSpellRuleRegistry {
         final Map<String, PlayerSpellRule> restored = new LinkedHashMap<>();
         for (int i = 1; i < entries.length; i++) {
             final String[] fields = entries[i].split(",", -1);
-            if (fields.length != 5) {
+            if (fields.length != 5 && fields.length != 7) {
                 throw new IllegalArgumentException("Invalid player spell rule state entry");
             }
             final int reduction;
@@ -243,17 +468,119 @@ public final class PlayerSpellRuleRegistry {
             } catch (final NumberFormatException ex) {
                 throw new IllegalArgumentException("Invalid player spell rule reduction", ex);
             }
+            final boolean harmony;
+            final int harmonyReduction;
+            if (fields.length == 5) {
+                harmony = false;
+                harmonyReduction = 0;
+            } else {
+                if (!"true".equals(fields[5]) && !"false".equals(fields[5])) {
+                    throw new IllegalArgumentException(
+                            "Invalid player spell rule Harmony flag");
+                }
+                harmony = Boolean.parseBoolean(fields[5]);
+                try {
+                    harmonyReduction = Integer.parseInt(fields[6]);
+                } catch (final NumberFormatException ex) {
+                    throw new IllegalArgumentException(
+                            "Invalid player spell rule Harmony reduction", ex);
+                }
+            }
             final PlayerSpellRule rule = new PlayerSpellRule(
                     decode(fields[0]), decode(fields[1]), decode(fields[2]),
-                    reduction, decode(fields[4]));
+                    reduction, decode(fields[4]), harmony, harmonyReduction);
             if (restored.putIfAbsent(rule.getKey(), rule) != null) {
                 throw new IllegalArgumentException("Duplicate player spell rule key: "
                         + rule.getKey());
             }
         }
+        final boolean refresh = hasHarmonyRules()
+                || restored.values().stream().anyMatch(PlayerSpellRule::isHarmony)
+                || harmonyViewRefreshPending;
         rules.clear();
         rules.putAll(restored);
         stackingSequence = restoredSequence;
+        if (refresh) {
+            advanceHarmonyEpoch();
+            refreshCardViews();
+        }
+    }
+
+    /**
+     * Rebuilds only cards that can currently need an eager visible update.
+     * Hidden libraries and sideboards are intentionally left lazy; live
+     * keyword queries use the Harmony epoch and remain correct without view
+     * materialization. This never accesses the card database.
+     */
+    public void refreshCardViews() {
+        lastHarmonyViewRefreshCount = 0;
+        lastHarmonyViewRefreshFailureCount = 0;
+        if (owner == null || owner.getGame() == null) {
+            harmonyViewRefreshPending = false;
+            return;
+        }
+        final Set<Card> cards = Collections.newSetFromMap(
+                new IdentityHashMap<>());
+        try {
+            cards.addAll(owner.getGame().getCardsInOwnedBy(
+                    HARMONY_EAGER_VIEW_ZONES, owner));
+            for (final Player player : owner.getGame().getPlayers()) {
+                if (player.getExtraZones() == null) {
+                    continue;
+                }
+                for (final forge.game.zone.PlayerZone zone
+                        : player.getExtraZones()) {
+                    if (zone.is(ZoneType.ExtraHand)) {
+                        for (final Card card : zone) {
+                            if (card.getOwner() == owner) {
+                                cards.add(card);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (final RuntimeException ex) {
+            recordHarmonyViewRefreshFailure(null, ex);
+            harmonyViewRefreshPending = true;
+            return;
+        }
+        for (final Card card : cards) {
+            harmonyViewScannedCardCount++;
+            try {
+                if (card.refreshHarmonyKeywordView()) {
+                    lastHarmonyViewRefreshCount++;
+                }
+            } catch (final RuntimeException ex) {
+                recordHarmonyViewRefreshFailure(card, ex);
+            }
+        }
+        harmonyViewRefreshPending = lastHarmonyViewRefreshFailureCount > 0;
+    }
+
+    int getLastHarmonyViewRefreshCount() {
+        return lastHarmonyViewRefreshCount;
+    }
+
+    int getLastHarmonyViewRefreshFailureCount() {
+        return lastHarmonyViewRefreshFailureCount;
+    }
+
+    long getHarmonyViewScannedCardCount() {
+        return harmonyViewScannedCardCount;
+    }
+
+    /** Records a non-fatal view failure for a later idempotent retry. */
+    public void recordHarmonyViewRefreshFailure(final Card card,
+            final RuntimeException ex) {
+        lastHarmonyViewRefreshFailureCount++;
+        harmonyViewRefreshPending = true;
+        System.err.println("Failed to refresh Harmony view"
+                + (card == null ? "" : " for card " + card.getId())
+                + ": " + ex.getMessage());
+    }
+
+    private void advanceHarmonyEpoch() {
+        harmonyEpoch++;
     }
 
     private static String encode(final String value) {

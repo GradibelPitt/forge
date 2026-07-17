@@ -1,11 +1,14 @@
 package forge.ai;
 
+import forge.card.CardRarity;
+import forge.card.CardRules;
 import forge.card.mana.ManaAtom;
 import forge.game.Game;
 import forge.game.GameSnapshot;
 import forge.game.GameState;
 import forge.game.ability.AbilityFactory;
 import forge.game.card.Card;
+import forge.game.keyword.Keyword;
 import forge.game.mana.Mana;
 import forge.game.mana.ManaCostBeingPaid;
 import forge.game.player.PlaySpellAbility;
@@ -13,6 +16,7 @@ import forge.game.player.Player;
 import forge.game.spellability.AbilitySub;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
+import forge.item.PaperCard;
 import forge.util.ThreadUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -20,6 +24,7 @@ import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PlayerSpellRuleManaPaymentIntegrationTest extends AITest {
     private static final String RULE_KEY = "test:off-color-floating-mana";
@@ -89,6 +94,87 @@ public class PlayerSpellRuleManaPaymentIntegrationTest extends AITest {
                 .getPayingMana().size(), 1);
         Assert.assertEquals(withRule.game.getStack().peekAbility()
                 .getPayingMana().get(0).getColor(), (byte) ManaAtom.BLUE);
+    }
+
+    @Test
+    public void harmonyReductionAndConversionShareTheRealPaymentPath() {
+        final CastFixture withoutRule = prepareDoubleBlueSpellWithRedMana();
+
+        Assert.assertFalse(ComputerUtilMana.canPayManaCost(
+                withoutRule.spell, withoutRule.player, 0, false));
+        Assert.assertFalse(PlaySpellAbility.playSpellAbility(
+                withoutRule.player.getController(), withoutRule.player,
+                withoutRule.spell));
+        Assert.assertEquals(withoutRule.player.getManaPool().totalMana(), 1);
+
+        final CastFixture withHarmony = prepareDoubleBlueSpellWithRedMana();
+        withHarmony.player.getSpellRuleRegistry().register(
+                RULE_KEY + ":harmony-reduction",
+                "Card.nonColorless",
+                "Spell",
+                0,
+                "",
+                true,
+                2);
+        final ManaCostBeingPaid estimated = ComputerUtilMana.calculateManaCost(
+                withHarmony.spell.getPayCosts(), withHarmony.spell,
+                withHarmony.player, true, 0, false);
+
+        Assert.assertEquals(estimated.toString(), "{1}");
+        Assert.assertTrue(ComputerUtilMana.canPayManaCost(
+                withHarmony.spell, withHarmony.player, 0, false));
+        Assert.assertTrue(PlaySpellAbility.playSpellAbility(
+                withHarmony.player.getController(), withHarmony.player,
+                withHarmony.spell));
+        Assert.assertEquals(withHarmony.player.getManaPool().totalMana(), 0);
+        Assert.assertEquals(withHarmony.game.getStack().peekAbility()
+                .getHostCard().getName(), "Harmony Payment Spell");
+        Assert.assertEquals(withHarmony.game.getStack().peekAbility()
+                .getPayingMana().size(), 1);
+        Assert.assertEquals(withHarmony.game.getStack().peekAbility()
+                .getPayingMana().get(0).getColor(), (byte) ManaAtom.RED);
+    }
+
+    @Test
+    public void borrowedSpellUsesOwnersHarmonyNotCastersHarmony() {
+        final CastFixture ownerHarmony =
+                prepareBorrowedDoubleBlueSpellWithRedMana();
+        ownerHarmony.card.getOwner().getSpellRuleRegistry().register(
+                RULE_KEY + ":borrowed-owner-harmony",
+                "Card.nonColorless", "Spell", 0, "", true, 2);
+        final ManaCostBeingPaid ownerEstimate =
+                ComputerUtilMana.calculateManaCost(
+                        ownerHarmony.spell.getPayCosts(), ownerHarmony.spell,
+                        ownerHarmony.player, true, 0, false);
+
+        Assert.assertTrue(ownerHarmony.card.hasKeyword(Keyword.HARMONY));
+        Assert.assertEquals(ownerEstimate.toString(), "{1}");
+        Assert.assertTrue(PlaySpellAbility.playSpellAbility(
+                ownerHarmony.player.getController(), ownerHarmony.player,
+                ownerHarmony.spell));
+        Assert.assertEquals(ownerHarmony.player.getManaPool().totalMana(), 0);
+        Assert.assertEquals(ownerHarmony.game.getStack().peekAbility()
+                .getPayingMana().get(0).getColor(), (byte) ManaAtom.RED);
+
+        final CastFixture casterHarmony =
+                prepareBorrowedDoubleBlueSpellWithRedMana();
+        casterHarmony.player.getSpellRuleRegistry().register(
+                RULE_KEY + ":borrowed-caster-harmony",
+                "Card.nonColorless", "Spell", 0, "", true, 2);
+        final ManaCostBeingPaid casterEstimate =
+                ComputerUtilMana.calculateManaCost(
+                        casterHarmony.spell.getPayCosts(), casterHarmony.spell,
+                        casterHarmony.player, true, 0, false);
+
+        Assert.assertFalse(casterHarmony.card.hasKeyword(Keyword.HARMONY));
+        Assert.assertEquals(casterEstimate.toString(), "{1}{U}{U}");
+        Assert.assertFalse(ComputerUtilMana.canPayManaCost(
+                casterHarmony.spell, casterHarmony.player, 0, false));
+        Assert.assertFalse(PlaySpellAbility.playSpellAbility(
+                casterHarmony.player.getController(), casterHarmony.player,
+                casterHarmony.spell));
+        Assert.assertEquals(casterHarmony.player.getManaPool().totalMana(), 1);
+        Assert.assertTrue(casterHarmony.game.getStack().isEmpty());
     }
 
     @Test
@@ -165,6 +251,8 @@ public class PlayerSpellRuleManaPaymentIntegrationTest extends AITest {
     public void restartGameResolveClearsRegistryWithAiController() {
         final Game game = initAndCreateGame();
         final Player player = registerRuleForAiPlayer(game);
+        final forge.game.GameAction.InputActionScope staleScope = game
+                .getAction().beginInputActionScope("pre-restart");
         final Card source = addCard("Karn Liberated", player);
         final SpellAbility restart = AbilityFactory.getAbility(
                 "DB$ RestartGame | RestrictFromZone$ Exile "
@@ -176,6 +264,15 @@ public class PlayerSpellRuleManaPaymentIntegrationTest extends AITest {
 
         Assert.assertTrue(player.getController() instanceof PlayerControllerAi);
         Assert.assertTrue(player.getSpellRuleRegistry().isEmpty());
+        Assert.assertFalse(game.getAction().invokeInputAction(staleScope,
+                () -> { }));
+        final forge.game.GameAction.InputActionScope freshScope = game
+                .getAction().beginInputActionScope("post-restart");
+        final AtomicBoolean freshRan = new AtomicBoolean();
+        Assert.assertTrue(game.getAction().invokeInputAction(freshScope,
+                () -> freshRan.set(true)));
+        game.getAction().pumpInputActionsUntil(freshScope, freshRan::get);
+        Assert.assertTrue(freshRan.get());
     }
 
     @Test
@@ -191,6 +288,21 @@ public class PlayerSpellRuleManaPaymentIntegrationTest extends AITest {
                 instanceof PlayerControllerAi);
         Assert.assertTrue(subgamePlayer.getSpellRuleRegistry().isEmpty());
         Assert.assertEquals(player.getSpellRuleRegistry().size(), 1);
+
+        final forge.game.GameAction.InputActionScope mainScope = game
+                .getAction().beginInputActionScope("main-game");
+        final forge.game.GameAction.InputActionScope childScope = subgame
+                .getAction().beginInputActionScope("subgame");
+        final AtomicBoolean mainRan = new AtomicBoolean();
+        final AtomicBoolean childRan = new AtomicBoolean();
+        Assert.assertTrue(game.getAction().invokeInputAction(mainScope,
+                () -> mainRan.set(true)));
+        Assert.assertTrue(subgame.getAction().invokeInputAction(childScope,
+                () -> childRan.set(true)));
+        subgame.getAction().pumpInputActionsUntil(childScope, childRan::get);
+        Assert.assertFalse(mainRan.get());
+        game.getAction().pumpInputActionsUntil(mainScope, mainRan::get);
+        Assert.assertTrue(mainRan.get());
     }
 
     @Test
@@ -241,6 +353,46 @@ public class PlayerSpellRuleManaPaymentIntegrationTest extends AITest {
         return new CastFixture(game, player, card, spell);
     }
 
+    private CastFixture prepareDoubleBlueSpellWithRedMana() {
+        final Game game = initAndCreateGame();
+        final Player player = game.getPlayers().get(1);
+        final Card card = Card.fromPaperCard(harmonyPaymentPaper(), player);
+        player.getZone(ZoneType.Hand).add(card);
+        card.setZone(player.getZone(ZoneType.Hand));
+        final SpellAbility spell = card.getSpellAbilities().getFirst();
+        spell.setActivatingPlayer(player);
+        final Card redManaSource = createCard("Mountain", player);
+        player.getManaPool().addMana(new Mana(
+                (byte) ManaAtom.RED, redManaSource, null, player));
+        return new CastFixture(game, player, card, spell);
+    }
+
+    private CastFixture prepareBorrowedDoubleBlueSpellWithRedMana() {
+        final Game game = initAndCreateGame();
+        final Player owner = game.getPlayers().get(0);
+        final Player caster = game.getPlayers().get(1);
+        final Card card = Card.fromPaperCard(harmonyPaymentPaper(), owner);
+        card.setController(caster, game.getNextTimestamp());
+        caster.getZone(ZoneType.Hand).add(card);
+        card.setZone(caster.getZone(ZoneType.Hand));
+        final SpellAbility spell = card.getSpellAbilities().getFirst();
+        spell.setActivatingPlayer(caster);
+        final Card redManaSource = createCard("Mountain", caster);
+        caster.getManaPool().addMana(new Mana(
+                (byte) ManaAtom.RED, redManaSource, null, caster));
+        return new CastFixture(game, caster, card, spell);
+    }
+
+    private static PaperCard harmonyPaymentPaper() {
+        return new PaperCard(CardRules.fromScript(Arrays.asList(
+                "Name:Harmony Payment Spell",
+                "ManaCost:1 U U",
+                "Types:Sorcery",
+                "A:SP$ Draw | NumCards$ 1 | SpellDescription$ Draw a card.",
+                "Oracle:Draw a card."
+        )), "TST", CardRarity.Common);
+    }
+
     private CastFixture prepareControlledBlueSpellWithRedMana() {
         final Game game = initAndCreateGame();
         final Player master = game.getPlayers().get(0);
@@ -263,7 +415,9 @@ public class PlayerSpellRuleManaPaymentIntegrationTest extends AITest {
                 "Card.nonColorless",
                 "Spell",
                 0,
-                "AnyType->AnyColor");
+                "",
+                true,
+                2);
         return player;
     }
 

@@ -2,5 +2,5 @@ Name:弃暗投明
 ManaCost:B
 Types:Sorcery
 A:SP$ ReplaceCards | Defined$ You | Zones$ Hand,Library | ValidCards$ Card.Black | ReplacementValid$ Card.nonBlack+nonColorless | MatchManaValue$ True | SubAbility$ GrantHarmonyRule | SpellDescription$ 将你手牌和牌库中的每张黑色牌替换为一张随机选择的、总法术力值相同、非黑色且非无色的牌，这些牌以及与其同名的牌永久获得调和（你可以用任意颜色的法术力支付此咒语的法术力费用）和“此咒语的施放费用减少{2}”
-SVar:GrantHarmonyRule:DB$ GrantSpellRule | Defined$ You | RuleKey$ RenounceDarkness.ColoredSpells | ValidCards$ Card.nonColorless | ValidSA$ Spell | ReduceGeneric$ 2 | ManaConversion$ AnyType->AnyColor | Duration$ Permanent
+SVar:GrantHarmonyRule:DB$ GrantSpellRule | Defined$ You | RuleKey$ RenounceDarkness.ColoredSpells | ValidCards$ Card.nonColorless | ValidSA$ Spell | Harmony$ True | HarmonyReduction$ 2 | Duration$ Permanent
 Oracle:将你手牌和牌库中的每张黑色牌替换为一张随机选择的、总法术力值相同、非黑色且非无色的牌，这些牌以及与其同名的牌永久获得调和（你可以用任意颜色的法术力支付此咒语的法术力费用）和“此咒语的施放费用减少{2}”

@@ -48,13 +48,29 @@ public class GrantSpellRuleAi extends SpellAbilityAi {
         if (genericReduction == null) {
             return false;
         }
+        final String harmonyValue = sa.getParamOrDefault("Harmony", "False");
+        if (!"true".equalsIgnoreCase(harmonyValue)
+                && !"false".equalsIgnoreCase(harmonyValue)) {
+            return false;
+        }
+        final boolean harmony = Boolean.parseBoolean(harmonyValue);
+        if ((harmony && (sa.hasParam("ManaConversion")
+                || sa.hasParam("ReduceGeneric")))
+                || (!harmony && sa.hasParam("HarmonyReduction"))) {
+            return false;
+        }
+        final Integer harmonyReduction = parseNonNegativeInteger(
+                sa.getParamOrDefault("HarmonyReduction", "0"));
+        if (harmonyReduction == null) {
+            return false;
+        }
         final String manaConversion = sa.getParamOrDefault(
                 "ManaConversion", "").trim();
         if (!manaConversion.isEmpty()
                 && !HARMONY_CONVERSION.equals(manaConversion)) {
             return false;
         }
-        if (genericReduction == 0 && manaConversion.isEmpty()) {
+        if (genericReduction == 0 && manaConversion.isEmpty() && !harmony) {
             return false;
         }
 
@@ -69,17 +85,23 @@ public class GrantSpellRuleAi extends SpellAbilityAi {
 
         try {
             PlayerSpellRuleRegistry.validateRuleDefinition(ruleKey, validCards,
-                    validSa, genericReduction, manaConversion);
+                    validSa, genericReduction, manaConversion, harmony,
+                    harmonyReduction);
             if (stacking) {
-                if (genericReduction == 0 && ai.getSpellRuleRegistry()
-                        .hasManaConversionCoverage(validCards, validSa,
-                                manaConversion)) {
+                if (genericReduction == 0 && harmonyReduction == 0
+                        && ((harmony && ai.getSpellRuleRegistry()
+                                .hasHarmonyCoverage(validCards, validSa)
+                        || !harmony && ai.getSpellRuleRegistry()
+                                .hasManaConversionCoverage(validCards, validSa,
+                                        manaConversion)))) {
                     return false;
                 }
                 ai.getSpellRuleRegistry().validateStackingRegistration(ruleKey,
-                        validCards, validSa, genericReduction, manaConversion);
+                        validCards, validSa, genericReduction, manaConversion,
+                        harmony, harmonyReduction);
             } else if (!ai.getSpellRuleRegistry().wouldAddRegistration(ruleKey,
-                    validCards, validSa, genericReduction, manaConversion)) {
+                    validCards, validSa, genericReduction, manaConversion,
+                    harmony, harmonyReduction)) {
                 return false;
             }
         } catch (final RuntimeException ex) {

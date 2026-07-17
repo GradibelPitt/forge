@@ -2,6 +2,9 @@ package forge.game.player;
 
 import forge.card.CardRarity;
 import forge.card.CardRules;
+import forge.card.CardStateName;
+import forge.card.CardType;
+import forge.card.ColorSet;
 import forge.card.GamePieceType;
 import forge.card.MagicColor;
 import forge.card.mana.ManaAtom;
@@ -13,11 +16,14 @@ import forge.game.GameType;
 import forge.game.Match;
 import forge.game.ability.AbilityFactory;
 import forge.game.card.Card;
+import forge.game.card.CardState;
 import forge.game.cost.Cost;
 import forge.game.cost.CostAdjustment;
 import forge.game.mana.ManaConversionMatrix;
 import forge.game.mana.ManaCostBeingPaid;
 import forge.game.mana.ManaPool;
+import forge.game.keyword.Keyword;
+import forge.game.keyword.KeywordView;
 import forge.game.spellability.SpellAbility;
 import forge.game.staticability.StaticAbility;
 import forge.game.staticability.StaticAbilityManaConvert;
@@ -131,6 +137,13 @@ public class PlayerSpellRuleRegistryTest {
                 .hasManaConversionCoverage(
                         "Card", "Spell", "W->U B->R"));
 
+        final Fixture harmony = new Fixture("Harmony is not caster coverage");
+        registerHarmonyRule(harmony.grantedPlayer);
+        Assert.assertFalse(harmony.grantedPlayer.getSpellRuleRegistry()
+                .hasManaConversionCoverage(
+                        "Card.nonColorless", "Spell",
+                        "AnyType->AnyColor"));
+
         Assert.expectThrows(IllegalArgumentException.class,
                 () -> fixture.grantedPlayer.getSpellRuleRegistry()
                         .hasManaConversionCoverage(
@@ -204,6 +217,524 @@ public class PlayerSpellRuleRegistryTest {
     }
 
     @Test
+    public void harmonyIsAVisibleDynamicKeywordAndClearRemovesIt() {
+        final Fixture fixture = new Fixture("visible Harmony keyword test");
+        final Card existing = Card.fromPaperCard(
+                paper("Existing Harmony Spell", "1 U U"),
+                fixture.grantedPlayer);
+        fixture.grantedPlayer.getZone(ZoneType.Hand).add(existing);
+        existing.setZone(fixture.grantedPlayer.getZone(ZoneType.Hand));
+        existing.updateStateForView();
+        Assert.assertFalse(existing.hasKeyword(Keyword.HARMONY));
+
+        registerHarmonyRule(fixture.grantedPlayer);
+
+        Assert.assertTrue(existing.hasKeyword(Keyword.HARMONY));
+        Assert.assertTrue(existing.getView().getCurrentState().hasKeyword(
+                Keyword.HARMONY));
+        final KeywordView view = existing.getView().getCurrentState()
+                .getKeywords().getValues(Keyword.HARMONY).iterator().next();
+        Assert.assertEquals(view.title(), "调和");
+        Assert.assertEquals(view.reminderText(),
+                "你可以用任意颜色的法术力支付此咒语的法术力费用");
+        Assert.assertTrue(existing.getView().getCurrentState().getAbilityText()
+                .contains("调和（你可以用任意颜色的法术力支付此咒语的法术力费用）"));
+
+        final Card createdAfterRule = Card.fromPaperCard(
+                paper("Later Harmony Spell", "2 R"), fixture.grantedPlayer);
+        Assert.assertTrue(createdAfterRule.hasKeyword(Keyword.HARMONY));
+        final Card colorless = Card.fromPaperCard(
+                paper("Colorless Non-Harmony Spell", "3"),
+                fixture.grantedPlayer);
+        Assert.assertFalse(colorless.hasKeyword(Keyword.HARMONY));
+
+        fixture.grantedPlayer.getSpellRuleRegistry().clear();
+        Assert.assertFalse(existing.hasKeyword(Keyword.HARMONY));
+        Assert.assertFalse(existing.getView().getCurrentState().hasKeyword(
+                Keyword.HARMONY));
+        Assert.assertFalse(existing.getView().getCurrentState().getAbilityText()
+                .contains("调和（你可以用任意颜色的法术力支付此咒语的法术力费用）"));
+    }
+
+    @Test
+    public void intrinsicHarmonyStillUsesNormalCardKeywordSemantics() {
+        final Fixture fixture = new Fixture("intrinsic Harmony compatibility");
+        final PaperCard paper = new PaperCard(CardRules.fromScript(Arrays.asList(
+                "Name:Intrinsic Harmony Spell",
+                "ManaCost:U",
+                "Types:Sorcery",
+                "K:Harmony",
+                "A:SP$ Draw | NumCards$ 1 | SpellDescription$ Test.",
+                "Oracle:Test."
+        )), "TST", CardRarity.Common);
+        final Card card = Card.fromPaperCard(paper, fixture.grantedPlayer);
+        fixture.grantedPlayer.getZone(ZoneType.Hand).add(card);
+        card.setZone(fixture.grantedPlayer.getZone(ZoneType.Hand));
+        card.updateStateForView();
+
+        assertHarmonyProjection(card, true);
+        final SpellAbility spell = card.getSpellAbilities().getFirst();
+        spell.setActivatingPlayer(fixture.grantedPlayer);
+        assertConversionApplies(fixture.grantedPlayer, spell);
+        card.addCantHaveKeyword(Keyword.HARMONY,
+                fixture.game.getNextTimestamp());
+        card.updateKeywords();
+        assertHarmonyProjection(card, false);
+        final ManaConversionMatrix suppressed = new ManaConversionMatrix();
+        suppressed.restoreColorReplacements();
+        Assert.assertFalse(StaticAbilityManaConvert.manaConvert(suppressed,
+                fixture.grantedPlayer, card, spell));
+    }
+
+    @Test
+    public void harmonyViewTracksTypeColorAndKeywordSuppressionDifferentially() {
+        final Fixture fixture = new Fixture("Harmony characteristic changes");
+        final Card card = Card.fromPaperCard(
+                paper("Changing Harmony Spell", "1 U"),
+                fixture.grantedPlayer);
+        fixture.grantedPlayer.getZone(ZoneType.Hand).add(card);
+        card.setZone(fixture.grantedPlayer.getZone(ZoneType.Hand));
+        card.updateStateForView();
+
+        registerHarmonyRule(fixture.grantedPlayer);
+
+        assertHarmonyProjection(card, true);
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getLastHarmonyViewRefreshCount(), 1);
+
+        card.setType(CardType.parse("Land", false));
+        assertHarmonyProjection(card, false);
+        card.setType(CardType.parse("Instant", false));
+        assertHarmonyProjection(card, true);
+
+        card.setColor(ColorSet.fromMask(0));
+        assertHarmonyProjection(card, false);
+        card.setColor(ColorSet.fromNames("U"));
+        assertHarmonyProjection(card, true);
+
+        // Harmony is a player-rule projection, so card-layer "can't have"
+        // suppression cannot make the live query and visible label diverge.
+        card.addCantHaveKeyword(Keyword.HARMONY,
+                fixture.game.getNextTimestamp());
+        card.updateKeywords();
+        assertHarmonyProjection(card, true);
+
+        final long scansBeforeEquivalentRegistration = fixture.grantedPlayer
+                .getSpellRuleRegistry().getHarmonyViewScannedCardCount();
+        final int refreshesBeforeEquivalentRegistration = fixture.grantedPlayer
+                .getSpellRuleRegistry().getLastHarmonyViewRefreshCount();
+        fixture.grantedPlayer.getSpellRuleRegistry().registerStacking(
+                "equivalent-visible-harmony", "Card.nonColorless", "Spell",
+                0, "", true, 2);
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getHarmonyViewScannedCardCount(),
+                scansBeforeEquivalentRegistration);
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getLastHarmonyViewRefreshCount(),
+                refreshesBeforeEquivalentRegistration);
+        assertHarmonyProjection(card, true);
+    }
+
+    @Test
+    public void harmonyCacheTracksDoubleFacesAndFaceDownRoundTrips() {
+        final Fixture fixture = new Fixture("Harmony face-state cache");
+        final PaperCard paper = new PaperCard(CardRules.fromScript(Arrays.asList(
+                "Name:Colored Harmony Face",
+                "ManaCost:1 U",
+                "Types:Sorcery",
+                "A:SP$ Draw | NumCards$ 1 | SpellDescription$ Test.",
+                "AlternateMode:DoubleFaced",
+                "Oracle:Test.",
+                "ALTERNATE",
+                "Name:Colorless Harmony Face",
+                "ManaCost:no cost",
+                "Colors:colorless",
+                "Types:Sorcery",
+                "A:SP$ Draw | NumCards$ 1 | SpellDescription$ Test.",
+                "Oracle:Test."
+        )), "TST", CardRarity.Common);
+        final Card card = Card.fromPaperCard(paper, fixture.grantedPlayer);
+        fixture.grantedPlayer.getZone(ZoneType.Hand).add(card);
+        card.setZone(fixture.grantedPlayer.getZone(ZoneType.Hand));
+        card.updateStateForView();
+        registerHarmonyRule(fixture.grantedPlayer);
+
+        assertHarmonyProjection(card, true);
+        Assert.assertTrue(card.setState(CardStateName.Backside, true, true));
+        assertHarmonyProjection(card, false);
+        Assert.assertTrue(card.setState(CardStateName.Original, true, true));
+        assertHarmonyProjection(card, true);
+
+        Assert.assertTrue(card.setState(CardStateName.FaceDown, true, true));
+        assertHarmonyProjection(card, false);
+        Assert.assertTrue(card.setState(CardStateName.Original, true, true));
+        assertHarmonyProjection(card, true);
+    }
+
+    @Test
+    public void failedHarmonyViewRefreshDoesNotBreakGrantAndCanRetry() {
+        final Fixture fixture = new Fixture("Harmony view retry");
+        final FailingAbilityTextCard card = new FailingAbilityTextCard(
+                fixture.game.nextCardId(), fixture.game);
+        card.setName("Retryable Harmony View");
+        card.setOwner(fixture.grantedPlayer);
+        card.setType(CardType.parse("Sorcery", false));
+        card.setColor("U");
+        fixture.grantedPlayer.getZone(ZoneType.Hand).add(card);
+        card.setZone(fixture.grantedPlayer.getZone(ZoneType.Hand));
+
+        registerHarmonyRule(fixture.grantedPlayer);
+
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .size(), 1);
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getLastHarmonyViewRefreshCount(), 0);
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getLastHarmonyViewRefreshFailureCount(), 1);
+        Assert.assertTrue(fixture.grantedPlayer.getSpellRuleRegistry()
+                .hasPendingHarmonyViewRefresh());
+        Assert.assertTrue(card.hasKeyword(Keyword.HARMONY));
+
+        registerHarmonyRule(fixture.grantedPlayer);
+
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getLastHarmonyViewRefreshFailureCount(), 0);
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getLastHarmonyViewRefreshCount(), 1);
+        Assert.assertFalse(fixture.grantedPlayer.getSpellRuleRegistry()
+                .hasPendingHarmonyViewRefresh());
+        assertHarmonyProjection(card, true);
+        Assert.assertTrue(card.getView().getCurrentState().getAbilityText()
+                .contains("调和"));
+    }
+
+    @Test
+    public void directZoneAndColorRefreshFailuresAreNonFatalAndRetryable() {
+        final Fixture fixture = new Fixture("direct Harmony view retry");
+        final FailingAbilityTextCard card = new FailingAbilityTextCard(
+                fixture.game.nextCardId(), fixture.game, true);
+        card.setName("Direct Retry Harmony Spell");
+        card.setOwner(fixture.grantedPlayer);
+        card.setType(CardType.parse("Sorcery", false));
+        card.setColor("U");
+        registerHarmonyRule(fixture.grantedPlayer);
+        fixture.grantedPlayer.getZone(ZoneType.Hand).add(card);
+
+        card.setZone(fixture.grantedPlayer.getZone(ZoneType.Hand));
+
+        Assert.assertTrue(fixture.grantedPlayer.getSpellRuleRegistry()
+                .hasPendingHarmonyViewRefresh());
+        registerHarmonyRule(fixture.grantedPlayer);
+        Assert.assertFalse(fixture.grantedPlayer.getSpellRuleRegistry()
+                .hasPendingHarmonyViewRefresh());
+        assertHarmonyProjection(card, true);
+
+        card.failNextAbilityText();
+        card.setColor(ColorSet.fromMask(0));
+
+        Assert.assertTrue(fixture.grantedPlayer.getSpellRuleRegistry()
+                .hasPendingHarmonyViewRefresh());
+        registerHarmonyRule(fixture.grantedPlayer);
+        Assert.assertFalse(fixture.grantedPlayer.getSpellRuleRegistry()
+                .hasPendingHarmonyViewRefresh());
+        assertHarmonyProjection(card, false);
+    }
+
+    @Test
+    public void idempotentGrantRetriesAPendingHarmonyViewRefresh() {
+        final Fixture fixture = new Fixture("Harmony Grant retry");
+        final FailingAbilityTextCard card = new FailingAbilityTextCard(
+                fixture.game.nextCardId(), fixture.game, true);
+        prepareVisibleColoredSpell(fixture, card, "Grant Retry Spell");
+        final SpellAbility grant = grantAbility(fixture,
+                "DB$ GrantSpellRule | Defined$ You "
+                        + "| RuleKey$ " + RULE_KEY + " "
+                        + "| ValidCards$ Card.nonColorless | ValidSA$ Spell "
+                        + "| Harmony$ True | HarmonyReduction$ 2 "
+                        + "| Duration$ Permanent");
+
+        grant.resolve();
+        Assert.assertTrue(fixture.grantedPlayer.getSpellRuleRegistry()
+                .hasPendingHarmonyViewRefresh());
+
+        grant.resolve();
+
+        Assert.assertFalse(fixture.grantedPlayer.getSpellRuleRegistry()
+                .hasPendingHarmonyViewRefresh());
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getLastHarmonyViewRefreshCount(), 1);
+        assertHarmonyProjection(card, true);
+    }
+
+    @Test
+    public void repeatedClearRetriesAPendingHarmonyViewRefresh() {
+        final Fixture fixture = new Fixture("Harmony clear retry");
+        final FailingAbilityTextCard card = new FailingAbilityTextCard(
+                fixture.game.nextCardId(), fixture.game, false);
+        prepareVisibleColoredSpell(fixture, card, "Clear Retry Spell");
+        registerHarmonyRule(fixture.grantedPlayer);
+        assertHarmonyProjection(card, true);
+        card.failNextAbilityText();
+
+        fixture.grantedPlayer.getSpellRuleRegistry().clear();
+
+        Assert.assertTrue(fixture.grantedPlayer.getSpellRuleRegistry()
+                .isEmpty());
+        Assert.assertTrue(fixture.grantedPlayer.getSpellRuleRegistry()
+                .hasPendingHarmonyViewRefresh());
+
+        fixture.grantedPlayer.getSpellRuleRegistry().clear();
+
+        Assert.assertFalse(fixture.grantedPlayer.getSpellRuleRegistry()
+                .hasPendingHarmonyViewRefresh());
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getLastHarmonyViewRefreshCount(), 1);
+        assertHarmonyProjection(card, false);
+    }
+
+    @Test
+    public void repeatedCopyAndRestoreRetryPendingHarmonyViews() {
+        final Fixture copyFixture = new Fixture("Harmony copy retry");
+        final FailingAbilityTextCard copiedCard = new FailingAbilityTextCard(
+                copyFixture.game.nextCardId(), copyFixture.game, false);
+        prepareVisibleColoredSpell(copyFixture, copiedCard, "Copy Retry Spell");
+        registerHarmonyRule(copyFixture.grantedPlayer);
+        copiedCard.failNextAbilityText();
+
+        copyFixture.grantedPlayer.getSpellRuleRegistry().copyFrom(
+                copyFixture.otherPlayer.getSpellRuleRegistry());
+        Assert.assertTrue(copyFixture.grantedPlayer.getSpellRuleRegistry()
+                .hasPendingHarmonyViewRefresh());
+        copyFixture.grantedPlayer.getSpellRuleRegistry().copyFrom(
+                copyFixture.otherPlayer.getSpellRuleRegistry());
+
+        Assert.assertFalse(copyFixture.grantedPlayer.getSpellRuleRegistry()
+                .hasPendingHarmonyViewRefresh());
+        assertHarmonyProjection(copiedCard, false);
+
+        final Fixture restoreFixture = new Fixture("Harmony restore retry");
+        final FailingAbilityTextCard restoredCard = new FailingAbilityTextCard(
+                restoreFixture.game.nextCardId(), restoreFixture.game, false);
+        prepareVisibleColoredSpell(restoreFixture, restoredCard,
+                "Restore Retry Spell");
+        registerHarmonyRule(restoreFixture.grantedPlayer);
+        restoreFixture.otherPlayer.getSpellRuleRegistry().register(
+                "restore-target", "Card.nonColorless", "Spell", 1, "");
+        final String state = restoreFixture.otherPlayer
+                .getSpellRuleRegistry().toStateString();
+        restoredCard.failNextAbilityText();
+
+        restoreFixture.grantedPlayer.getSpellRuleRegistry()
+                .restoreFromStateString(state);
+        Assert.assertTrue(restoreFixture.grantedPlayer.getSpellRuleRegistry()
+                .hasPendingHarmonyViewRefresh());
+        restoreFixture.grantedPlayer.getSpellRuleRegistry()
+                .restoreFromStateString(state);
+
+        Assert.assertFalse(restoreFixture.grantedPlayer.getSpellRuleRegistry()
+                .hasPendingHarmonyViewRefresh());
+        assertHarmonyProjection(restoredCard, false);
+    }
+
+    @Test
+    public void harmonyFollowsCardOwnershipWhileLegacyRulesFollowCaster() {
+        final Fixture fixture = new Fixture("Harmony ownership semantics");
+        registerHarmonyRule(fixture.grantedPlayer);
+        final SpellAbility ownedByGranted = spellOwnedBy(
+                fixture.grantedPlayer, fixture.otherPlayer,
+                "Borrowed Owner-Harmony Spell", "1 U U");
+
+        Assert.assertTrue(ownedByGranted.getHostCard().hasKeyword(
+                Keyword.HARMONY));
+        Assert.assertTrue(ownedByGranted.getHostCard().getView()
+                .getCurrentState().hasKeyword(Keyword.HARMONY));
+        Assert.assertEquals(adjustedCost(ownedByGranted).toString(), "{1}");
+        assertConversionApplies(fixture.otherPlayer, ownedByGranted);
+
+        final Fixture inverse = new Fixture("caster must not lend Harmony");
+        registerHarmonyRule(inverse.otherPlayer);
+        final SpellAbility ownedByOther = spellOwnedBy(
+                inverse.grantedPlayer, inverse.otherPlayer,
+                "Borrowed Non-Harmony Spell", "1 U U");
+        Assert.assertFalse(ownedByOther.getHostCard().hasKeyword(
+                Keyword.HARMONY));
+        Assert.assertFalse(ownedByOther.getHostCard().getView()
+                .getCurrentState().hasKeyword(Keyword.HARMONY));
+        Assert.assertEquals(adjustedCost(ownedByOther).toString(),
+                "{1}{U}{U}");
+        final ManaConversionMatrix noHarmony = new ManaConversionMatrix();
+        noHarmony.restoreColorReplacements();
+        Assert.assertFalse(StaticAbilityManaConvert.manaConvert(noHarmony,
+                inverse.otherPlayer, ownedByOther.getHostCard(), ownedByOther));
+
+        inverse.otherPlayer.getSpellRuleRegistry().register(
+                RULE_KEY + ":legacy-caster-rule",
+                "Card.nonColorless", "Spell", 2, "AnyType->AnyColor");
+        Assert.assertEquals(adjustedCost(ownedByOther).toString(), "{U}{U}");
+        assertConversionApplies(inverse.otherPlayer, ownedByOther);
+    }
+
+    @Test
+    public void hiddenLibraryHarmonyUsesEpochWithoutEagerAbilityTextRebuilds() {
+        final Fixture fixture = new Fixture("Harmony hidden-library epoch");
+        Card first = null;
+        Card last = null;
+        for (int i = 0; i < 20_000; i++) {
+            final Card card = new Card(fixture.game.nextCardId(), fixture.game);
+            card.setName("Hidden Harmony Card " + i);
+            card.setOwner(fixture.grantedPlayer);
+            card.setType(CardType.parse("Sorcery", false));
+            card.setColor("U");
+            fixture.grantedPlayer.getZone(ZoneType.Library).add(card);
+            card.setZone(fixture.grantedPlayer.getZone(ZoneType.Library));
+            if (first == null) {
+                first = card;
+            }
+            last = card;
+        }
+        Assert.assertNotNull(first);
+        Assert.assertNotNull(last);
+        final String firstText = first.getView().getCurrentState()
+                .getAbilityText();
+        final String lastText = last.getView().getCurrentState()
+                .getAbilityText();
+
+        registerHarmonyRule(fixture.grantedPlayer);
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getLastHarmonyViewRefreshCount(), 0);
+        fixture.grantedPlayer.getSpellRuleRegistry().registerStacking(
+                "hidden-library-stack", "Card.nonColorless", "Spell",
+                0, "", true, 2);
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getLastHarmonyViewRefreshCount(), 0);
+
+        Assert.assertTrue(first.hasKeyword(Keyword.HARMONY));
+        Assert.assertTrue(last.hasKeyword(Keyword.HARMONY));
+        Assert.assertEquals(first.getView().getCurrentState().getAbilityText(),
+                firstText);
+        Assert.assertEquals(last.getView().getCurrentState().getAbilityText(),
+                lastText);
+
+        first.setType(CardType.parse("Land", false));
+        first.setColor("R");
+        Assert.assertFalse(first.hasKeyword(Keyword.HARMONY));
+        Assert.assertEquals(first.getView().getCurrentState().getAbilityText(),
+                firstText);
+
+        fixture.grantedPlayer.getSpellRuleRegistry().clear();
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getLastHarmonyViewRefreshCount(), 0);
+        Assert.assertFalse(last.hasKeyword(Keyword.HARMONY));
+        Assert.assertEquals(last.getView().getCurrentState().getAbilityText(),
+                lastText);
+    }
+
+    @Test
+    public void coveredStackingHarmonySkipsTwentyThousandPublicViewScans() {
+        final Fixture fixture = new Fixture("covered Harmony public scan");
+        for (int i = 0; i < 20_000; i++) {
+            final Card card = new Card(fixture.game.nextCardId(), fixture.game);
+            card.setName("Public Nonspell " + i);
+            card.setOwner(fixture.grantedPlayer);
+            card.setType(CardType.parse("Land", false));
+            card.setColor("U");
+            fixture.grantedPlayer.getZone(ZoneType.Battlefield).add(card);
+            card.setZone(fixture.grantedPlayer.getZone(ZoneType.Battlefield));
+        }
+        registerHarmonyRule(fixture.grantedPlayer);
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getLastHarmonyViewRefreshCount(), 0);
+        final long scansBeforeStacking = fixture.grantedPlayer
+                .getSpellRuleRegistry().getHarmonyViewScannedCardCount();
+        final long epochBeforeStacking = fixture.grantedPlayer
+                .getSpellRuleRegistry().getHarmonyEpoch();
+
+        fixture.grantedPlayer.getSpellRuleRegistry().registerStacking(
+                "covered-public-stack", "Card.nonColorless", "Spell",
+                0, "", true, 2);
+
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getHarmonyViewScannedCardCount(), scansBeforeStacking);
+        Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry()
+                .getHarmonyEpoch(), epochBeforeStacking);
+        Assert.assertEquals(adjustedCost(spell(fixture.grantedPlayer,
+                "Stacked Harmony Reduction", "5 U")).toString(), "{2}");
+    }
+
+    @Test
+    public void harmonyReductionRemovesColoredPipsButLegacyReductionDoesNot() {
+        final Fixture harmony = new Fixture("Harmony reduction semantics");
+        registerHarmonyRule(harmony.grantedPlayer);
+        final SpellAbility harmonySpell = spell(harmony.grantedPlayer,
+                "Harmony Double Blue", "1 U U");
+
+        Assert.assertEquals(adjustedCost(harmonySpell).toString(), "{1}");
+        assertConversionApplies(harmony.grantedPlayer, harmonySpell);
+
+        final Fixture legacy = new Fixture("legacy generic reduction semantics");
+        registerColoredSpellRule(legacy.grantedPlayer);
+        final SpellAbility legacySpell = spell(legacy.grantedPlayer,
+                "Legacy Double Blue", "1 U U");
+
+        Assert.assertEquals(adjustedCost(legacySpell).toString(), "{U}{U}");
+        Assert.assertFalse(legacySpell.getHostCard().hasKeyword(
+                Keyword.HARMONY));
+    }
+
+    @Test
+    public void harmonyStateRoundTripsAndLegacyFiveFieldStateStillRestores() {
+        final Fixture source = new Fixture("Harmony state source");
+        registerHarmonyRule(source.grantedPlayer);
+        final String harmonyState = source.grantedPlayer
+                .getSpellRuleRegistry().toStateString();
+        final Fixture restored = new Fixture("Harmony state restored");
+
+        restored.grantedPlayer.getSpellRuleRegistry()
+                .restoreFromStateString(harmonyState);
+
+        Assert.assertEquals(restored.grantedPlayer.getSpellRuleRegistry()
+                .toStateString(), harmonyState);
+        final SpellAbility restoredSpell = spell(restored.grantedPlayer,
+                "Restored Harmony Spell", "1 U U");
+        Assert.assertTrue(restoredSpell.getHostCard().hasKeyword(
+                Keyword.HARMONY));
+        Assert.assertEquals(adjustedCost(restoredSpell).toString(), "{1}");
+
+        final String legacyState = "0;"
+                + encodeStateField("legacy") + ","
+                + encodeStateField("Card.nonColorless") + ","
+                + encodeStateField("Spell") + ",2,"
+                + encodeStateField("AnyType->AnyColor");
+        restored.grantedPlayer.getSpellRuleRegistry()
+                .restoreFromStateString(legacyState);
+        Assert.assertEquals(adjustedCost(spell(restored.grantedPlayer,
+                "Legacy Restored Spell", "1 U U")).toString(), "{U}{U}");
+    }
+
+    @Test
+    public void harmonyRejectsLegacyReductionInRegistrationAndStateRestore() {
+        final Fixture fixture = new Fixture("ambiguous Harmony definition");
+        registerColoredSpellRule(fixture.grantedPlayer);
+        final RegistrySnapshot before = RegistrySnapshot.capture(
+                fixture.grantedPlayer);
+
+        Assert.expectThrows(IllegalArgumentException.class,
+                () -> fixture.grantedPlayer.getSpellRuleRegistry().register(
+                        "ambiguous-harmony", "Card.nonColorless", "Spell",
+                        2, "", true, 2));
+        before.assertUnchanged(fixture.grantedPlayer);
+
+        final String ambiguousState = "0;"
+                + encodeStateField("ambiguous-harmony") + ","
+                + encodeStateField("Card.nonColorless") + ","
+                + encodeStateField("Spell") + ",2,,true,2";
+        Assert.expectThrows(IllegalArgumentException.class,
+                () -> fixture.grantedPlayer.getSpellRuleRegistry()
+                        .restoreFromStateString(ambiguousState));
+        before.assertUnchanged(fixture.grantedPlayer);
+    }
+
+    @Test
     public void colorlessSpellsDoNotMatchThePlayerRule() {
         final Fixture fixture = new Fixture("colorless exclusion test");
         registerColoredSpellRule(fixture.grantedPlayer);
@@ -268,7 +799,7 @@ public class PlayerSpellRuleRegistryTest {
         final SpellAbility grant = AbilityFactory.getAbility(
                 "DB$ GrantSpellRule | Defined$ You | RuleKey$ RenounceDarkness.ColoredSpells "
                         + "| ValidCards$ Card.nonColorless | ValidSA$ Spell "
-                        + "| ReduceGeneric$ 2 | ManaConversion$ AnyType->AnyColor "
+                        + "| Harmony$ True | HarmonyReduction$ 2 "
                         + "| Duration$ Permanent",
                 source);
         grant.setActivatingPlayer(fixture.grantedPlayer);
@@ -277,8 +808,10 @@ public class PlayerSpellRuleRegistryTest {
         grant.resolve();
 
         Assert.assertEquals(fixture.grantedPlayer.getSpellRuleRegistry().size(), 1);
-        Assert.assertEquals(adjustedCost(spell(fixture.grantedPlayer,
-                "Idempotent Colored Spell", "5 R")).toString(), "{3}{R}");
+        final SpellAbility spell = spell(fixture.grantedPlayer,
+                "Idempotent Colored Spell", "5 R");
+        Assert.assertEquals(adjustedCost(spell).toString(), "{4}");
+        Assert.assertTrue(spell.getHostCard().hasKeyword(Keyword.HARMONY));
         Assert.assertTrue(fixture.game.getCardsIn(ZoneType.Command).isEmpty());
     }
 
@@ -583,6 +1116,16 @@ public class PlayerSpellRuleRegistryTest {
         Assert.assertTrue(alternative.isSpell());
         Assert.assertEquals(adjustedPayCost(alternative).toString(), "{3}{U}");
         assertConversionApplies(fixture.grantedPlayer, alternative);
+
+        final Fixture harmony = new Fixture("Harmony alternative cost path");
+        registerHarmonyRule(harmony.grantedPlayer);
+        final SpellAbility harmonyAlternative = spell(harmony.grantedPlayer,
+                "Harmony Alternative Cost Spell", "7 U")
+                .copyWithDefinedCost(new Cost("1 U U", false));
+        harmonyAlternative.setActivatingPlayer(harmony.grantedPlayer);
+        Assert.assertEquals(adjustedPayCost(harmonyAlternative).toString(),
+                "{1}");
+        assertConversionApplies(harmony.grantedPlayer, harmonyAlternative);
     }
 
     @Test
@@ -685,6 +1228,16 @@ public class PlayerSpellRuleRegistryTest {
 
         Assert.assertEquals(adjusted.toString(), "{2}{U}");
         Assert.assertEquals(adjusted.getConvertedManaCost(), 3);
+
+        final Fixture harmony = new Fixture("Harmony and Trinisphere order");
+        registerHarmonyRule(harmony.grantedPlayer);
+        addStaticAbilitySource(harmony, ZoneType.Battlefield,
+                "Mode$ SetCost | ValidCard$ Card | Type$ Spell "
+                        + "| Amount$ 3 | RaiseTo$ True");
+        final ManaCostBeingPaid harmonyAdjusted = adjustedCost(spell(
+                harmony.grantedPlayer, "Harmony Trinisphere Spell", "1 U U"));
+        Assert.assertEquals(harmonyAdjusted.toString(), "{3}");
+        Assert.assertEquals(harmonyAdjusted.getConvertedManaCost(), 3);
     }
 
     @Test
@@ -809,10 +1362,11 @@ public class PlayerSpellRuleRegistryTest {
 
     private static String stateWithManaConversion(
             final String state, final String conversion) {
-        final int conversionStart = state.lastIndexOf(',') + 1;
-        return state.substring(0, conversionStart)
-                + Base64.getUrlEncoder().withoutPadding().encodeToString(
-                        conversion.getBytes(StandardCharsets.UTF_8));
+        final int entryStart = state.indexOf(';') + 1;
+        final String[] fields = state.substring(entryStart).split(",", -1);
+        Assert.assertTrue(fields.length == 5 || fields.length == 7);
+        fields[4] = encodeStateField(conversion);
+        return state.substring(0, entryStart) + String.join(",", fields);
     }
 
     private static long stackingSequence(final Player player) {
@@ -831,6 +1385,22 @@ public class PlayerSpellRuleRegistryTest {
                 "Spell",
                 2,
                 "AnyType->AnyColor");
+    }
+
+    private static void registerHarmonyRule(final Player player) {
+        player.getSpellRuleRegistry().register(
+                RULE_KEY,
+                "Card.nonColorless",
+                "Spell",
+                0,
+                "",
+                true,
+                2);
+    }
+
+    private static String encodeStateField(final String value) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(
+                value.getBytes(StandardCharsets.UTF_8));
     }
 
     private static ManaCostBeingPaid adjustedCost(final SpellAbility spell) {
@@ -900,6 +1470,36 @@ public class PlayerSpellRuleRegistryTest {
         return spell;
     }
 
+    private static SpellAbility spellOwnedBy(final Player owner,
+                                             final Player activator,
+                                             final String name,
+                                             final String manaCost) {
+        final Card card = Card.fromPaperCard(paper(name, manaCost), owner);
+        card.setController(activator, activator.getGame().getNextTimestamp());
+        card.setZone(activator.getZone(ZoneType.Hand));
+        final SpellAbility spell = card.getSpellAbilities().getFirst();
+        spell.setActivatingPlayer(activator);
+        return spell;
+    }
+
+    private static void assertHarmonyProjection(final Card card,
+                                                final boolean expected) {
+        Assert.assertEquals(card.hasKeyword(Keyword.HARMONY), expected);
+        Assert.assertEquals(card.getView().getCurrentState().hasKeyword(
+                Keyword.HARMONY), expected);
+    }
+
+    private static void prepareVisibleColoredSpell(final Fixture fixture,
+                                                   final Card card,
+                                                   final String name) {
+        card.setName(name);
+        card.setOwner(fixture.grantedPlayer);
+        card.setType(CardType.parse("Sorcery", false));
+        card.setColor("U");
+        fixture.grantedPlayer.getZone(ZoneType.Hand).add(card);
+        card.setZone(fixture.grantedPlayer.getZone(ZoneType.Hand));
+    }
+
     private static PaperCard paper(final String name, final String manaCost) {
         return new PaperCard(CardRules.fromScript(Arrays.asList(
                 "Name:" + name,
@@ -923,6 +1523,33 @@ public class PlayerSpellRuleRegistryTest {
                     serialized);
             Assert.assertEquals(player.getSpellRuleRegistry().size(), size);
             Assert.assertEquals(stackingSequence(player), sequence);
+        }
+    }
+
+    private static final class FailingAbilityTextCard extends Card {
+        private boolean failNextAbilityText;
+
+        private FailingAbilityTextCard(final int id, final Game game) {
+            this(id, game, true);
+        }
+
+        private FailingAbilityTextCard(final int id, final Game game,
+                                       final boolean failInitially) {
+            super(id, game);
+            failNextAbilityText = failInitially;
+        }
+
+        private void failNextAbilityText() {
+            failNextAbilityText = true;
+        }
+
+        @Override
+        public String getAbilityText(final CardState state) {
+            if (failNextAbilityText) {
+                failNextAbilityText = false;
+                throw new IllegalStateException("injected view failure");
+            }
+            return super.getAbilityText(state);
         }
     }
 

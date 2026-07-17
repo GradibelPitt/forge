@@ -3,6 +3,7 @@ package forge.ai;
 import forge.card.MagicColor;
 import forge.card.mana.ManaAtom;
 import forge.card.mana.ManaCostShard;
+import forge.game.ability.AbilityUtils;
 import forge.game.ability.ApiType;
 import forge.game.card.Card;
 import forge.game.card.CardPlayOption;
@@ -10,10 +11,12 @@ import forge.game.cost.Cost;
 import forge.game.cost.CostPart;
 import forge.game.cost.CostPartMana;
 import forge.game.cost.CostTap;
+import forge.game.keyword.Keyword;
 import forge.game.mana.Mana;
 import forge.game.mana.ManaCostBeingPaid;
 import forge.game.mana.ManaPool;
 import forge.game.player.Player;
+import forge.game.player.PlayerSpellRule;
 import forge.game.spellability.AbilityManaPart;
 import forge.game.spellability.SpellAbility;
 import forge.game.staticability.StaticAbility;
@@ -361,12 +364,23 @@ public final class ManaPaymentPreview {
                     effect && !paidFor.isCastFromPlayEffect() ? null : paidFor;
             final Card card = paidFor.getHostCard();
             final Player owner = card.getOwner();
+            payer.getSpellRuleRegistry().applyManaConversion(pool, card,
+                    conversionSa);
+            boolean ownerHarmonyApplied = false;
             if (owner != null) {
-                owner.getSpellRuleRegistry().applyManaConversion(pool, card,
-                        conversionSa);
+                ownerHarmonyApplied = owner.getSpellRuleRegistry()
+                        .applyOwnedHarmonyManaConversion(pool, card,
+                                conversionSa);
                 if (!owner.getSpellRuleRegistry().isEmpty()) {
                     requireChoice("player spell rules require real payment revalidation");
                 }
+            }
+            if (!ownerHarmonyApplied && conversionSa != null
+                    && conversionSa.isSpell() && !conversionSa.isCopied()
+                    && !card.isCopiedSpell()
+                    && card.hasKeyword(Keyword.HARMONY)) {
+                AbilityUtils.applyManaColorConversion(pool,
+                        PlayerSpellRule.HARMONY_MANA_CONVERSION);
             }
             if (payer != owner && !payer.getSpellRuleRegistry().isEmpty()) {
                 requireChoice("payer spell rules require real payment revalidation");

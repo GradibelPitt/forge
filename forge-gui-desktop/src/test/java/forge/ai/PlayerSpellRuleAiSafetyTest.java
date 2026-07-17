@@ -25,8 +25,7 @@ public class PlayerSpellRuleAiSafetyTest extends AITest {
     private static final String GRANT_BASE =
             "DB$ GrantSpellRule | Defined$ %s | RuleKey$ ai-safety "
                     + "| ValidCards$ Card.nonColorless | ValidSA$ Spell "
-                    + "| ReduceGeneric$ 2 "
-                    + "| ManaConversion$ AnyType->AnyColor "
+                    + "| Harmony$ True | HarmonyReduction$ 2 "
                     + "| Duration$ Permanent";
 
     @Test
@@ -266,8 +265,8 @@ public class PlayerSpellRuleAiSafetyTest extends AITest {
     public void repeatedRenounceWithNoCardsAndNoNewRuleIsRejected() {
         final Fixture fixture = createFixture();
         fixture.ai.getSpellRuleRegistry().register("ai-safety",
-                "Card.nonColorless", "Spell", 2,
-                "AnyType->AnyColor");
+                "Card.nonColorless", "Spell", 0,
+                "", true, 2);
         final String originalState = fixture.ai.getSpellRuleRegistry()
                 .toStateString();
         final SpellAbility replace = createRenounceChain(fixture, "You", "You");

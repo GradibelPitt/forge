@@ -273,6 +273,11 @@ public class CostAdjustment {
         }
 
         if (sa.isSpell()) {
+            final Player owner = host.getOwner();
+            if (owner != null) {
+                cost.decreaseHarmonyMana(owner.getSpellRuleRegistry()
+                        .getHarmonyReduction(host, sa));
+            }
             sumGeneric = saturatingAdd(sumGeneric, activator.getSpellRuleRegistry()
                     .getGenericReduction(host, sa));
         }

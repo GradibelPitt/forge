@@ -3,8 +3,10 @@ package forge.game.staticability;
 import forge.game.Game;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
+import forge.game.keyword.Keyword;
 import forge.game.mana.ManaConversionMatrix;
 import forge.game.player.Player;
+import forge.game.player.PlayerSpellRule;
 import forge.game.spellability.SpellAbility;
 
 public class StaticAbilityManaConvert {
@@ -13,6 +15,20 @@ public class StaticAbilityManaConvert {
         final Game game = p.getGame();
         boolean changed = p.getSpellRuleRegistry()
                 .applyManaConversion(matrix, card, sa);
+        final Player owner = card == null ? null : card.getOwner();
+        boolean ownerHarmonyApplied = false;
+        if (owner != null) {
+            ownerHarmonyApplied = owner.getSpellRuleRegistry()
+                    .applyOwnedHarmonyManaConversion(matrix, card, sa);
+            changed |= ownerHarmonyApplied;
+        }
+        if (!ownerHarmonyApplied && card != null && sa != null
+                && sa.isSpell() && !sa.isCopied() && !card.isCopiedSpell()
+                && card.hasKeyword(Keyword.HARMONY)) {
+            AbilityUtils.applyManaColorConversion(matrix,
+                    PlayerSpellRule.HARMONY_MANA_CONVERSION);
+            changed = true;
+        }
         final boolean[] staticChanged = {false};
         game.visitStaticAbilityModeSources(StaticAbilityMode.ManaConvert, ca -> {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
