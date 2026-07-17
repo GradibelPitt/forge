@@ -17,7 +17,8 @@ class ReincarnationContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:转生", text)
-        self.assertIn("ManaCost:W B", text)
+        self.assertIn("ManaCost:W/B", text)
+        self.assertNotIn("ManaCost:W B", text)
         self.assertIn("Types:Instant", text)
         self.assertIn("66 U 转生 @Custom", EDITION.read_text(encoding="utf-8"))
         self.assertIn(
