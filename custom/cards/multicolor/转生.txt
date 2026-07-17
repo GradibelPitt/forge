@@ -1,0 +1,7 @@
+Name:转生
+ManaCost:W B
+Types:Instant
+A:SP$ Destroy | ValidTgts$ Creature | TgtPrompt$ Select target creature | RememberDestroyed$ True | SubAbility$ DBReturn | SpellDescription$ Destroy target creature. If a creature card is put into a graveyard this way, return it to the battlefield under its owner's control.
+SVar:DBReturn:DB$ ChangeZone | Origin$ Graveyard | Destination$ Battlefield | Defined$ Remembered | ConditionDefined$ Remembered | ConditionPresent$ Card.Creature | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+Oracle:Destroy target creature. If a creature card is put into a graveyard this way, return it to the battlefield under its owner's control.

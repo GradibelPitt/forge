@@ -62,3 +62,4 @@ Type=Custom_Set
 63 C 潮池学徒 @Custom
 64 R 符文秘银杖 @Custom
 65 R 弃暗投明 @Custom
+66 U 转生 @Custom
