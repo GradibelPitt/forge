@@ -146,7 +146,9 @@ public class PlaySpellAbility {
         // choose alternative additional cost
         final List<SpellAbility> abilities = GameActionUtil.getAdditionalCostSpell(original);
 
-        final SpellAbility choosen = c.getAbilityToPlay(original.getHostCard(), abilities);
+        final SpellAbility choosen = abilities.size() == 1
+                ? abilities.get(0)
+                : c.getAbilityToPlay(original.getHostCard(), abilities);
 
         List<OptionalCostValue> list = GameActionUtil.getOptionalCostValues(choosen);
         if (!list.isEmpty()) {

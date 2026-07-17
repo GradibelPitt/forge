@@ -57,7 +57,7 @@ public abstract class InputBase implements java.io.Serializable, Input {
         return owner == null ? null : owner.getView();
     }
 
-    private boolean finished = false;
+    private volatile boolean finished = false;
     protected final boolean isFinished() { return finished; }
     protected final void setFinished() {
         finished = true;

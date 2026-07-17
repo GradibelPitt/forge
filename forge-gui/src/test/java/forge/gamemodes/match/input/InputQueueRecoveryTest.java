@@ -170,6 +170,31 @@ class InputQueueRecoveryTest {
     }
 
     @Test
+    void removingEqualButNonTopOuterInputUsesIdentityAndDoesNotReactivateInner() {
+        final PlayerControllerHuman controller = newController();
+        final InputQueue queue = controller.getInputQueue();
+        queue.deleteObservers();
+        final EqualRecordingInput outer = new EqualRecordingInput(controller);
+        final EqualRecordingInput inner = new EqualRecordingInput(controller);
+        queue.setInput(outer);
+        queue.setInput(inner);
+        final AtomicInteger innerReactivations = new AtomicInteger();
+        queue.addObserver((observable, argument) -> {
+            if (queue.getInput() == inner) {
+                innerReactivations.incrementAndGet();
+            }
+        });
+
+        assertTrue(queue.removeInputExact(outer));
+
+        assertSame(inner, queue.getInput(),
+                "equals-compatible inputs must still be removed by identity");
+        assertEquals(0, innerReactivations.get(),
+                "removing an invisible outer input must not show inner again");
+        inner.stop();
+    }
+
+    @Test
     void stopFinishesRemovesAndReleasesLatchWhenOnStopThrows() throws Exception {
         final PlayerControllerHuman controller = newController();
         final InputQueue queue = controller.getInputQueue();
@@ -256,6 +281,23 @@ class InputQueueRecoveryTest {
         assertTrue(input.finished());
         assertNull(queue.getInput());
         assertEquals(0, latchOf(input).getCount());
+    }
+
+    @Test
+    void initialMessageFailureStopsInputAndReleasesWaitingGameThread() throws Exception {
+        final PlayerControllerHuman controller = newController();
+        final InputQueue queue = controller.getInputQueue();
+        final FailingShowInput input = new FailingShowInput(controller);
+        GuiBase.setInterface(testGui(true));
+
+        final IllegalStateException failure = assertThrows(
+                IllegalStateException.class, () -> queue.setInput(input));
+
+        assertSame(input.showFailure, failure);
+        assertTrue(input.finished());
+        assertNull(queue.getInput());
+        assertEquals(0, latchOf(input).getCount(),
+                "a broken initial UI render must never strand showAndWait");
     }
 
     private static PlayerControllerHuman newController() {
@@ -485,6 +527,39 @@ class InputQueueRecoveryTest {
         @Override
         protected boolean allowAwaitNextInput() {
             return true;
+        }
+    }
+
+    private static final class EqualRecordingInput extends RecordingInput {
+        private static final long serialVersionUID = 1L;
+
+        private EqualRecordingInput(final PlayerControllerHuman controller) {
+            super(controller, false);
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            return other instanceof EqualRecordingInput;
+        }
+
+        @Override
+        public int hashCode() {
+            return 1;
+        }
+    }
+
+    private static final class FailingShowInput extends RecordingInput {
+        private static final long serialVersionUID = 1L;
+        private final IllegalStateException showFailure =
+                new IllegalStateException("initial message failed");
+
+        private FailingShowInput(final PlayerControllerHuman controller) {
+            super(controller, false);
+        }
+
+        @Override
+        protected void showMessage() {
+            throw showFailure;
         }
     }
 }

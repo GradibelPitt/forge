@@ -1565,6 +1565,11 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
      *  auto-tap plan) are raised to strength 2 by adding them a second time, so the GUI can
      *  render them more prominently. Each pref layer is gated independently. */
     public void pushActionableCards(boolean paymentMode, Iterable<CardView> emphasized) {
+        if (paymentMode) {
+            pushPaymentActionableCards(shouldCollectPaymentActionableCards()
+                    ? collectPaymentActionableCards() : Collections.emptySet(), emphasized);
+            return;
+        }
         final boolean showActionable = yieldController.getBoolPref(FPref.UI_SHOW_ACTIONABLE_HIGHLIGHTS);
         final boolean showAutoTap = emphasized != null
                 && yieldController.getBoolPref(FPref.UI_SHOW_AUTOTAP_PREVIEW);
@@ -1576,15 +1581,7 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
 
         final Set<CardView> actionable = Sets.newHashSet();
         if (showActionable) {
-            if (paymentMode) {
-                for (ZoneType zone : ACTIONABLE_PAYMENT_ZONES) {
-                    for (Card c : player.getCardsIn(zone)) {
-                        if (cardHasPlayableManaAbility(c)) {
-                            actionable.add(c.getView());
-                        }
-                    }
-                }
-            } else if (cachedActionableCards != null) {
+            if (cachedActionableCards != null) {
                 // Reuse the priority-time scan; recompute if neither APINA nor highlights triggered it.
                 actionable.addAll(cachedActionableCards);
             } else {
@@ -1605,11 +1602,54 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
         getGui().setWeaklySelectable(weighted);
     }
 
-    private boolean cardHasPlayableManaAbility(Card c) {
-        for (SpellAbility sa : c.getAllPossibleAbilities(player, true)) {
-            if (sa.isManaAbility()) return true;
+    /** Read on the EDT before scheduling the narrow payment scan off the EDT. */
+    public boolean shouldCollectPaymentActionableCards() {
+        return yieldController.getBoolPref(FPref.UI_SHOW_ACTIONABLE_HIGHLIGHTS);
+    }
+
+    /**
+     * Narrow game-state read for payment highlighting. Call from the engine action context;
+     * publishing the returned views is a separate EDT operation.
+     */
+    public Set<CardView> collectPaymentActionableCards() {
+        final Set<CardView> paymentCards = Sets.newHashSet();
+        for (ZoneType zone : ACTIONABLE_PAYMENT_ZONES) {
+            for (Card c : player.getCardsIn(zone)) {
+                if (PlayableManaAbilityUtil.hasPlayableManaAbility(c, player)) {
+                    paymentCards.add(c.getView());
+                }
+            }
         }
-        return false;
+        return paymentCards;
+    }
+
+    /** Publish a previously collected payment snapshot; this method never reads card abilities. */
+    public void pushPaymentActionableCards(final Iterable<CardView> collected,
+                                           final Iterable<CardView> emphasized) {
+        final boolean showActionable = yieldController.getBoolPref(FPref.UI_SHOW_ACTIONABLE_HIGHLIGHTS);
+        final boolean showAutoTap = emphasized != null
+                && yieldController.getBoolPref(FPref.UI_SHOW_AUTOTAP_PREVIEW);
+        if (!showActionable && !showAutoTap) {
+            getGui().clearWeaklySelectable();
+            return;
+        }
+
+        final Set<CardView> actionable = Sets.newHashSet();
+        if (showActionable && collected != null) {
+            for (CardView card : collected) {
+                actionable.add(card);
+            }
+        }
+        final List<CardView> weighted = Lists.newArrayList(actionable);
+        if (showAutoTap) {
+            for (CardView card : emphasized) {
+                if (!actionable.contains(card)) {
+                    weighted.add(card);
+                }
+                weighted.add(card);
+            }
+        }
+        getGui().setWeaklySelectable(weighted);
     }
 
     public void clearActionableCards() {

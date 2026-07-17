@@ -67,6 +67,7 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 
 import java.util.*;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 /**
@@ -77,6 +78,17 @@ import java.util.function.Predicate;
  */
 public class GameAction {
     private final Game game;
+    private final GameInputActionLane inputActionLane = new GameInputActionLane();
+
+    /** Opaque token for one synchronous UI-input lifetime. */
+    public static final class InputActionScope {
+        private final GameInputActionLane.Scope delegate;
+
+        private InputActionScope(final GameInputActionLane.Scope delegate) {
+            this.delegate = delegate;
+        }
+    }
+
     private int holdCheckingStaticAbilitiesDepth;
 
     private final static Comparator<StaticAbility> effectOrder = Comparator.comparing(StaticAbility::isCharacteristicDefining).reversed()
@@ -84,6 +96,61 @@ public class GameAction {
 
     public GameAction(Game game0) {
         game = game0;
+    }
+
+    public InputActionScope beginInputActionScope(final String name) {
+        return new InputActionScope(inputActionLane.begin(name));
+    }
+
+    public boolean invokeInputAction(final InputActionScope scope,
+            final Runnable action) {
+        return scope != null && inputActionLane.submit(scope.delegate, action);
+    }
+
+    public boolean invokeCriticalInputAction(final InputActionScope scope,
+            final Runnable cleanup) {
+        return scope != null
+                && inputActionLane.submitCritical(scope.delegate, cleanup);
+    }
+
+    public void setInputActionTermination(final InputActionScope scope,
+            final Runnable cleanup) {
+        if (scope != null) {
+            inputActionLane.setTerminationCleanup(scope.delegate, cleanup);
+        }
+    }
+
+    public void sealInputActionScope(final InputActionScope scope) {
+        if (scope != null) {
+            inputActionLane.seal(scope.delegate);
+        }
+    }
+
+    /**
+     * Releases a scope whose first action could not be accepted. Once any
+     * action has been accepted, normal seal/drain semantics must be used.
+     */
+    public boolean abandonInputActionScope(final InputActionScope scope) {
+        return scope != null && inputActionLane.abandon(scope.delegate);
+    }
+
+    public void pumpInputActionsUntil(final InputActionScope scope,
+            final BooleanSupplier inputReleased) {
+        if (scope != null) {
+            inputActionLane.pumpUntil(scope.delegate, inputReleased);
+        }
+    }
+
+    public boolean isExecutingInputAction(final InputActionScope scope) {
+        return scope != null && inputActionLane.isExecuting(scope.delegate);
+    }
+
+    public boolean isInputActionScopeAccepting(final InputActionScope scope) {
+        return scope != null && inputActionLane.isAccepting(scope.delegate);
+    }
+
+    public void terminateInputActions() {
+        inputActionLane.terminate();
     }
 
     public Card changeZone(final Zone zoneFrom, Zone zoneTo, final Card c, Integer position, SpellAbility cause) {

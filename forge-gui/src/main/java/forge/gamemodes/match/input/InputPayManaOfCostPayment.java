@@ -10,7 +10,6 @@ import forge.game.spellability.SpellAbility;
 import forge.localinstance.properties.ForgePreferences;
 import forge.model.FModel;
 import forge.player.PlayerControllerHuman;
-import forge.util.ITriggerEvent;
 import forge.util.Localizer;
 
 import java.util.ArrayList;
@@ -22,26 +21,51 @@ public class InputPayManaOfCostPayment extends InputPayMana {
         super(controller, spellAbility, payer, effect);
         manaCost = cost;
         extraMatrix = matrix;
+    }
+
+    @Override
+    protected void initializeInputStateOnLane() {
+        previousMatrix = new ManaConversionMatrix();
+        previousMatrix.restoreColorReplacements();
+        previousMatrix.applyCardMatrix(player.getManaPool());
+        super.initializeInputStateOnLane();
         applyMatrix();
 
         // CR 118.3c forced cast must use pool mana
         // TODO this introduces a small risk for illegal payments if the human "wastes" enough mana for abilities like Doubling Cube
-        if (spellAbility.getPayCosts().isMandatory()) {
+        if (saPaidFor.getPayCosts().isMandatory()) {
             List<Mana> refund = new ArrayList<>();
-            mandatory = payer.getManaPool().payManaCostFromPool(new ManaCostBeingPaid(cost), spellAbility, true, refund);
-            payer.getManaPool().refundMana(refund);
+            mandatory = player.getManaPool().payManaCostFromPool(
+                    new ManaCostBeingPaid(manaCost), saPaidFor, true, refund);
+            player.getManaPool().refundMana(refund);
         }
 
         // Set Mana cost being paid for SA to be able to reference it later
         player.pushPaidForSA(saPaidFor);
         saPaidFor.setManaCostBeingPaid(manaCost);
+        markPaidForStatePushed();
     }
 
     private static final long serialVersionUID = 3467312982164195091L;
     private ManaConversionMatrix extraMatrix;
+    private ManaConversionMatrix previousMatrix;
 
     @Override
-    protected final void onPlayerSelected(Player selected, final ITriggerEvent triggerEvent) {
+    protected void prepareRefreshStateOnLane() {
+        applyMatrix();
+    }
+
+    @Override
+    protected void onManaInputStoppedOnLane() {
+        if (previousMatrix != null) {
+            player.getManaPool().restoreColorReplacements();
+            player.getManaPool().applyCardMatrix(previousMatrix);
+            previousMatrix = null;
+        }
+    }
+
+    @Override
+    protected final void onPlayerSelectedOnLane(final Player selected) {
         if (player == selected) {
             if (player.canPayLife(this.phyLifeToLose + 2, this.effect, saPaidFor)) {
                 if (manaCost.payPhyrexian()) {
@@ -53,7 +77,6 @@ public class InputPayManaOfCostPayment extends InputPayMana {
                 }
             }
 
-            this.showMessage();
         }
     }
 
@@ -65,17 +88,10 @@ public class InputPayManaOfCostPayment extends InputPayMana {
     }
 
     @Override
-    protected void onCancel() {
-        stop();
-    }
-
-    @Override
     protected String getMessage() { 
         final String displayMana = manaCost.toString(false, player.getManaPool());
         final StringBuilder msg = new StringBuilder();
         final Localizer localizer = Localizer.getInstance();
-
-        applyMatrix();
 
         if (messagePrefix != null) {
             msg.append(messagePrefix).append("\n");

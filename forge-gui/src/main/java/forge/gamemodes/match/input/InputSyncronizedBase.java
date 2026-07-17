@@ -30,8 +30,13 @@ public abstract class InputSyncronizedBase extends InputBase implements InputSyn
     }
 
     @Override
-    public final void relaseLatchWhenGameIsOver() {
+    public void relaseLatchWhenGameIsOver() {
         cdlDone.countDown();
+        onLatchReleased();
+    }
+
+    protected final boolean isLatchReleased() {
+        return cdlDone.getCount() == 0;
     }
 
     public void showAndWait() {
@@ -40,7 +45,7 @@ public abstract class InputSyncronizedBase extends InputBase implements InputSyn
     }
 
     @Override
-    public final void stop() {
+    public void stop() {
         netLog.trace("stop() called on {}, latch count before = {}", this.getClass().getSimpleName(), cdlDone.getCount());
         Throwable failure = null;
         try {
@@ -61,14 +66,14 @@ public abstract class InputSyncronizedBase extends InputBase implements InputSyn
         }
 
         try {
-            // thread irrelevant
-            if (getController().getInputQueue().getInput() == this) {
-                getController().getInputQueue().removeInput(InputSyncronizedBase.this);
-            }
+            // Identity removal also handles an input that failed after a
+            // replacement was pushed above it.
+            getController().getInputQueue().removeInputExact(this);
         } catch (final RuntimeException | Error ex) {
             failure = preserveFirstFailure(failure, ex);
         } finally {
             cdlDone.countDown();
+            onLatchReleased();
         }
         netLog.trace("stop() done, latch count after = {}", cdlDone.getCount());
 
@@ -91,4 +96,7 @@ public abstract class InputSyncronizedBase extends InputBase implements InputSyn
     }
 
     protected void onStop() { }
+
+    /** Lets actor-backed inputs wake their per-game pump after an external release. */
+    protected void onLatchReleased() { }
 }

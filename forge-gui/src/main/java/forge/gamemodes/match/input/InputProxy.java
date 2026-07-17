@@ -60,17 +60,60 @@ public class InputProxy implements Observer {
                     FThreads.debugGetStackTraceItem(6, true), nextInput == null ? "null" : nextInput.getClass().getSimpleName(), 
                             game.getPhaseHandler().debugPrintState(), Singletons.getControl().getInputQueue().printInputStack());
 */
-        input.set(nextInput);
-        if (!(nextInput instanceof InputLockUI)) {
-            controller.getGui().setCurrentPlayer(nextInput.getOwner());
+        final Input previousInput = input.getAndSet(nextInput);
+        if (previousInput != nextInput && previousInput instanceof InputPayMana) {
+            ((InputPayMana) previousInput).onInputDeactivated();
         }
         final Runnable showMessage = () -> {
-            Input current = getInput();
-            controller.getInputQueue().syncPoint();
+            if (input.get() != nextInput) {
+                return;
+            }
             //System.out.printf("\t%s > showMessage @ %s/%s during %s%n", FThreads.debugGetCurrThreadId(), nextInput.getClass().getSimpleName(), current.getClass().getSimpleName(), game.getPhaseHandler().debugPrintState());
-            current.showMessageInitial();
+            try {
+                if (!(nextInput instanceof InputLockUI)) {
+                    controller.getGui().setCurrentPlayer(nextInput.getOwner());
+                }
+                controller.getInputQueue().syncPoint();
+                if (input.get() == nextInput) {
+                    nextInput.showMessageInitial();
+                }
+            } catch (final RuntimeException | Error failure) {
+                abortInput(nextInput, failure);
+                throw failure;
+            }
         };
-        FThreads.invokeInEdtLater(showMessage);
+        try {
+            FThreads.invokeInEdtLater(showMessage);
+        } catch (final RuntimeException | Error failure) {
+            abortInput(nextInput, failure);
+            throw failure;
+        }
+    }
+
+    private void abortInput(final Input failedInput,
+            final Throwable originalFailure) {
+        if (!(failedInput instanceof InputSynchronized)) {
+            return;
+        }
+        final InputSynchronized synchronizedInput =
+                (InputSynchronized) failedInput;
+        try {
+            synchronizedInput.stop();
+        } catch (final RuntimeException | Error stopFailure) {
+            if (stopFailure != originalFailure) {
+                originalFailure.addSuppressed(stopFailure);
+            }
+        } finally {
+            if (!(failedInput instanceof InputPayMana)) {
+                try {
+                    synchronizedInput.relaseLatchWhenGameIsOver();
+                } catch (final RuntimeException | Error releaseFailure) {
+                    if (releaseFailure != originalFailure) {
+                        originalFailure.addSuppressed(releaseFailure);
+                    }
+                }
+            }
+        }
     }
     /**
      * <p>
@@ -99,6 +142,12 @@ public class InputProxy implements Observer {
     public final void selectPlayer(final PlayerView playerView, final ITriggerEvent triggerEvent) {
         final Input inp = getInput();
         if (inp != null) {
+            if (inp instanceof InputPayMana) {
+                if (playerView != null) {
+                    ((InputPayMana) inp).selectPlayerById(playerView.getId());
+                }
+                return;
+            }
             final Player player = controller.getGame().getPlayer(playerView);
             if (player != null) {
                 inp.selectPlayer(player, triggerEvent);
@@ -113,6 +162,11 @@ public class InputProxy implements Observer {
     public final String getActivateAction(final CardView cardView) {
         final Input inp = getInput();
         if (inp != null) {
+            if (inp instanceof InputPayMana) {
+                return cardView == null ? null
+                        : ((InputPayMana) inp).getActivateAction(
+                                cardView.getId());
+            }
             final Card card = getCard(cardView);
             if (card != null) {
                 return inp.getActivateAction(card);
@@ -124,6 +178,21 @@ public class InputProxy implements Observer {
     public final boolean selectCard(final CardView cardView, final List<CardView> otherCardViewsToSelect, final ITriggerEvent triggerEvent) {
         final Input inp = getInput();
         if (inp != null) {
+            if (inp instanceof InputPayMana) {
+                if (cardView == null) {
+                    return false;
+                }
+                final List<Integer> otherIds = new ArrayList<>();
+                if (otherCardViewsToSelect != null) {
+                    for (final CardView otherView : otherCardViewsToSelect) {
+                        if (otherView != null) {
+                            otherIds.add(otherView.getId());
+                        }
+                    }
+                }
+                return ((InputPayMana) inp).selectCardById(
+                        cardView.getId(), otherIds);
+            }
             final Card card = getCard(cardView);
             if (card != null) {
                 List<Card> otherCardsToSelect = null;

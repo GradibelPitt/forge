@@ -682,6 +682,11 @@ public class Game {
             return;
         }
 
+        // Reject stale UI/network tokens immediately. Each active scope keeps
+        // one registered critical cleanup that its owning game-thread pump
+        // executes before returning from showAndWait.
+        action.terminateInputActions();
+
         for (Player p : allPlayers) {
             p.clearController();
         }

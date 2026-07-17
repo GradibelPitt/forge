@@ -21,6 +21,7 @@ import forge.game.GameView;
 import forge.util.IHasForgeLog;
 import forge.player.PlayerControllerHuman;
 
+import java.util.Iterator;
 import java.util.Observable;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -63,6 +64,27 @@ public class InputQueue extends Observable implements IHasForgeLog {
            inputStack.pop();
         }
         updateObservers();
+    }
+
+    /** Removes this exact input even if a newer nested input is above it. */
+    public final boolean removeInputExact(final Input inp) {
+        if (!(inp instanceof InputSynchronized)) {
+            return false;
+        }
+        final InputSynchronized visibleBefore = inputStack.peek();
+        boolean removed = false;
+        for (final Iterator<InputSynchronized> iterator =
+                inputStack.iterator(); iterator.hasNext();) {
+            if (iterator.next() == inp) {
+                iterator.remove();
+                removed = true;
+                break;
+            }
+        }
+        if (removed && visibleBefore != inputStack.peek()) {
+            updateObservers();
+        }
+        return removed;
     }
 
     public final void clearInputs() {
@@ -146,6 +168,9 @@ public class InputQueue extends Observable implements IHasForgeLog {
 
     public void onGameOver(final boolean releaseAllInputs) {
         for (final InputSynchronized inp : inputStack) {
+            if (inp instanceof InputPayMana) {
+                ((InputPayMana) inp).onInputDeactivated();
+            }
             inp.relaseLatchWhenGameIsOver();
             if (!releaseAllInputs) {
                 break;
