@@ -24,16 +24,22 @@ import java.awt.Dimension;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.event.InputMethodEvent;
+import java.awt.event.InputMethodListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 import javax.swing.AbstractListModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.ImageIcon;
 import javax.swing.JList;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.ListCellRenderer;
 import javax.swing.ListSelectionModel;
@@ -43,17 +49,21 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.Timer;
 import java.awt.image.BufferedImage;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import forge.card.CardType;
+import forge.card.ICardFace;
 import forge.card.MagicColor;
+import forge.game.card.CardFaceView;
 import forge.game.card.CounterKeywordType;
 import forge.game.card.CounterType;
 import forge.localinstance.skin.FSkinProp;
 import forge.toolbox.FList;
+import forge.toolbox.FButton;
 import forge.toolbox.FMouseAdapter;
 import forge.toolbox.FOptionPane;
 import forge.toolbox.FScrollPane;
@@ -61,7 +71,6 @@ import forge.toolbox.FSkin;
 import forge.toolbox.FTextField;
 import forge.util.ITranslatable;
 import forge.util.Localizer;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * A simple class that shows a list of choices in a dialog. Two properties
@@ -88,6 +97,11 @@ import org.apache.commons.lang3.StringUtils;
  * @version $Id: ListChooser.java 25183 2014-03-14 23:09:45Z drdev $
  */
 public class ListChooser<T> {
+    private static final ExecutorService SEARCH_EXECUTOR = Executors.newSingleThreadExecutor(task -> {
+        final Thread thread = new Thread(task, "forge-choice-search");
+        thread.setDaemon(true);
+        return thread;
+    });
     // Data and number of choices for the list
     private final List<T> allItems;
     private List<T> displayedItems;
@@ -101,13 +115,26 @@ public class ListChooser<T> {
     private final FList<T> lstChoices;
     private final FOptionPane optionPane;
     private final ChooserListModel listModel;
+    private CompletableFuture<CardNameSearchIndex<T>> searchIndexFuture;
+    private final LatestSearchGeneration searchGeneration = new LatestSearchGeneration();
+    private CompletableFuture<?> pendingSearch;
+    private Timer searchDebounce;
+    private boolean inputMethodComposing;
+    private JLabel searchStatus;
+    private final boolean cardNameChooser;
+    private boolean searchPending;
+    private FTextField cardSearchField;
+    private FButton cardSearchButton;
+    private volatile boolean disposed;
 
     public ListChooser(final String title, final int minChoices, final int maxChoices, final Collection<T> list, final Function<T, String> display) {
         FThreads.assertExecutedByEdt(true);
         this.minChoices = minChoices;
         this.maxChoices = maxChoices;
         this.display = display;
-        this.allItems = list.getClass().isInstance(List.class) ? (List<T>)list : Lists.newArrayList(list);
+        this.allItems = Lists.newArrayList(list);
+        this.cardNameChooser = !allItems.isEmpty()
+                && (allItems.get(0) instanceof ICardFace || allItems.get(0) instanceof CardFaceView);
         this.displayedItems = new ArrayList<>(this.allItems);
         this.listModel = new ChooserListModel();
         this.lstChoices = new FList<>(this.listModel);
@@ -124,9 +151,16 @@ public class ListChooser<T> {
         }
 
         this.lstChoices.setCellRenderer(new TransformedCellRenderer(display));
+        if (cardNameChooser && allItems.size() > 25) {
+            // Prevent JList preferred-size/layout from asking the renderer to translate every
+            // candidate on the EDT while the immutable search index is built in the worker.
+            this.lstChoices.setFixedCellWidth(480);
+            this.lstChoices.setFixedCellHeight(Math.max(28,
+                    this.lstChoices.getFontMetrics(this.lstChoices.getFont()).getHeight() + 8));
+        }
 
         final FScrollPane listScroller = new FScrollPane(this.lstChoices, true);
-        int minWidth = this.lstChoices.getAutoSizeWidth();
+        int minWidth = cardNameChooser && allItems.size() > 25 ? 480 : this.lstChoices.getAutoSizeWidth();
         if (this.lstChoices.getModel().getSize() > this.lstChoices.getVisibleRowCount()) {
             minWidth += listScroller.getVerticalScrollBar().getPreferredSize().width;
         }
@@ -134,29 +168,100 @@ public class ListChooser<T> {
 
         // Add search field for large lists (same threshold as mobile)
         if (allItems.size() > 25) {
+            if (cardNameChooser) {
+                final List<T> indexCandidates = new ArrayList<>(allItems);
+                // Arbitrary caller renderers remain EDT-only. The worker indexes only the
+                // immutable candidate's canonical/ITranslatable fields.
+                final Function<T, String> indexDisplay = ListChooser::getDefaultDisplayText;
+                this.searchIndexFuture = CompletableFuture.supplyAsync(() -> new CardNameSearchIndex<>(
+                        indexCandidates, indexDisplay,
+                        () -> disposed || Thread.currentThread().isInterrupted()), SEARCH_EXECUTOR);
+            }
             final FTextField searchField = new FTextField.Builder()
                     .ghostText(Localizer.getInstance().getMessage("lblSearch"))
                     .showGhostTextWithFocus()
                     .build();
+            if (cardNameChooser) {
+                cardSearchField = searchField;
+            }
+            this.searchDebounce = new Timer(180, e -> {
+                if (!inputMethodComposing) {
+                    applyFilter(searchField);
+                }
+            });
+            this.searchDebounce.setRepeats(false);
             searchField.getDocument().addDocumentListener(new DocumentListener() {
-                @Override public void insertUpdate(DocumentEvent e) { applyFilter(searchField); }
-                @Override public void removeUpdate(DocumentEvent e) { applyFilter(searchField); }
-                @Override public void changedUpdate(DocumentEvent e) { applyFilter(searchField); }
+                @Override public void insertUpdate(DocumentEvent e) { onSearchTextChanged(searchField); }
+                @Override public void removeUpdate(DocumentEvent e) { onSearchTextChanged(searchField); }
+                @Override public void changedUpdate(DocumentEvent e) { onSearchTextChanged(searchField); }
+            });
+            searchField.addInputMethodListener(new InputMethodListener() {
+                @Override public void inputMethodTextChanged(final InputMethodEvent e) {
+                    final int total = e.getText() == null ? 0
+                            : e.getText().getEndIndex() - e.getText().getBeginIndex();
+                    inputMethodComposing = total > e.getCommittedCharacterCount();
+                    if (!inputMethodComposing) {
+                        onSearchTextChanged(searchField);
+                    }
+                }
+
+                @Override public void caretPositionChanged(final InputMethodEvent e) { }
             });
             searchField.addKeyListener(new KeyAdapter() {
                 @Override public void keyPressed(final KeyEvent e) {
                     if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                        ListChooser.this.commit();
+                        if (cardNameChooser) {
+                            runFilterNow(searchField);
+                        } else {
+                            ListChooser.this.commit();
+                        }
+                        e.consume();
                     } else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+                        if (searchPending) {
+                            e.consume();
+                            return;
+                        }
+                        if (lstChoices.getSelectedIndex() < 0 && !displayedItems.isEmpty()) {
+                            lstChoices.setSelectedIndex(0);
+                        }
                         lstChoices.requestFocusInWindow();
+                        e.consume();
+                    } else if (e.getKeyCode() == KeyEvent.VK_UP && cardNameChooser) {
+                        if (!searchPending && lstChoices.getSelectedIndex() < 0 && !displayedItems.isEmpty()) {
+                            lstChoices.setSelectedIndex(displayedItems.size() - 1);
+                            lstChoices.requestFocusInWindow();
+                        }
+                        e.consume();
                     }
                 }
             });
 
-            final JPanel panel = new JPanel(new BorderLayout(0, 4));
+            final JPanel searchPanel = new JPanel(new BorderLayout(6, 0));
+            searchPanel.setOpaque(false);
+            searchPanel.add(searchField, BorderLayout.CENTER);
+            if (cardNameChooser) {
+                final FButton searchButton = new FButton(Localizer.getInstance().getMessage("lblSearch"));
+                cardSearchButton = searchButton;
+                searchButton.addActionListener(e -> runFilterNow(searchField));
+                searchPanel.add(searchButton, BorderLayout.EAST);
+            }
+
+            this.searchStatus = new JLabel();
+            this.searchStatus.setVisible(false);
+            final JPanel resultsPanel = new JPanel(new BorderLayout(0, 2));
+            resultsPanel.setOpaque(false);
+            if (cardNameChooser) {
+                resultsPanel.add(this.searchStatus, BorderLayout.NORTH);
+            }
+            resultsPanel.add(listScroller, BorderLayout.CENTER);
+
+            final JPanel panel = new JPanel(new BorderLayout(0, 6));
             panel.setOpaque(false);
-            panel.add(searchField, BorderLayout.NORTH);
-            panel.add(listScroller, BorderLayout.CENTER);
+            panel.add(searchPanel, BorderLayout.NORTH);
+            panel.add(resultsPanel, BorderLayout.CENTER);
+            if (cardNameChooser) {
+                panel.setPreferredSize(new Dimension(Math.max(480, minWidth), 420));
+            }
 
             this.optionPane = new FOptionPane(null, title, null, panel, options, minChoices < 0 ? 0 : -1);
             if (minChoices != -1) {
@@ -193,43 +298,122 @@ public class ListChooser<T> {
         });
     }
 
-    private void applyFilter(final FTextField searchField) {
-        final String text = normalize(searchField.getText());
-        lstChoices.clearSelection();
+    private void scheduleFilter() {
+        if (!inputMethodComposing && searchDebounce != null) {
+            setSearchPending();
+            searchDebounce.restart();
+        }
+    }
 
+    private void onSearchTextChanged(final FTextField searchField) {
+        if (cardNameChooser) {
+            scheduleFilter();
+        } else {
+            applyLegacyFilter(searchField);
+        }
+    }
+
+    private void applyLegacyFilter(final FTextField searchField) {
+        final String text = CardNameSearchIndex.normalize(searchField.getText());
+        lstChoices.clearSelection();
+        final List<T> matches;
         if (text.isEmpty()) {
-            displayedItems = new ArrayList<>(allItems);
+            matches = new ArrayList<>(allItems);
         } else {
             final List<T> startsWith = new ArrayList<>();
             final List<T> contains = new ArrayList<>();
             for (final T item : allItems) {
-                final String name = normalize(getDisplayText(item));
+                final String name = CardNameSearchIndex.normalize(getDisplayText(item));
                 if (name.startsWith(text)) {
                     startsWith.add(item);
                 } else if (name.contains(text)) {
                     contains.add(item);
                 }
             }
-            startsWith.sort(Comparator.comparingInt(a -> getDisplayText(a).length()));
-            displayedItems = new ArrayList<>(startsWith.size() + contains.size());
-            displayedItems.addAll(startsWith);
-            displayedItems.addAll(contains);
+            startsWith.sort(Comparator.comparingInt(item -> getDisplayText(item).length()));
+            matches = new ArrayList<>(startsWith.size() + contains.size());
+            matches.addAll(startsWith);
+            matches.addAll(contains);
         }
-
-        listModel.fireDataChanged();
+        listModel.replaceItems(matches);
         if (!displayedItems.isEmpty() && maxChoices > 0) {
             lstChoices.setSelectedIndex(0);
         }
     }
 
-    private static String normalize(final String s) {
-        return StringUtils.stripAccents(s.toLowerCase()).replaceAll("[^a-z0-9 ]", "");
+    private void runFilterNow(final FTextField searchField) {
+        if (searchDebounce != null) {
+            searchDebounce.stop();
+        }
+        if (!inputMethodComposing) {
+            applyFilter(searchField);
+        }
+    }
+
+    private void applyFilter(final FTextField searchField) {
+        final String query = searchField.getText();
+        setSearchPending();
+        final long generation = searchGeneration.begin();
+        if (pendingSearch != null) {
+            pendingSearch.cancel(true);
+        }
+        pendingSearch = searchIndexFuture.thenApplyAsync(index -> index.search(query,
+                        () -> !searchGeneration.isCurrent(generation) || Thread.currentThread().isInterrupted()), SEARCH_EXECUTOR)
+                .whenComplete((results, error) -> SwingUtilities.invokeLater(() -> {
+                    if (error == null) {
+                        applySearchResults(generation, query, results);
+                    } else {
+                        applySearchFailure(generation);
+                    }
+                }));
+    }
+
+    private void applySearchResults(final long generation, final String query, final List<T> results) {
+        if (disposed || !searchGeneration.isCurrent(generation)) {
+            return;
+        }
+        listModel.replaceItems(results);
+        searchPending = false;
+        lstChoices.setEnabled(true);
+        lstChoices.clearSelection();
+        if (searchStatus != null) {
+            final boolean noResults = results.isEmpty() && !CardNameSearchIndex.normalize(query).isEmpty();
+            searchStatus.setText(noResults
+                    ? Localizer.getInstance().getMessageorUseDefault("lblNoSearchResults", "No results for: {0}", query)
+                    : "");
+            searchStatus.setVisible(noResults);
+            searchStatus.getParent().revalidate();
+        }
+        optionPane.setButtonEnabled(0, minChoices <= 0 && CardNameSearchIndex.normalize(query).isEmpty());
+        lstChoices.revalidate();
+        lstChoices.repaint();
+    }
+
+    private void applySearchFailure(final long generation) {
+        if (disposed || !searchGeneration.isCurrent(generation)) {
+            return;
+        }
+        listModel.replaceItems(List.of());
+        searchPending = false;
+        lstChoices.setEnabled(true);
+        lstChoices.clearSelection();
+        optionPane.setButtonEnabled(0, false);
+        if (searchStatus != null) {
+            searchStatus.setText(Localizer.getInstance().getMessageorUseDefault(
+                    "lblSearchUnavailable", "Search unavailable. Close and reopen this chooser."));
+            searchStatus.setVisible(true);
+            searchStatus.getParent().revalidate();
+        }
     }
 
     private String getDisplayText(final T value) {
         if (display != null) {
             return display.apply(value);
         }
+        return getDefaultDisplayText(value);
+    }
+
+    private static String getDefaultDisplayText(final Object value) {
         if (value instanceof ITranslatable t) {
             return t.getTranslatedName();
         }
@@ -245,6 +429,44 @@ public class ListChooser<T> {
     public FList<T> getLstChoices() {
         return this.lstChoices;
     }
+
+    FTextField getCardSearchFieldForTesting() {
+        return cardSearchField;
+    }
+
+    FButton getCardSearchButtonForTesting() {
+        return cardSearchButton;
+    }
+
+    boolean isSearchPendingForTesting() {
+        return searchPending;
+    }
+
+    boolean isSearchIndexReadyForTesting() {
+        return searchIndexFuture == null || searchIndexFuture.isDone();
+    }
+
+    List<T> getDisplayedItemsForTesting() {
+        return List.copyOf(displayedItems);
+    }
+
+    boolean isConfirmEnabledForTesting() {
+        return optionPane.isButtonEnabled(0);
+    }
+
+    int getDialogResultForTesting() {
+        return optionPane.getResult();
+    }
+
+    void finishInputCompositionForTesting() {
+        inputMethodComposing = false;
+        onSearchTextChanged(cardSearchField);
+    }
+
+    void startInputCompositionForTesting() {
+        inputMethodComposing = true;
+    }
+
 
     /** @return boolean */
     public boolean show() {
@@ -282,6 +504,17 @@ public class ListChooser<T> {
         } while (this.minChoices > 0 && result != 0);
 
         this.optionPane.dispose();
+        disposed = true;
+        searchGeneration.invalidate();
+        if (searchIndexFuture != null) {
+            searchIndexFuture.cancel(true);
+        }
+        if (pendingSearch != null) {
+            pendingSearch.cancel(true);
+        }
+        if (searchDebounce != null) {
+            searchDebounce.stop();
+        }
 
         // this assert checks if we really don't return on a cancel if input is mandatory
         assert (this.minChoices <= 0) || (result == 0);
@@ -357,9 +590,23 @@ public class ListChooser<T> {
      * </p>
      */
     private void commit() {
-        if (this.optionPane.isButtonEnabled(0)) {
+        if (!searchPending && this.optionPane.isButtonEnabled(0)) {
             optionPane.setResult(0);
         }
+    }
+
+    private void setSearchPending() {
+        if (!cardNameChooser) {
+            return;
+        }
+        searchPending = true;
+        searchGeneration.invalidate();
+        if (pendingSearch != null) {
+            pendingSearch.cancel(true);
+        }
+        lstChoices.clearSelection();
+        lstChoices.setEnabled(false);
+        optionPane.setButtonEnabled(0, false);
     }
 
     private class ChooserListModel extends AbstractListModel<T> {
@@ -375,8 +622,16 @@ public class ListChooser<T> {
             return ListChooser.this.displayedItems.get(index);
         }
 
-        void fireDataChanged() {
-            fireContentsChanged(this, 0, Math.max(getSize() - 1, 0));
+        void replaceItems(final Collection<T> items) {
+            final int oldSize = displayedItems.size();
+            if (oldSize > 0) {
+                displayedItems = new ArrayList<>();
+                fireIntervalRemoved(this, 0, oldSize - 1);
+            }
+            if (!items.isEmpty()) {
+                displayedItems = new ArrayList<>(items);
+                fireIntervalAdded(this, 0, displayedItems.size() - 1);
+            }
         }
     }
 
@@ -384,7 +639,8 @@ public class ListChooser<T> {
         @Override
         public void valueChanged(final ListSelectionEvent e) {
             final int num = ListChooser.this.lstChoices.getSelectedIndices().length;
-            ListChooser.this.optionPane.setButtonEnabled(0, (num >= ListChooser.this.minChoices) && (num <= ListChooser.this.maxChoices));
+            ListChooser.this.optionPane.setButtonEnabled(0, !searchPending
+                    && (num >= ListChooser.this.minChoices) && (num <= ListChooser.this.maxChoices));
         }
     }
 
@@ -427,13 +683,25 @@ public class ListChooser<T> {
         }
 
         protected String getLabel(final T value) {
-            if (transformer != null) {
-                return transformer.apply(value);
+            if (!(value instanceof ICardFace) && !(value instanceof CardFaceView)) {
+                if (transformer != null) {
+                    return transformer.apply(value);
+                }
+                if (value instanceof ITranslatable t) {
+                    return t.getTranslatedName();
+                }
+                return value != null ? value.toString() : "";
             }
-            if (value instanceof ITranslatable t) {
-                return t.getTranslatedName();
-            }
-            return value != null ? value.toString() : "";
+            return CardNameSearchIndex.displayLabel(value, v -> {
+                @SuppressWarnings("unchecked") final T typed = (T) v;
+                if (transformer != null) {
+                    return transformer.apply(typed);
+                }
+                if (typed instanceof ITranslatable t) {
+                    return t.getTranslatedName();
+                }
+                return typed != null ? typed.toString() : "";
+            });
         }
     }
 }

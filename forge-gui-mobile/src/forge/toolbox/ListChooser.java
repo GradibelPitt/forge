@@ -40,7 +40,7 @@ import forge.itemmanager.filters.ListLabelFilter;
 import forge.menu.FMenuItem;
 import forge.menu.FPopupMenu;
 import forge.util.*;
-import org.apache.commons.lang3.StringUtils;
+import forge.gui.CardNameSearchIndex;
 
 /**
  * A simple class that shows a list of choices in a dialog. Two properties
@@ -88,7 +88,6 @@ public class ListChooser<T> extends FContainer {
         lstChoices = add(new ChoiceList(list, minChoices, maxChoices));
         display = display0;
         callback = callback0;
-
         //only show search field if more than 25 items and vertical layout
         if (list.size() > 25 && !lstChoices.getListItemRenderer().layoutHorizontal()) {
             txtSearch = add(new FTextField());
@@ -162,7 +161,11 @@ public class ListChooser<T> extends FContainer {
 
         final String pattern = normalize(txtSearch.getText());
         if (!pattern.isEmpty()) {
-            predicates.add(input -> normalize(lstChoices.getChoiceText(input)).contains(pattern));
+            // Mobile intentionally keeps its original synchronous contains filter for the
+            // first release. Unicode and canonical names are supported without building a
+            // 10k translated-name index on the UI thread; desktop owns fuzzy/button parity.
+            predicates.add(input -> normalize(lstChoices.getChoiceText(input)).contains(pattern)
+                    || input instanceof IHasName named && normalize(named.getName()).contains(pattern));
         }
         if (advancedSearchFilter != null && !advancedSearchFilter.isEmpty()) {
             predicates.add((Predicate<? super T>)advancedSearchFilter.getPredicate());
@@ -182,7 +185,7 @@ public class ListChooser<T> extends FContainer {
     }
 
     private static String normalize(final String s) {
-        return StringUtils.stripAccents(s.toLowerCase()).replaceAll("[^a-z0-9 ]", "");
+        return CardNameSearchIndex.normalize(s);
     }
 
     private void updateHeight() {

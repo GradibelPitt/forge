@@ -7,6 +7,7 @@ import forge.item.PaperCard;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -31,5 +32,18 @@ public class MakeCardEffectTest {
                 startingDeck, "Hogger");
 
         Assert.assertEquals(names, Arrays.asList("Patches", "Patches"));
+    }
+
+    @Test
+    public void cancelledSpellbookChoiceStopsWithoutAddingAnEmptyCardName() {
+        final List<String> names = new ArrayList<>();
+
+        Assert.assertFalse(MakeCardEffect.recordChosenNameOrCancel(names, null));
+        Assert.assertFalse(MakeCardEffect.recordChosenNameOrCancel(names, ""));
+        Assert.assertTrue(names.isEmpty());
+        Assert.assertTrue(MakeCardEffect.recordChosenNameOrCancel(names, "Garden of Hope"));
+        Assert.assertEquals(names, List.of("Garden of Hope"));
+        Assert.assertFalse(MakeCardEffect.recordChosenNameOrCancel(names, ""));
+        Assert.assertTrue(names.isEmpty(), "cancelling a later SpellbookAmount choice must be atomic");
     }
 }

@@ -99,6 +99,7 @@ import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A prototype for player controller class
@@ -2719,17 +2720,28 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
     @Override
     public String chooseCardName(final SpellAbility sa, final Predicate<ICardFace> cpp, final String valid,
                                  final String message) {
-        while (true) {
-            final ICardFace cardFace = chooseSingleCardFace(sa, message, cpp, sa.getHostCard().getName());
-            final PaperCard cp = FModel.getMagicDb().getCommonCards().getCard(cardFace.getName());
-            // the Card instance for test needs a game to be tested
-            final Card instanceForPlayer = Card.fromPaperCard(cp, player);
-            // TODO need the valid check be done against the CardFace?
-            if (instanceForPlayer.isValid(valid, sa.getHostCard().getController(), sa.getHostCard(), sa)) {
-                // it need to return name for card face
-                return cardFace.getName();
-            }
-        }
+        return chooseCardNameFromCandidates(sa, FModel.getMagicDb().getCommonCards().streamAllFaces(),
+                cpp, valid, message);
+    }
+
+    String chooseCardNameFromCandidates(final SpellAbility sa, final Stream<ICardFace> candidates,
+                                        final Predicate<ICardFace> cpp, final String valid, final String message) {
+        final List<ICardFace> legalFaces = candidates
+                .filter(cpp)
+                // Hidden Agenda supplies a broad face predicate; this dynamic clause is
+                // safely expressible without constructing live Card instances.
+                .filter(face -> !"Card.!NamedCard".equals(valid)
+                        || !sa.getHostCard().hasNamedCardName(face.getName()))
+                .collect(Collectors.toList());
+        final ICardFace chosen = chooseOptionalCardNameFace(legalFaces, message);
+        return chosen == null ? "" : chosen.getName();
+    }
+
+    private ICardFace chooseOptionalCardNameFace(final List<ICardFace> faces, final String message) {
+        final Map<CardFaceView, ICardFace> mapped = faces.stream().collect(Collectors.toMap(
+                CardFaceView::new, Function.identity(), (a, b) -> a, TreeMap::new));
+        final CardFaceView chosen = getGui().oneOrNone(message, Lists.newArrayList(mapped.keySet()));
+        return chosen == null ? null : mapped.get(chosen);
     }
 
     @Override
@@ -3779,7 +3791,7 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
 
     @Override
     public String chooseCardName(SpellAbility sa, List<ICardFace> faces, String message) {
-        ICardFace face = chooseSingleCardFace(sa, faces, message);
+        ICardFace face = chooseOptionalCardNameFace(faces, message);
         return face == null ? "" : face.getName();
     }
 

@@ -121,7 +121,9 @@ public class MakeCardEffect extends SpellAbilityEffect {
                             Localizer.getInstance().getMessage("lblChooseFromSpellbook", sbName);
                         chosen = player.getController().chooseCardName(sa, faces, message);
                     }
-                    names.add(chosen);
+                    if (!recordChosenNameOrCancel(names, chosen)) {
+                        break;
+                    }
                     faces.remove(StaticData.instance().getCommonCards().getFaceByName(chosen));
                     i--;
                 }
@@ -233,6 +235,15 @@ public class MakeCardEffect extends SpellAbilityEffect {
                 player.shuffle(sa);
             }
         }
+    }
+
+    static boolean recordChosenNameOrCancel(final List<String> names, final String chosen) {
+        if (chosen == null || chosen.isEmpty()) {
+            names.clear();
+            return false;
+        }
+        names.add(chosen);
+        return true;
     }
 
     static List<String> getLegendaryPermanentStartingDeckNames(final CardPool startingDeck,
