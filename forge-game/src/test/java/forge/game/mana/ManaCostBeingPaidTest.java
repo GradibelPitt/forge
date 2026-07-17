@@ -23,6 +23,10 @@ public class ManaCostBeingPaidTest {
 
     @Test
     public void harmonyReductionRemovesColoredSymbolsBeforeGeneric() {
+        final ManaCostBeingPaid oneGreen = createManaCostBeingPaid("1 G");
+        oneGreen.decreaseHarmonyMana(2);
+        AssertJUnit.assertTrue("{1}{G} reduced by 2 should be free", oneGreen.isPaid());
+
         final ManaCostBeingPaid doubleBlue = createManaCostBeingPaid("1 U U");
         doubleBlue.decreaseHarmonyMana(2);
         AssertJUnit.assertEquals("{1}", doubleBlue.toString());
