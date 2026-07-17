@@ -159,6 +159,11 @@ public class GameSnapshot {
             //System.out.println("RESTORED");
         }
 
+        // Zone callbacks normally maintain this derived index incrementally.
+        // A snapshot/restore is a lifecycle boundary, so rebuild once from the
+        // copied identities to prove no old-game or stale LKI reference remains.
+        toGame.rebuildBattlefieldDerivedState();
+
         // TODO update thisTurnCast
     }
 

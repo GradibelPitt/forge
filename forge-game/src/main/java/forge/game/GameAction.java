@@ -77,8 +77,7 @@ import java.util.function.Predicate;
  */
 public class GameAction {
     private final Game game;
-
-    private boolean holdCheckingStaticAbilities = false;
+    private int holdCheckingStaticAbilitiesDepth;
 
     private final static Comparator<StaticAbility> effectOrder = Comparator.comparing(StaticAbility::isCharacteristicDefining).reversed()
             .thenComparing(StaticAbility::getTimestamp);
@@ -1002,7 +1001,6 @@ public class GameAction {
     }
 
     public final void controllerChangeZoneCorrection(final Card c) {
-        System.out.println("Correcting zone for " + c.toString());
         final Zone oldBattlefield = game.getZoneOf(c);
 
         if (oldBattlefield == null || oldBattlefield.is(ZoneType.Stack)) {
@@ -1025,43 +1023,96 @@ public class GameAction {
         if (c.isPaired()) {
             Card partner = c.getPairedWith();
             c.setPairedWith(null);
-            partner.setPairedWith(null);
-            partner.updateStateForView();
+            if (partner != null && partner.getPairedWith() == c) {
+                partner.setPairedWith(null);
+                partner.updateStateForView();
+            }
         }
 
         // run Game Commands early
         c.runChangeControllerCommands();
 
-        game.getTriggerHandler().suppressMode(TriggerType.ChangesZone);
+        final boolean suppressionWasAlreadyActive = game.getTriggerHandler()
+                .isTriggerSuppressed(TriggerType.ChangesZone);
+        if (!suppressionWasAlreadyActive) {
+            game.getTriggerHandler().suppressMode(TriggerType.ChangesZone);
+        }
+        try {
+            oldBattlefield.remove(c);
+            newBattlefield.add(c);
+            if (game.getPhaseHandler().inCombat()) {
+                game.getCombat().removeFromCombat(c);
+            }
 
-        oldBattlefield.remove(c);
-        newBattlefield.add(c);
-        if (game.getPhaseHandler().inCombat()) {
-            game.getCombat().removeFromCombat(c);
+            c.setCameUnderControlSinceLastUpkeep(true);
+            c.handleChangedControllerSprocketReset();
+
+            final Map<AbilityKey, Object> runParams = AbilityKey.mapFromCard(c);
+            runParams.put(AbilityKey.OriginalController, original);
+            game.getTriggerHandler().runTrigger(TriggerType.ChangesController,
+                    runParams, false);
+        } catch (final RuntimeException | Error ex) {
+            if (!containsIdentity(oldBattlefield, c)
+                    && !containsIdentity(newBattlefield, c)) {
+                try {
+                    oldBattlefield.add(c);
+                } catch (final RuntimeException | Error rollbackFailure) {
+                    ex.addSuppressed(rollbackFailure);
+                }
+            }
+            throw ex;
+        } finally {
+            if (!suppressionWasAlreadyActive) {
+                game.getTriggerHandler().clearSuppression(
+                        TriggerType.ChangesZone);
+            }
+        }
+    }
+
+    private static boolean containsIdentity(final Iterable<Card> cards,
+            final Card expected) {
+        for (final Card card : cards) {
+            if (card == expected) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    StaticAbilityCheckScope holdStaticAbilityChecks() {
+        holdCheckingStaticAbilitiesDepth++;
+        return new StaticAbilityCheckScope();
+    }
+
+    boolean isCheckingStaticAbilitiesOnHold() {
+        return holdCheckingStaticAbilitiesDepth > 0;
+    }
+
+    final class StaticAbilityCheckScope implements AutoCloseable {
+        private boolean closed;
+
+        private StaticAbilityCheckScope() {
         }
 
-        c.setCameUnderControlSinceLastUpkeep(true);
-        c.handleChangedControllerSprocketReset();
-
-        final Map<AbilityKey, Object> runParams = AbilityKey.mapFromCard(c);
-        runParams.put(AbilityKey.OriginalController, original);
-        game.getTriggerHandler().runTrigger(TriggerType.ChangesController, runParams, false);
-
-        game.getTriggerHandler().clearSuppression(TriggerType.ChangesZone);
-    }
-
-    // Temporarily disable (if mode = true) actively checking static abilities.
-    private void setHoldCheckingStaticAbilities(boolean mode) {
-        holdCheckingStaticAbilities = mode;
-    }
-
-    private boolean isCheckingStaticAbilitiesOnHold() {
-        return holdCheckingStaticAbilities;
+        @Override
+        public void close() {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            if (holdCheckingStaticAbilitiesDepth <= 0) {
+                throw new IllegalStateException(
+                        "Static ability check hold underflow");
+            }
+            holdCheckingStaticAbilitiesDepth--;
+        }
     }
 
     // This doesn't check layers or if the ability gets removed by other effects
     public boolean hasStaticAbilityAffectingZone(ZoneType zone, StaticAbilityLayer layer) {
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        final boolean[] found = {false};
+        game.getContinuousStaticAbilitySourceIndex()
+                .visitCurrentContinuousSources(ca -> {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.Continuous)) {
                     continue;
@@ -1070,11 +1121,13 @@ public class GameAction {
                     continue;
                 }
                 if (ZoneType.listValueOf(stAb.getParamOrDefault("AffectedZone", ZoneType.Battlefield.toString())).contains(zone)) {
-                    return true;
+                    found[0] = true;
+                    return false;
                 }
             }
-        }
-        return false;
+            return true;
+        });
+        return found[0];
     }
 
     public final void checkStaticAbilities() {
@@ -1090,6 +1143,9 @@ public class GameAction {
         if (game.isGameOver()) {
             return;
         }
+        final ContinuousStaticAbilitySourceIndex sourceIndex =
+                game.getContinuousStaticAbilitySourceIndex();
+        sourceIndex.recordCheckInvocation();
         game.getTracker().freeze(); //prevent views flickering during while updating for state-based effects
 
         final Map<StaticAbilityLayer, Set<Card>> affectedPerLayer = Maps.newHashMap();
@@ -1105,7 +1161,9 @@ public class GameAction {
             dependencies = HashBasedTable.create();
         }
 
-        game.forEachCardInGame(c -> {
+        final CardCollection staticSourceCards =
+                sourceIndex.snapshotAfterStaticEffectsCleared(preList);
+        for (final Card c : staticSourceCards) {
             // need to get Card from preList if able
             final Card co = preList.get(c);
             for (StaticAbility stAb : co.getStaticAbilities()) {
@@ -1121,8 +1179,7 @@ public class GameAction {
                     staticAbilities.add(stAb);
                 }
             }
-            return true;
-        }, true);
+        }
 
         staticAbilities.sort(effectOrder);
 
@@ -1210,21 +1267,19 @@ public class GameAction {
         // preList means that this is run by a pre Check with LKI objects
         // in that case Always trigger should not Run
         if (preList.isEmpty()) {
-            for (Player p : game.getPlayers()) {
-                for (Card c : p.getCardsIn(ZoneType.Battlefield).threadSafeIterable()) {
-                    if (!c.getController().equals(p)) {
-                        controllerChangeZoneCorrection(c);
-                        affectedCards.add(c);
-                    }
-                    if (c.isCreature() && c.isPaired()) {
-                        Card partner = c.getPairedWith();
-                        if (!partner.isCreature() || c.getController() != partner.getController() || !c.isInPlay()) {
-                            c.setPairedWith(null);
-                            partner.setPairedWith(null);
-                            affectedCards.add(c);
-                        }
-                    }
-                }
+            final BattlefieldDerivedStateTracker derivedStateTracker =
+                    game.getBattlefieldDerivedStateTracker();
+            // Static CONTROL removals are not separately represented in
+            // affectedPerLayer. Recheck only the already-affected identities,
+            // then drain controller corrections before soulbond cleanup.
+            try {
+                derivedStateTracker.markAffected(affectedCards);
+                derivedStateTracker.drain(affectedCards, this);
+            } catch (final RuntimeException | Error ex) {
+                // The dirty identities remain retryable. Do not strand the UI
+                // tracker in a frozen state if a script or zone listener fails.
+                game.getTracker().unfreeze();
+                throw ex;
             }
 
             final Map<AbilityKey, Object> runParams = AbilityKey.newMap();
@@ -1273,6 +1328,12 @@ public class GameAction {
             affectedPerLayer.get(StaticAbilityLayer.RULES).forEach(Card::updateNonAbilityTextForView);
         }
         // TODO filter out old copies from zone change
+
+        // Only the abilities layer can create/remove a new static source.
+        // Feeding every P/T-affected card back into discovery turns a global
+        // anthem into another hidden full-battlefield scan.
+        sourceIndex.refresh(staticSourceCards,
+                affectedPerLayer.get(StaticAbilityLayer.ABILITIES));
 
         if (runEvents && !affectedCards.isEmpty()) {
             game.fireEvent(new GameEventCardStatsChanged(affectedCards));
@@ -1572,37 +1633,35 @@ public class GameAction {
 
             // only check static abilities once after destroying all the creatures
             // (e.g. helpful for Erebos's Titan and another creature dealing lethal damage to each other simultaneously)
-            setHoldCheckingStaticAbilities(true);
+            try (StaticAbilityCheckScope ignored = holdStaticAbilityChecks()) {
+                if (noRegCreats.size() > 1 && !orderedNoRegCreats) {
+                    noRegCreats = (CardCollection) GameActionUtil.orderCardsByTheirOwners(game, noRegCreats, ZoneType.Graveyard, null);
+                    orderedNoRegCreats = true;
+                }
+                for (Card c : noRegCreats) {
+                    c.updateWasDestroyed(true);
+                    sacrificeDestroy(c, null, mapParams);
+                }
 
-            if (noRegCreats.size() > 1 && !orderedNoRegCreats) {
-                noRegCreats = (CardCollection) GameActionUtil.orderCardsByTheirOwners(game, noRegCreats, ZoneType.Graveyard, null);
-                orderedNoRegCreats = true;
-            }
-            for (Card c : noRegCreats) {
-                c.updateWasDestroyed(true);
-                sacrificeDestroy(c, null, mapParams);
-            }
-
-            if (desCreats != null) {
-                if (desCreats.size() > 1 && !orderedDesCreats) {
-                    desCreats = CardLists.filter(desCreats, Card::canBeDestroyed);
-                    if (!desCreats.isEmpty()) {
-                        desCreats = (CardCollection) GameActionUtil.orderCardsByTheirOwners(game, desCreats, ZoneType.Graveyard, null);
+                if (desCreats != null) {
+                    if (desCreats.size() > 1 && !orderedDesCreats) {
+                        desCreats = CardLists.filter(desCreats, Card::canBeDestroyed);
+                        if (!desCreats.isEmpty()) {
+                            desCreats = (CardCollection) GameActionUtil.orderCardsByTheirOwners(game, desCreats, ZoneType.Graveyard, null);
+                        }
+                        orderedDesCreats = true;
                     }
-                    orderedDesCreats = true;
+                    for (Card c : desCreats) {
+                        destroy(c, null, true, mapParams);
+                    }
                 }
-                for (Card c : desCreats) {
-                    destroy(c, null, true, mapParams);
+
+                if (sacrificeList.size() > 1 && !orderedSacrificeList) {
+                    sacrificeList = (CardCollection) GameActionUtil.orderCardsByTheirOwners(game, sacrificeList, ZoneType.Graveyard, null);
+                    orderedSacrificeList = true;
                 }
+                sacrifice(sacrificeList, null, true, mapParams);
             }
-
-            if (sacrificeList.size() > 1 && !orderedSacrificeList) {
-                sacrificeList = (CardCollection) GameActionUtil.orderCardsByTheirOwners(game, sacrificeList, ZoneType.Graveyard, null);
-                orderedSacrificeList = true;
-            }
-            sacrifice(sacrificeList, null, true, mapParams);
-
-            setHoldCheckingStaticAbilities(false);
 
             table.triggerChangesZoneAll(game, null);
 

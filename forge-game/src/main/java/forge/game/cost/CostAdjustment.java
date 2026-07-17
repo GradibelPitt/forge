@@ -35,6 +35,8 @@ import java.util.Map.Entry;
 import java.util.function.Predicate;
 
 public class CostAdjustment {
+    private static final List<ZoneType> COST_SOURCE_ZONES = List.of(
+            ZoneType.Battlefield, ZoneType.Stack, ZoneType.Command);
 
     public static Cost adjust(final Cost cost, final SpellAbility sa, boolean effect) {
         if (sa.isTrigger() || cost == null || effect) {
@@ -64,17 +66,27 @@ public class CostAdjustment {
             }
         }
 
-        CardCollection cardsOnBattlefield = new CardCollection(game.getCardsIn(ZoneType.Battlefield));
-        cardsOnBattlefield.addAll(game.getCardsIn(ZoneType.Stack));
-        cardsOnBattlefield.addAll(game.getCardsIn(ZoneType.Command));
-        if (!cardsOnBattlefield.contains(host)) {
-            cardsOnBattlefield.add(host);
-        }
         final List<StaticAbility> raiseAbilities = Lists.newArrayList();
 
         // Sort abilities to apply them in proper order
-        for (Card c : cardsOnBattlefield) {
+        final boolean[] sawHost = {
+                game.containsStaticAbilitySourceEquivalent(host,
+                        COST_SOURCE_ZONES)
+        };
+        game.visitStaticAbilityModeSources(StaticAbilityMode.RaiseCost,
+                COST_SOURCE_ZONES, c -> {
+            if (c.equals(host)) {
+                sawHost[0] = true;
+            }
             for (final StaticAbility stAb : c.getStaticAbilities()) {
+                if (stAb.checkMode(StaticAbilityMode.RaiseCost)) {
+                    raiseAbilities.add(stAb);
+                }
+            }
+            return true;
+        });
+        if (!sawHost[0]) {
+            for (final StaticAbility stAb : host.getStaticAbilities()) {
                 if (stAb.checkMode(StaticAbilityMode.RaiseCost)) {
                     raiseAbilities.add(stAb);
                 }
@@ -191,22 +203,53 @@ public class CostAdjustment {
             isStateChangeToFaceDown = true;
         }
 
-        CardCollection cardsOnBattlefield = new CardCollection(game.getCardsIn(ZoneType.Battlefield));
-        cardsOnBattlefield.addAll(game.getCardsIn(ZoneType.Stack));
-        cardsOnBattlefield.addAll(game.getCardsIn(ZoneType.Command));
-        if (!cardsOnBattlefield.contains(host)) {
-            cardsOnBattlefield.add(host);
-        }
         final List<StaticAbility> reduceAbilities = Lists.newArrayList();
         final List<StaticAbility> setAbilities = Lists.newArrayList();
 
         // Sort abilities to apply them in proper order
-        for (Card c : cardsOnBattlefield) {
+        final boolean[] sawHostForReduce = {
+                game.containsStaticAbilitySourceEquivalent(host,
+                        COST_SOURCE_ZONES)
+        };
+        game.visitStaticAbilityModeSources(StaticAbilityMode.ReduceCost,
+                COST_SOURCE_ZONES, c -> {
+            if (c.equals(host)) {
+                sawHostForReduce[0] = true;
+            }
             for (final StaticAbility stAb : c.getStaticAbilities()) {
                 if (stAb.checkMode(StaticAbilityMode.ReduceCost) && checkRequirement(sa, stAb)) {
                     reduceAbilities.add(stAb);
                 }
-                else if (stAb.checkMode(StaticAbilityMode.SetCost)) {
+            }
+            return true;
+        });
+        if (!sawHostForReduce[0]) {
+            for (final StaticAbility stAb : host.getStaticAbilities()) {
+                if (stAb.checkMode(StaticAbilityMode.ReduceCost)
+                        && checkRequirement(sa, stAb)) {
+                    reduceAbilities.add(stAb);
+                }
+            }
+        }
+        final boolean[] sawHostForSet = {
+                game.containsStaticAbilitySourceEquivalent(host,
+                        COST_SOURCE_ZONES)
+        };
+        game.visitStaticAbilityModeSources(StaticAbilityMode.SetCost,
+                COST_SOURCE_ZONES, c -> {
+            if (c.equals(host)) {
+                sawHostForSet[0] = true;
+            }
+            for (final StaticAbility stAb : c.getStaticAbilities()) {
+                if (stAb.checkMode(StaticAbilityMode.SetCost)) {
+                    setAbilities.add(stAb);
+                }
+            }
+            return true;
+        });
+        if (!sawHostForSet[0]) {
+            for (final StaticAbility stAb : host.getStaticAbilities()) {
+                if (stAb.checkMode(StaticAbilityMode.SetCost)) {
                     setAbilities.add(stAb);
                 }
             }

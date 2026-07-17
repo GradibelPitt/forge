@@ -2,12 +2,12 @@ package forge.game.staticability;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import com.google.common.collect.Lists;
 
 import forge.card.mana.ManaCostParser;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.cost.Cost;
 import forge.game.player.Player;
 import forge.game.spellability.OptionalCost;
@@ -19,9 +19,7 @@ public class StaticAbilityAlternativeCost {
     public static List<SpellAbility> alternativeCosts(final SpellAbility sa, final Card source, final Player pl) {
         List<SpellAbility> result = Lists.newArrayList();
         // add source first in case it's LKI (alternate host)
-        CardCollection list = new CardCollection(source);
-        list.addAll(source.getGame().getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES));
-        for (final Card ca : list) {
+        final Consumer<Card> collectFromCard = ca -> {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.AlternativeCost)) {
                     continue;
@@ -92,7 +90,15 @@ public class StaticAbilityAlternativeCost {
 
                 result.add(newSA);
             }
-        }
+        };
+        collectFromCard.accept(source);
+        source.getGame().visitStaticAbilityModeSources(
+                StaticAbilityMode.AlternativeCost, ca -> {
+                    if (!ca.equals(source)) {
+                        collectFromCard.accept(ca);
+                    }
+                    return true;
+                });
         return result;
     }
 

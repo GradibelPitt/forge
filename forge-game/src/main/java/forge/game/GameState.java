@@ -74,6 +74,7 @@ public class GameState {
 
     private final Map<Integer, Card> idToCard = new HashMap<>();
     private final Map<Card, Integer> cardToAttachId = new HashMap<>();
+    private final Map<Card, Integer> cardToPairedId = new IdentityHashMap<>();
     private final Map<Card, Player> cardToEnchantPlayerId = new HashMap<>();
     private final Map<Card, Integer> markedDamage = new HashMap<>();
     private final Map<Card, List<String>> cardToChosenClrs = new HashMap<>();
@@ -193,6 +194,13 @@ public class GameState {
                     if (!card.getAllAttachedCards().isEmpty()) {
                         // Remember the ID of cards that have attachments
                         cardsReferencedByID.add(card);
+                    }
+                    if (card.isPaired()) {
+                        // Both endpoints of a reciprocal Soulbond pair need a
+                        // stable ID so a real GameState round trip can rebuild
+                        // the relation without retaining old Card identities.
+                        cardsReferencedByID.add(card);
+                        cardsReferencedByID.add(card.getPairedWith());
                     }
                 }
                 for (Object o : card.getRemembered()) {
@@ -314,6 +322,10 @@ public class GameState {
             if (c.isPhasedOut()) {
                 newText.append("|PhasedOut:");
                 newText.append(getPlayerString(c.getPhasedOut()));
+            }
+            if (c.isPaired()) {
+                newText.append("|PairedWith:")
+                        .append(c.getPairedWith().getId());
             }
             if (c.isFaceDown()) {
                 newText.append("|FaceDown");
@@ -591,6 +603,11 @@ public class GameState {
     }
 
     protected void applyGameOnThread(final Game game) {
+        // Pair text is user-editable game-state input. Validate every endpoint
+        // before setting the stack/trigger suppression flags or replacing any
+        // zone, so malformed and overflowing IDs can only discard the pair,
+        // never strand a partially-mutated game.
+        final PairRestorePlan pairRestorePlan = preflightPairRestore();
         if (game.getPlayers().size() != playerStates.size()) {
             throw new RuntimeException("Non-matching number of players, (" +
                 game.getPlayers().size() + " vs. " + playerStates.size() + ")");
@@ -598,6 +615,7 @@ public class GameState {
 
         idToCard.clear();
         cardToAttachId.clear();
+        cardToPairedId.clear();
         cardToEnchantPlayerId.clear();
         cardToRememberedId.clear();
         cardToExiledWithId.clear();
@@ -624,9 +642,11 @@ public class GameState {
         game.getTriggerHandler().setSuppressAllTriggers(true);
 
         for (int i = 0; i < playerStates.size(); i++) {
-            setupPlayerState(game.getPlayers().get(i), playerStates.get(i));
+            setupPlayerState(game.getPlayers().get(i), playerStates.get(i),
+                    pairRestorePlan);
         }
         handleCardAttachments();
+        handleCardPairing();
         handleChosenEntities();
         handleRememberedEntities();
         handleMergedCards();
@@ -662,6 +682,7 @@ public class GameState {
             }
         }
 
+        game.rebuildBattlefieldDerivedState();
         game.getAction().checkStateEffects(true); //ensure state based effects and triggers are updated
 
         // prevent interactions with objects from old state
@@ -1085,6 +1106,133 @@ public class GameState {
         }
     }
 
+    private PairRestorePlan preflightPairRestore() {
+        final Map<Integer, Integer> idOccurrences = new HashMap<>();
+        final Map<Integer, Integer> requestedTargets = new HashMap<>();
+        final Set<Integer> invalidSources = new HashSet<>();
+
+        for (final PlayerState playerState : playerStates) {
+            for (final Entry<ZoneType, String> zoneCards
+                    : playerState.cardTexts.entrySet()) {
+                if (StringUtils.isEmpty(zoneCards.getValue())) {
+                    continue;
+                }
+                for (final String cardText : zoneCards.getValue().split(";")) {
+                    final String[] fields = cardText.trim().split("\\|");
+                    final ParsedPositiveField id = parsePositiveField(fields,
+                            "Id:");
+                    final ParsedPositiveField pairedWith = parsePositiveField(
+                            fields, "PairedWith:");
+                    if (id.isSingleValid()) {
+                        idOccurrences.merge(id.value(), 1, Integer::sum);
+                    }
+                    if (pairedWith.occurrences() == 0) {
+                        continue;
+                    }
+                    if (zoneCards.getKey() != ZoneType.Battlefield
+                            || !id.isSingleValid()
+                            || !pairedWith.isSingleValid()) {
+                        if (id.value() != null) {
+                            invalidSources.add(id.value());
+                        }
+                        continue;
+                    }
+                    final Integer previous = requestedTargets.putIfAbsent(
+                            id.value(), pairedWith.value());
+                    if (previous != null
+                            && !previous.equals(pairedWith.value())) {
+                        invalidSources.add(id.value());
+                    }
+                }
+            }
+        }
+
+        final Map<Integer, Integer> validTargets = new HashMap<>();
+        for (final Entry<Integer, Integer> request
+                : requestedTargets.entrySet()) {
+            final int source = request.getKey();
+            final int target = request.getValue();
+            if (source == target || invalidSources.contains(source)
+                    || invalidSources.contains(target)
+                    || idOccurrences.getOrDefault(source, 0) != 1
+                    || idOccurrences.getOrDefault(target, 0) != 1
+                    || !Objects.equals(requestedTargets.get(target), source)) {
+                continue;
+            }
+            validTargets.put(source, target);
+        }
+        return new PairRestorePlan(Map.copyOf(validTargets));
+    }
+
+    private static ParsedPositiveField parsePositiveField(
+            final String[] fields, final String prefix) {
+        int occurrences = 0;
+        Integer value = null;
+        boolean malformed = false;
+        for (final String field : fields) {
+            if (!field.startsWith(prefix)) {
+                continue;
+            }
+            occurrences++;
+            try {
+                final int parsed = Integer.parseInt(field.substring(
+                        prefix.length()));
+                if (parsed <= 0 || value != null && value != parsed) {
+                    malformed = true;
+                } else {
+                    value = parsed;
+                }
+            } catch (final NumberFormatException ex) {
+                malformed = true;
+            }
+        }
+        return new ParsedPositiveField(occurrences, value, malformed);
+    }
+
+    /**
+     * Restores only an explicitly reciprocal pair. Corrupt, one-sided, stale,
+     * cross-game, or off-battlefield references are ignored rather than
+     * producing a half-pair or retaining an object from the replaced state.
+     * Creature validity is intentionally left to the following static/SBA
+     * pass because a continuous effect can supply the creature type.
+     */
+    private void handleCardPairing() {
+        final Set<Card> restored = Collections.newSetFromMap(
+                new IdentityHashMap<>());
+        for (final Entry<Card, Integer> entry : cardToPairedId.entrySet()) {
+            final Card first = entry.getKey();
+            final Card second = idToCard.get(entry.getValue());
+            if (second == null || first == second || restored.contains(first)
+                    || restored.contains(second)
+                    || !first.isInZone(ZoneType.Battlefield)
+                    || !second.isInZone(ZoneType.Battlefield)
+                    || first.getGame() != second.getGame()) {
+                continue;
+            }
+            final Integer reverseId = cardToPairedId.get(second);
+            if (reverseId == null || idToCard.get(reverseId) != first) {
+                continue;
+            }
+            first.setPairedWith(second);
+            second.setPairedWith(first);
+            restored.add(first);
+            restored.add(second);
+        }
+    }
+
+    private record PairRestorePlan(Map<Integer, Integer> validTargets) {
+        private Integer targetFor(final int sourceId) {
+            return validTargets.get(sourceId);
+        }
+    }
+
+    private record ParsedPositiveField(int occurrences, Integer value,
+            boolean malformed) {
+        private boolean isSingleValid() {
+            return occurrences == 1 && value != null && !malformed;
+        }
+    }
+
     private void handleMergedCards() {
         for (Entry<Card, List<String>> entry : cardToMergedCards.entrySet()) {
             Card mergedTo = entry.getKey();
@@ -1141,7 +1289,8 @@ public class GameState {
         }
     }
 
-    private void setupPlayerState(final Player p, final PlayerState state) {
+    private void setupPlayerState(final Player p, final PlayerState state,
+            final PairRestorePlan pairRestorePlan) {
         // Lock check static as we setup player state
 
         // Clear all zones first, this ensures that any lingering cards and effects (e.g. in command zone) get cleared up
@@ -1157,7 +1306,9 @@ public class GameState {
         Map<ZoneType, CardCollectionView> playerCards = new EnumMap<>(ZoneType.class);
         for (Entry<ZoneType, String> kv : state.cardTexts.entrySet()) {
             String value = kv.getValue();
-            playerCards.put(kv.getKey(), processCardsForZone(value.isEmpty() ? new String[0] : value.split(";"), p));
+            playerCards.put(kv.getKey(), processCardsForZone(
+                    value.isEmpty() ? new String[0] : value.split(";"), p,
+                    pairRestorePlan));
         }
 
         if (state.life >= 0) p.setLife(state.life, null);
@@ -1241,7 +1392,8 @@ public class GameState {
      *            a {@link forge.game.player.Player} object.
      * @return a {@link CardCollectionView} object.
      */
-    private CardCollectionView processCardsForZone(final String[] data, final Player player) {
+    private CardCollectionView processCardsForZone(final String[] data,
+            final Player player, final PairRestorePlan pairRestorePlan) {
         final CardCollection cl = new CardCollection();
         for (final String element : data) {
             final String[] cardinfo = element.trim().split("\\|");
@@ -1294,6 +1446,17 @@ public class GameState {
                 }
             }
             c.setSickness(false);
+
+            final ParsedPositiveField idField = parsePositiveField(cardinfo,
+                    "Id:");
+            if (idField.isSingleValid()) {
+                idToCard.put(idField.value(), c);
+                final Integer targetId = pairRestorePlan.targetFor(
+                        idField.value());
+                if (targetId != null) {
+                    cardToPairedId.put(c, targetId);
+                }
+            }
 
             for (final String info : cardinfo) {
                 if (info.startsWith("Tapped")) {
@@ -1360,11 +1523,13 @@ public class GameState {
                     c.setRingBearer(true);
                     player.setRingBearer(c);
                 } else if (info.startsWith("Id:")) {
-                    int id = Integer.parseInt(info.substring(3));
-                    idToCard.put(id, c);
+                    // Parsed without throwing before any game mutation and
+                    // installed above only when exactly one positive ID exists.
                 } else if (info.startsWith("Attaching:") /*deprecated*/ || info.startsWith("AttachedTo:")) {
                     int id = Integer.parseInt(info.substring(info.indexOf(':') + 1));
                     cardToAttachId.put(c, id);
+                } else if (info.startsWith("PairedWith:")) {
+                    // The preflight plan admits only complete reciprocal pairs.
                 } else if (info.startsWith("EnchantingPlayer:")) {
                     String tgt = info.substring(info.indexOf(':') + 1);
                     cardToEnchantPlayerId.put(c, parsePlayerString(player.getGame(), tgt));

@@ -44,11 +44,22 @@ public class PlayerZoneBattlefield extends PlayerZone {
 
     public final void addToMelded(final Card c) {
         c.getZone().remove(c);
-        meldedCards.add(c);
+        if (meldedCards.add(c)) {
+            game.onMeldedCardEnteredStaticAbilitySourceSet(getPlayer(), c,
+                    meldedCards.size() - 1);
+        }
     }
 
     public final void removeFromMelded(final Card c) {
-        meldedCards.remove(c);
+        if (!meldedCards.contains(c)) {
+            return;
+        }
+        final int position = meldedCards.indexOf(c);
+        if (position >= 0) {
+            final Card removedCard = meldedCards.remove(position);
+            game.onMeldedCardLeftStaticAbilitySourceSet(getPlayer(),
+                    removedCard, position);
+        }
     }
 
     /** {@inheritDoc} */

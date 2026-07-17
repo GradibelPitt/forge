@@ -2,24 +2,27 @@ package forge.game.staticability;
 
 import forge.game.Game;
 import forge.game.card.Card;
-import forge.game.zone.ZoneType;
 
 public class StaticAbilityIgnoreLegendRule {
 
     public static boolean ignoreLegendRule(final Card card)  {
         final Game game = card.getGame();
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        final boolean[] ignored = {false};
+        game.visitStaticAbilityModeSources(StaticAbilityMode.IgnoreLegendRule,
+                ca -> {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.IgnoreLegendRule)) {
                     continue;
                 }
 
                 if (applyIgnoreLegendRuleAbility(stAb, card)) {
-                    return true;
+                    ignored[0] = true;
+                    return false;
                 }
             }
-        }
-        return false;
+            return true;
+        });
+        return ignored[0];
     }
 
     private static boolean applyIgnoreLegendRuleAbility(final StaticAbility stAb, final Card card) {

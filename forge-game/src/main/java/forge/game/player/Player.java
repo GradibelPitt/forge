@@ -2754,10 +2754,21 @@ public class Player extends GameEntity implements Comparable<Player> {
         return inboundTokens;
     }
     public void addInboundToken(Card c) {
-        inboundTokens.add(c);
+        if (inboundTokens.add(c)) {
+            game.onInboundCardEnteredStaticAbilitySourceSet(this, c,
+                    inboundTokens.size() - 1);
+        }
     }
     public void removeInboundToken(Card c) {
-        inboundTokens.remove(c);
+        if (!inboundTokens.contains(c)) {
+            return;
+        }
+        final int position = inboundTokens.indexOf(c);
+        if (position >= 0) {
+            final Card removedCard = inboundTokens.remove(position);
+            game.onInboundCardLeftStaticAbilitySourceSet(this, removedCard,
+                    position);
+        }
     }
 
     public void onMulliganned() {

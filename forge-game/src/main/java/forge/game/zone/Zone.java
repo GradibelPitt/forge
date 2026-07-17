@@ -49,6 +49,9 @@ public class Zone implements java.io.Serializable, Iterable<Card> {
     private final CardCollection cardList = new CardCollection();
     protected final ZoneType zoneType;
     protected final Game game;
+    // LKI zones are detached snapshots, not members of the live game. Keep
+    // them out of the continuous-static source index.
+    private transient boolean detachedSnapshot;
 
     protected final transient ListMultimap<ZoneType, Card> cardsAddedThisTurn = MultimapBuilder.enumKeys(ZoneType.class).arrayListValues().build();
     protected final transient ListMultimap<ZoneType, Card> cardsAddedLastTurn = MultimapBuilder.enumKeys(ZoneType.class).arrayListValues().build();
@@ -62,6 +65,9 @@ public class Zone implements java.io.Serializable, Iterable<Card> {
 
     protected void sort() {
         cardList.sort(COMPARATOR);
+        if (!detachedSnapshot) {
+            game.onStaticAbilitySourceZoneOrderChanged(this, cardList);
+        }
     }
 
     public Zone(final ZoneType zone0, Game game0) {
@@ -83,6 +89,9 @@ public class Zone implements java.io.Serializable, Iterable<Card> {
     public final void reorder(final Card c, final int index) {
         cardList.remove(c);
         cardList.add(index, c);
+        if (!detachedSnapshot) {
+            game.onStaticAbilitySourceZoneOrderChanged(this, cardList);
+        }
     }
 
     public final void add(final Card c) {
@@ -139,12 +148,17 @@ public class Zone implements java.io.Serializable, Iterable<Card> {
 
         c.setZone(this);
 
+        final boolean alreadyPresent = cardList.contains(c);
         if ((zoneType == ZoneType.Battlefield || !c.isToken() || c.getCurrentStateName() == CardStateName.PreparedSpell) || (zoneType == ZoneType.Stack && c.getCopiedPermanent() != null)) {
             if (index == null) {
                 cardList.add(c);
             } else {
                 cardList.add(index, c);
             }
+        }
+        if (!detachedSnapshot && !alreadyPresent && cardList.contains(c)) {
+            game.onCardEnteredStaticAbilitySourceZone(c, this,
+                    index == null ? cardList.size() - 1 : index);
         }
         onChanged();
 
@@ -160,17 +174,32 @@ public class Zone implements java.io.Serializable, Iterable<Card> {
     }
 
     public void remove(final Card c) {
-        if (cardList.remove(c)) {
+        if (!cardList.contains(c)) {
+            return;
+        }
+        final int position = cardList.indexOf(c);
+        if (position >= 0) {
+            final Card removedCard = cardList.remove(position);
+            if (!detachedSnapshot) {
+                game.onCardLeftStaticAbilitySourceZone(removedCard, this,
+                        position);
+            }
             onChanged();
             game.fireEvent(new GameEventZone(zoneType, getPlayer(), EventValueChangeType.Removed, c));
         }
     }
 
     public final void setCards(final Iterable<Card> cards) {
+        if (!detachedSnapshot) {
+            game.onStaticAbilitySourceZoneContentsCleared(this, cardList);
+        }
         cardList.clear();
         for (Card c : cards) {
             c.setZone(this);
             cardList.add(c);
+        }
+        if (!detachedSnapshot) {
+            game.onStaticAbilitySourceZoneContentsSet(this, cardList);
         }
         onChanged();
         game.fireEvent(new GameEventZone(zoneType, getPlayer(), EventValueChangeType.ComplexUpdate, null));
@@ -178,6 +207,9 @@ public class Zone implements java.io.Serializable, Iterable<Card> {
 
     public final void removeAllCards(boolean forcedWithoutEvents) {
         if (forcedWithoutEvents) {
+            if (!detachedSnapshot) {
+                game.onStaticAbilitySourceZoneContentsCleared(this, cardList);
+            }
             cardList.clear();
         } else {
             for (Card c : cardList) {
@@ -260,6 +292,9 @@ public class Zone implements java.io.Serializable, Iterable<Card> {
 
     public void shuffle() {
         Collections.shuffle(cardList, MyRandom.getRandom());
+        if (!detachedSnapshot) {
+            game.onStaticAbilitySourceZoneOrderChanged(this, cardList);
+        }
         onChanged();
     }
 
@@ -270,6 +305,7 @@ public class Zone implements java.io.Serializable, Iterable<Card> {
 
     public Zone getLKICopy(Map<Integer, Card> cachedMap) {
         Zone result = new Zone(zoneType, game);
+        result.detachedSnapshot = true;
 
         result.setCards(CardCopyService.getLKICopyList(getCards(), cachedMap));
 

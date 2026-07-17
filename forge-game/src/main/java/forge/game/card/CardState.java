@@ -153,6 +153,9 @@ public class CardState implements GameObject, IHasSVars, ITranslatable {
 
     public void updateTypes() {
         this.changedType = getType().getTypeWithChanges(card.getChangedCardTypes());
+        if (card.getCurrentState() == this && card.getGame() != null) {
+            card.getGame().onCardTypePotentiallyChanged(card);
+        }
     }
     public void updateTypesForView() {
         view.updateType(this);
@@ -403,6 +406,7 @@ public class CardState implements GameObject, IHasSVars, ITranslatable {
         for (KeywordInterface k : intrinsicKeyword0) {
             intrinsicKeywords.insert(k.copy(card, lki));
         }
+        card.rebuildIntrinsicStaticAbilityModes();
         card.updateKeywordsCache(this);
     }
 
@@ -427,6 +431,9 @@ public class CardState implements GameObject, IHasSVars, ITranslatable {
         if (inst != null && initTraits) {
             inst.createTraits(card, true);
         }
+        if (inst != null) {
+            card.rebuildIntrinsicStaticAbilityModes();
+        }
         return inst;
     }
     public final boolean addIntrinsicKeywords(final Iterable<String> keywords) {
@@ -443,13 +450,25 @@ public class CardState implements GameObject, IHasSVars, ITranslatable {
     }
 
     public final boolean removeIntrinsicKeyword(final String s) {
-        return intrinsicKeywords.remove(s);
+        final boolean changed = intrinsicKeywords.remove(s);
+        if (changed) {
+            card.rebuildIntrinsicStaticAbilityModes();
+        }
+        return changed;
     }
     public final boolean removeIntrinsicKeyword(final KeywordInterface s) {
-        return intrinsicKeywords.remove(s);
+        final boolean changed = intrinsicKeywords.remove(s);
+        if (changed) {
+            card.rebuildIntrinsicStaticAbilityModes();
+        }
+        return changed;
     }
     public final boolean removeIntrinsicKeyword(final Keyword k) {
-        return intrinsicKeywords.removeAll(k);
+        final boolean changed = intrinsicKeywords.removeAll(k);
+        if (changed) {
+            card.rebuildIntrinsicStaticAbilityModes();
+        }
+        return changed;
     }
 
     public final FCollectionView<SpellAbility> getSpellAbilities() {
@@ -711,11 +730,22 @@ public class CardState implements GameObject, IHasSVars, ITranslatable {
         card.updateStaticAbilities(result, this);
         return result;
     }
+    public final FCollectionView<StaticAbility> getIntrinsicStaticAbilities() {
+        return staticAbilities;
+    }
     public final boolean addStaticAbility(StaticAbility stab) {
-        return staticAbilities.add(stab);
+        final boolean changed = staticAbilities.add(stab);
+        if (changed) {
+            card.rebuildIntrinsicStaticAbilityModes();
+        }
+        return changed;
     }
     public final boolean removeStaticAbility(StaticAbility stab) {
-        return staticAbilities.remove(stab);
+        final boolean changed = staticAbilities.remove(stab);
+        if (changed) {
+            card.rebuildIntrinsicStaticAbilityModes();
+        }
+        return changed;
     }
 
     public FCollectionView<ReplacementEffect> getReplacementEffects() {

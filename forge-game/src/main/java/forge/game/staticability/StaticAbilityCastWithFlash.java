@@ -2,45 +2,58 @@ package forge.game.staticability;
 
 import forge.game.Game;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
-import forge.game.zone.ZoneType;
 
 public class StaticAbilityCastWithFlash {
 
     public static boolean anyWithFlashNeedsInfo(final SpellAbility sa, final Card card, final Player activator) {
-        final Game game = activator.getGame();
-        final CardCollection allp = new CardCollection(game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES));
-        allp.add(card);
-        for (final Card ca : allp) {
-            for (final StaticAbility stAb : ca.getStaticAbilities()) {
-                if (!stAb.checkConditions(StaticAbilityMode.CastWithFlash)) {
-                    continue;
-                }
-                if (applyWithFlashNeedsInfo(stAb, sa, card, activator)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return anyWithFlash(sa, card, activator, true);
     }
 
     public static boolean anyWithFlash(final SpellAbility sa, final Card card, final Player activator) {
+        return anyWithFlash(sa, card, activator, false);
+    }
+
+    private static boolean anyWithFlash(final SpellAbility sa, final Card card,
+            final Player activator, final boolean needsInfo) {
         final Game game = activator.getGame();
-        final CardCollection allp = new CardCollection(game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES));
-        allp.add(card);
-        for (final Card ca : allp) {
+        final boolean[] result = {false};
+        final boolean[] sawCard = {
+                game.containsStaticAbilitySourceEquivalent(card)
+        };
+        game.visitStaticAbilityModeSources(StaticAbilityMode.CastWithFlash,
+                ca -> {
+            if (ca.equals(card)) {
+                sawCard[0] = true;
+            }
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.CastWithFlash)) {
                     continue;
                 }
-                if (applyWithFlashAbility(stAb, sa, card, activator)) {
+                final boolean applies = needsInfo
+                        ? applyWithFlashNeedsInfo(stAb, sa, card, activator)
+                        : applyWithFlashAbility(stAb, sa, card, activator);
+                if (applies) {
+                    result[0] = true;
+                    return false;
+                }
+            }
+            return true;
+        });
+        if (!result[0] && !sawCard[0]) {
+            for (final StaticAbility stAb : card.getStaticAbilities()) {
+                if (!stAb.checkConditions(StaticAbilityMode.CastWithFlash)) {
+                    continue;
+                }
+                if (needsInfo
+                        ? applyWithFlashNeedsInfo(stAb, sa, card, activator)
+                        : applyWithFlashAbility(stAb, sa, card, activator)) {
                     return true;
                 }
             }
         }
-        return false;
+        return result[0];
     }
 
     private static boolean commonParts(final StaticAbility stAb, final SpellAbility sa, final Card card, final Player activator, final boolean skipValidSA) {

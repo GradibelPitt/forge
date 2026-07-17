@@ -58,7 +58,7 @@ public class StaticAbilityMustTarget {
         final Game game = spellAbility.getHostCard().getGame();
         List<Pair<String, ZoneType>> restrictions = new ArrayList<>();
 
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        game.visitStaticAbilityModeSources(StaticAbilityMode.MustTarget, ca -> {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.MustTarget) || !stAb.matchesValidParam("ValidSA", spellAbility)) {
                     continue;
@@ -68,7 +68,8 @@ public class StaticAbilityMustTarget {
                     restrictions.add(newRestriction);
                 }
             }
-        }
+            return true;
+        });
 
         return restrictions;
     }

@@ -100,6 +100,10 @@ public class RestartGameEffect extends SpellAbilityEffect {
             p.shuffle(null);
         }
 
+        // Restart reuses the Game object while replacing most Card identities.
+        // Rebuild this derived-only state once after all restart moves.
+        game.rebuildBattlefieldDerivedState();
+
         trigHandler.clearSuppression(TriggerType.Shuffled);
         trigHandler.clearSuppression(TriggerType.ChangesZone);
 

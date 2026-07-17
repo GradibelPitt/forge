@@ -93,6 +93,13 @@ public class StaticAbility extends CardTraitBase implements IIdentifiable, Clone
     }
     public void setMode(Set<StaticAbilityMode> modes) {
         this.modes = modes;
+        markPotentialStaticSource();
+    }
+
+    @Override
+    public void setIntrinsic(final boolean intrinsic) {
+        super.setIntrinsic(intrinsic);
+        markPotentialStaticSource();
     }
 
     public SpellAbility getPayingTrigSA() {
@@ -583,6 +590,17 @@ public class StaticAbility extends CardTraitBase implements IIdentifiable, Clone
         super.setHostCard(host);
         if (payingTrigSA != null) {
             payingTrigSA.setHostCard(host);
+        }
+        markPotentialStaticSource();
+    }
+
+    private void markPotentialStaticSource() {
+        if (modes == null || modes.isEmpty() || getHostCard() == null) {
+            return;
+        }
+        getHostCard().notePotentialStaticAbilityModes(modes);
+        if (getHostCard().isStructuralStaticAbility(this)) {
+            getHostCard().rebuildIntrinsicStaticAbilityModes();
         }
     }
 

@@ -44,6 +44,7 @@ import forge.game.replacement.ReplacementHandler;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.SpellAbilityStackInstance;
 import forge.game.staticability.StaticAbilityCantChangeDayTime;
+import forge.game.staticability.StaticAbilityMode;
 import forge.game.trigger.TriggerHandler;
 import forge.game.trigger.TriggerType;
 import forge.game.zone.*;
@@ -89,6 +90,10 @@ public class Game {
     public final CostPaymentStack costPaymentStack = new CostPaymentStack();
     private final PhaseHandler phaseHandler;
     private final StaticEffects staticEffects = new StaticEffects();
+    private final ContinuousStaticAbilitySourceIndex continuousStaticAbilitySourceIndex =
+            new ContinuousStaticAbilitySourceIndex(this);
+    private final BattlefieldDerivedStateTracker battlefieldDerivedStateTracker =
+            new BattlefieldDerivedStateTracker(this);
     private final TriggerHandler triggerHandler = new TriggerHandler(this);
     private final ReplacementHandler replacementHandler = new ReplacementHandler(this);
     private final EventBus events = new EventBus("game events");
@@ -464,6 +469,115 @@ public class Game {
 
     public final StaticEffects getStaticEffects() {
         return staticEffects;
+    }
+    ContinuousStaticAbilitySourceIndex getContinuousStaticAbilitySourceIndex() {
+        return continuousStaticAbilitySourceIndex;
+    }
+    BattlefieldDerivedStateTracker getBattlefieldDerivedStateTracker() {
+        return battlefieldDerivedStateTracker;
+    }
+    public final void rebuildBattlefieldDerivedState() {
+        battlefieldDerivedStateTracker.rebuildFromCurrentBattlefields();
+    }
+    public final void onCardEnteredStaticAbilitySourceZone(final Card card,
+            final Zone zone, final int position) {
+        continuousStaticAbilitySourceIndex.cardEntered(card, zone, position);
+        battlefieldDerivedStateTracker.cardEntered(card, zone, position);
+    }
+    public final void onCardLeftStaticAbilitySourceZone(final Card card,
+            final Zone zone, final int position) {
+        continuousStaticAbilitySourceIndex.cardLeft(card, zone, position);
+        battlefieldDerivedStateTracker.cardLeft(card, zone, position);
+    }
+    public final void onStaticAbilitySourceZoneContentsCleared(final Zone zone,
+            final Iterable<Card> cards) {
+        continuousStaticAbilitySourceIndex.zoneContentsCleared(zone, cards);
+        battlefieldDerivedStateTracker.zoneContentsCleared(zone, cards);
+    }
+    public final void onStaticAbilitySourceZoneContentsSet(final Zone zone,
+            final Iterable<Card> cards) {
+        continuousStaticAbilitySourceIndex.zoneContentsSet(zone, cards);
+        battlefieldDerivedStateTracker.zoneContentsSet(zone, cards);
+    }
+    public final void onStaticAbilitySourceZoneOrderChanged(final Zone zone,
+            final Iterable<Card> cards) {
+        continuousStaticAbilitySourceIndex.zoneOrderChanged(zone, cards);
+        battlefieldDerivedStateTracker.zoneOrderChanged(zone, cards);
+    }
+    public final void onCardControllerPotentiallyChanged(final Card card) {
+        battlefieldDerivedStateTracker.controllerMayHaveChanged(card);
+    }
+    public final void onCardTypePotentiallyChanged(final Card card) {
+        battlefieldDerivedStateTracker.cardTypeMayHaveChanged(card);
+    }
+    public final void onCardPhasingPotentiallyChanged(final Card card) {
+        battlefieldDerivedStateTracker.phasingMayHaveChanged(card);
+    }
+    public final void onCardPairingChanged(final Card card,
+            final Card oldPartner, final Card newPartner) {
+        battlefieldDerivedStateTracker.pairingChanged(card, oldPartner,
+                newPartner);
+    }
+    public final void onMeldedCardEnteredStaticAbilitySourceSet(
+            final Player player, final Card card, final int position) {
+        continuousStaticAbilitySourceIndex.meldedCardEntered(player, card,
+                position);
+    }
+    public final void onMeldedCardLeftStaticAbilitySourceSet(
+            final Player player, final Card card, final int position) {
+        continuousStaticAbilitySourceIndex.meldedCardLeft(player, card,
+                position);
+    }
+    public final void onInboundCardEnteredStaticAbilitySourceSet(
+            final Player player, final Card card, final int position) {
+        continuousStaticAbilitySourceIndex.inboundCardEntered(player, card,
+                position);
+    }
+    public final void onInboundCardLeftStaticAbilitySourceSet(
+            final Player player, final Card card, final int position) {
+        continuousStaticAbilitySourceIndex.inboundCardLeft(player, card,
+                position);
+    }
+    public final void markPotentialContinuousStaticAbilitySource(
+            final Card card) {
+        continuousStaticAbilitySourceIndex.markPotentialSource(card);
+    }
+    public final void recheckPotentialContinuousStaticAbilitySource(
+            final Card card) {
+        continuousStaticAbilitySourceIndex.recheckPotentialSource(card);
+    }
+    public final void markPotentialStaticAbilityModes(final Card card,
+            final Set<StaticAbilityMode> modes) {
+        continuousStaticAbilitySourceIndex.markPotentialStaticAbilityModes(
+                card, modes);
+    }
+    public final void reconcileIntrinsicStaticAbilityModes(final Card card,
+            final Set<StaticAbilityMode> previousModes,
+            final Set<StaticAbilityMode> currentModes) {
+        continuousStaticAbilitySourceIndex
+                .reconcileIntrinsicStaticAbilityModes(card, previousModes,
+                        currentModes);
+    }
+    public final boolean visitStaticAbilityModeSources(
+            final StaticAbilityMode mode, final Visitor<Card> visitor) {
+        return continuousStaticAbilitySourceIndex
+                .visitStaticAbilityModeSources(mode, visitor);
+    }
+    public final boolean visitStaticAbilityModeSources(
+            final StaticAbilityMode mode, final Iterable<ZoneType> zones,
+            final Visitor<Card> visitor) {
+        return continuousStaticAbilitySourceIndex
+                .visitStaticAbilityModeSources(mode, zones, visitor);
+    }
+    public final boolean containsStaticAbilitySourceEquivalent(
+            final Card card) {
+        return continuousStaticAbilitySourceIndex
+                .containsStaticAbilitySourceEquivalent(card);
+    }
+    public final boolean containsStaticAbilitySourceEquivalent(
+            final Card card, final Iterable<ZoneType> zones) {
+        return continuousStaticAbilitySourceIndex
+                .containsStaticAbilitySourceEquivalent(card, zones);
     }
     public final ReplacementHandler getReplacementHandler() {
         return replacementHandler;
@@ -996,6 +1110,12 @@ public class Game {
         getStack().removeInstancesControlledBy(p);
 
         ingamePlayers.remove(p);
+        // Sideboards and other player-owned source containers are not part of
+        // the normal leave-game cleanup traversal. Remove every indexed
+        // reference only after the player is no longer in the authoritative
+        // player list; snapshots also fail closed against that list.
+        continuousStaticAbilitySourceIndex.playerRemoved(p);
+        battlefieldDerivedStateTracker.playerRemoved(p);
         lostPlayers.add(p);
 
         final Map<AbilityKey, Object> runParams = AbilityKey.mapFromPlayer(p);

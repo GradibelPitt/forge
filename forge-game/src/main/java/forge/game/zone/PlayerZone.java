@@ -83,7 +83,8 @@ public class PlayerZone extends Zone {
 
     @Override
     protected void onChanged() {
-        if (getZoneType() == ZoneType.Hand && player.getController().isOrderedZone()) {
+        if (getZoneType() == ZoneType.Hand && player.getController() != null
+                && player.getController().isOrderedZone()) {
             sort();
         }
         player.updateZoneForView(this);

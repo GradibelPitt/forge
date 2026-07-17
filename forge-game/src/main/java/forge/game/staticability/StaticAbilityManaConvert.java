@@ -6,7 +6,6 @@ import forge.game.card.Card;
 import forge.game.mana.ManaConversionMatrix;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
-import forge.game.zone.ZoneType;
 
 public class StaticAbilityManaConvert {
 
@@ -14,18 +13,20 @@ public class StaticAbilityManaConvert {
         final Game game = p.getGame();
         boolean changed = p.getSpellRuleRegistry()
                 .applyManaConversion(matrix, card, sa);
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        final boolean[] staticChanged = {false};
+        game.visitStaticAbilityModeSources(StaticAbilityMode.ManaConvert, ca -> {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.ManaConvert)) {
                     continue;
                 }
                 if (checkManaConvert(stAb, p, card, sa)) {
                     AbilityUtils.applyManaColorConversion(matrix, stAb.getParam("ManaConversion"));
-                    changed = true;
+                    staticChanged[0] = true;
                 }
             }
-        }
-        return changed;
+            return true;
+        });
+        return changed || staticChanged[0];
     }
 
     public static boolean checkManaConvert(StaticAbility stAb, Player p, Card card, SpellAbility sa) {

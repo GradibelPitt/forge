@@ -175,6 +175,10 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     private final Multimap<Long, Keyword> cantHaveKeywords = MultimapBuilder.hashKeys().hashSetValues().build();
 
     private final Map<CounterType, StaticAbility> counterTypeKeywordStatic = Maps.newHashMap();
+    private final EnumSet<StaticAbilityMode> intrinsicStaticAbilityModes =
+            EnumSet.noneOf(StaticAbilityMode.class);
+    private final Set<StaticAbilityMode> intrinsicStaticAbilityModesView =
+            Collections.unmodifiableSet(intrinsicStaticAbilityModes);
 
     private final Map<Long, Integer> canBlockAdditional = Maps.newTreeMap();
     private final Set<Long> canBlockAny = Sets.newHashSet();
@@ -549,6 +553,9 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         // For Ertai's Meddling a morph spell
         currentState = CardUtil.getFaceDownCharacteristic(this, CardStateName.Original);
         states.put(CardStateName.Original, currentState);
+        if (game != null) {
+            game.onCardTypePotentiallyChanged(this);
+        }
     }
 
     public boolean changeToState(final CardStateName state) {
@@ -631,6 +638,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     public void setStates(Map<CardStateName, CardState> map) {
         states.clear();
         states.putAll(map);
+        rebuildIntrinsicStaticAbilityModes();
     }
 
     public final void addAlternateState(final CardStateName state, final boolean updateView) {
@@ -1385,7 +1393,14 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         return pairedWith;
     }
     public final void setPairedWith(final Card c) {
+        final Card oldPartner = pairedWith;
+        if (oldPartner == c) {
+            return;
+        }
         pairedWith = view.setCard(pairedWith, c, TrackableProperty.PairedWith);
+        if (game != null) {
+            game.onCardPairingChanged(this, oldPartner, c);
+        }
     }
     public final boolean isPaired() {
         return pairedWith != null;
@@ -1851,6 +1866,10 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
             return false;
         }
         result.putParam("Timestamp", String.valueOf(game.getNextTimestamp()));
+        // computeIfAbsent reuses the same hidden StaticAbility after a counter
+        // is removed and later re-added. Explicitly re-advertise the live host
+        // so an indexed static pass can never miss that cached trait.
+        game.markPotentialContinuousStaticAbilitySource(this);
         return true;
     }
 
@@ -3621,9 +3640,72 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
 
     public void addStaticCommandList(Object[] objects) {
         staticCommandList.add(objects);
+        if (game != null) {
+            game.markPotentialContinuousStaticAbilitySource(this);
+        }
     }
     public List<Object[]> getStaticCommandList() {
         return staticCommandList;
+    }
+
+    public final void notePotentialStaticAbilityModes(
+            final Set<StaticAbilityMode> modes) {
+        if (modes == null || modes.isEmpty()) {
+            return;
+        }
+        if (game != null) {
+            if (modes.contains(StaticAbilityMode.Continuous)) {
+                game.markPotentialContinuousStaticAbilitySource(this);
+            }
+            game.markPotentialStaticAbilityModes(this, modes);
+        }
+    }
+
+    public final Set<StaticAbilityMode> getIntrinsicStaticAbilityModes() {
+        return intrinsicStaticAbilityModesView;
+    }
+
+    public final boolean isStructuralStaticAbility(
+            final StaticAbility ability) {
+        for (final CardState state : states.values()) {
+            if (state.getIntrinsicStaticAbilities().contains(ability)) {
+                return true;
+            }
+            for (final KeywordInterface keyword : state.getIntrinsicKeywords()) {
+                if (keyword.getStaticAbilities().contains(ability)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public final void rebuildIntrinsicStaticAbilityModes() {
+        final EnumSet<StaticAbilityMode> previousModes =
+                EnumSet.noneOf(StaticAbilityMode.class);
+        previousModes.addAll(intrinsicStaticAbilityModes);
+        intrinsicStaticAbilityModes.clear();
+        for (final CardState state : states.values()) {
+            for (final StaticAbility ability
+                    : state.getIntrinsicStaticAbilities()) {
+                if (ability.getMode() != null) {
+                    intrinsicStaticAbilityModes.addAll(ability.getMode());
+                }
+            }
+            for (final KeywordInterface keyword : state.getIntrinsicKeywords()) {
+                for (final StaticAbility ability
+                        : keyword.getStaticAbilities()) {
+                    if (ability.getMode() != null) {
+                        intrinsicStaticAbilityModes.addAll(ability.getMode());
+                    }
+                }
+            }
+        }
+        if (game != null && !previousModes.equals(
+                intrinsicStaticAbilityModes)) {
+            game.reconcileIntrinsicStaticAbilityModes(this, previousModes,
+                    intrinsicStaticAbilityModes);
+        }
     }
 
     public final List<GameCommand> getLeavesPlayCommands() {
@@ -3730,6 +3812,9 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         owner = owner0;
         view.updateOwner(this);
         view.updateController(this);
+        if (game != null) {
+            game.onCardControllerPotentiallyChanged(this);
+        }
     }
 
     public final Player getController() {
@@ -3751,16 +3836,25 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         controller = player;
         controllerTimestamp = tstamp;
         view.updateController(this);
+        if (game != null) {
+            game.onCardControllerPotentiallyChanged(this);
+        }
     }
 
     public final void addTempController(final Player player, final long tstamp) {
         tempControllers.put(tstamp, player);
         view.updateController(this);
+        if (game != null) {
+            game.onCardControllerPotentiallyChanged(this);
+        }
     }
 
     public final void removeTempController(final long tstamp) {
         if (tempControllers.remove(tstamp) != null) {
             view.updateController(this);
+            if (game != null) {
+                game.onCardControllerPotentiallyChanged(this);
+            }
         }
     }
 
@@ -3772,6 +3866,9 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         }
         if (changed) {
             view.updateController(this);
+            if (game != null) {
+                game.onCardControllerPotentiallyChanged(this);
+            }
         }
     }
 
@@ -3779,6 +3876,9 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         if (tempControllers.isEmpty()) { return; }
         tempControllers.clear();
         view.updateController(this);
+        if (game != null) {
+            game.onCardControllerPotentiallyChanged(this);
+        }
     }
 
     public final void clearControllers() {
@@ -3786,6 +3886,9 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         tempControllers.clear();
         controller = null;
         view.updateController(this);
+        if (game != null) {
+            game.onCardControllerPotentiallyChanged(this);
+        }
     }
 
     public boolean mayPlayerLook(final Player player) {
@@ -4121,7 +4224,6 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         changedCardColorsByText.clear();
         changedCardColorsCharacterDefining.clear();
         changedCardColors.clear();
-
         return changed;
     }
 
@@ -4147,6 +4249,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         for (Table.Cell<Long, Long, KeywordsChange> entry : changedCardKeywords.cellSet()) {
             this.changedCardKeywords.put(entry.getRowKey(), entry.getColumnKey(), entry.getValue().copy(this, true));
         }
+        recheckDynamicContinuousStaticAbilitySource();
     }
 
     public final void addChangedCardTypesByText(final CardTypeView addType, final long timestamp, final long staticId) {
@@ -4921,12 +5024,14 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         for (Table.Cell<Long, Long, CardTraitChanges> e : changes.cellSet()) {
             changedCardTraitsByText.put(e.getRowKey(), e.getColumnKey(), e.getValue().copy(this, true));
         }
+        recheckDynamicContinuousStaticAbilitySource();
     }
     public final void addChangedCardTraitsByText(Collection<SpellAbility> spells,
             Collection<Trigger> trigger, Collection<ReplacementEffect> replacements, Collection<StaticAbility> statics, long timestamp, long staticId) {
         changedCardTraitsByText.put(timestamp, staticId, new CardTraitChanges(
             spells, trigger, replacements, statics, e -> true
         ));
+        recheckDynamicContinuousStaticAbilitySource();
 
         // setting card traits via text, does overwrite any other word change effects?
         this.changedTextColors.addEmpty(timestamp, staticId);
@@ -4949,6 +5054,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     }
     public final ICardTraitChanges addChangedCardTraits(ICardTraitChanges changes, long timestamp, long staticId, boolean updateView) {
         changedCardTraits.put(timestamp, staticId, changes);
+        recheckDynamicContinuousStaticAbilitySource();
         if (updateView) {
             updateAbilityTextForView();
         }
@@ -4979,6 +5085,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         for (Table.Cell<Long, Long, ICardTraitChanges> e : changes.cellSet()) {
             changedCardTraits.put(e.getRowKey(), e.getColumnKey(), e.getValue().copy(this, true));
         }
+        recheckDynamicContinuousStaticAbilitySource();
     }
 
     public boolean clearChangedCardTraits() {
@@ -5071,6 +5178,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
 
         final KeywordsChange newCks = new KeywordsChange(kws, removeKeywords, removeAllKeywords);
         changedCardKeywords.put(timestamp, st == null ? 0l : st.getId(), newCks);
+        recheckDynamicContinuousStaticAbilitySource();
 
         if (updateView) {
             updateKeywords();
@@ -5133,6 +5241,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         // keywords should already created for Card, so no addKeywordsToCard
         // this one is done for Volrath's Shapeshifter which replaces all the card text
         changedCardKeywordsByText.put(timestamp, staticId, new KeywordsChange(keywords, ImmutableList.<KeywordInterface>of(), true));
+        recheckDynamicContinuousStaticAbilitySource();
 
         if (updateView) {
             updateKeywords();
@@ -5144,6 +5253,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         for (Table.Cell<Long, Long, IKeywordsChange> entry : changedCardKeywords.cellSet()) {
             this.changedCardKeywordsByText.put(entry.getRowKey(), entry.getColumnKey(), entry.getValue().copy(this, true));
         }
+        recheckDynamicContinuousStaticAbilitySource();
     }
 
     public final void addChangedCardKeywordsInternal(
@@ -5153,6 +5263,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         final KeywordsChange newCks = new KeywordsChange(keywords, removeKeywords, removeAllKeywords);
         long staticId = st == null ? 0 : st.getId();
         changedCardKeywords.put(timestamp, staticId, newCks);
+        recheckDynamicContinuousStaticAbilitySource();
 
         if (updateView) {
             updateKeywords();
@@ -5633,6 +5744,9 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         if (phasedOut == phasedOut0) { return; }
         phasedOut = phasedOut0;
         view.updatePhasedOut(this);
+        if (game != null) {
+            game.onCardPhasingPotentiallyChanged(this);
+        }
     }
 
     public final void phase(final boolean fromUntapStep) {
@@ -5685,12 +5799,10 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
             // CR 702.26f
             runPhaseOutCommands();
 
-            // these links also break
+            // Encoded links break. Soulbond pairing does not: a phased-out
+            // permanent is treated as though it does not exist, but the pair
+            // remains and resumes when it phases in.
             clearEncodedCards();
-            if (isPaired()) {
-                getPairedWith().setPairedWith(null);
-                setPairedWith(null);
-            }
         }
 
         setPhasedOut(isPhasedOut() ? null : getController());
@@ -6985,6 +7097,11 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     public final FCollectionView<StaticAbility> getStaticAbilities() {
         return currentState.getStaticAbilities();
     }
+    private void recheckDynamicContinuousStaticAbilitySource() {
+        if (game != null) {
+            game.recheckPotentialContinuousStaticAbilitySource(this);
+        }
+    }
     public final StaticAbility addStaticAbility(final String s) {
         if (!s.trim().isEmpty()) {
             final StaticAbility stAb = StaticAbility.create(s, this, currentState, true);
@@ -8113,5 +8230,9 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         for (Map.Entry<CounterType, StaticAbility> e : in.counterTypeKeywordStatic.entrySet()) {
             this.counterTypeKeywordStatic.put(e.getKey(), e.getValue().copy(this, true));
         }
+        // Structural provenance belongs to this copy's actual state/keyword
+        // graph. Copying the donor's cache can retain a mode whose raw trait
+        // was deliberately omitted or replaced on the destination.
+        rebuildIntrinsicStaticAbilityModes();
     }
 }

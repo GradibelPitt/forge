@@ -57,6 +57,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * <p>
@@ -421,15 +422,14 @@ public final class GameActionUtil {
             game.getAction().checkStaticAbilities(false, Sets.newHashSet(source), preList);
         }
 
-        final CardCollection costSources = new CardCollection(source);
-        costSources.addAll(game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES));
-        for (final Card ca : costSources) {
+        final Card sourceForCosts = source;
+        final Consumer<Card> collectOptionalCosts = ca -> {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.OptionalCost)) {
                     continue;
                 }
 
-                if (!stAb.matchesValidParam("ValidCard", source)) {
+                if (!stAb.matchesValidParam("ValidCard", sourceForCosts)) {
                     continue;
                 }
                 if (!stAb.matchesValidParam("ValidSA", sa)) {
@@ -456,7 +456,15 @@ public final class GameActionUtil {
                     costs.add(new OptionalCostValue(OptionalCost.Generic, cost));
                 }
             }
-        }
+        };
+        collectOptionalCosts.accept(source);
+        game.visitStaticAbilityModeSources(StaticAbilityMode.OptionalCost,
+                ca -> {
+                    if (!ca.equals(sourceForCosts)) {
+                        collectOptionalCosts.accept(ca);
+                    }
+                    return true;
+                });
 
         for (KeywordInterface inst : source.getKeywords()) {
             final String keyword = inst.getOriginal();

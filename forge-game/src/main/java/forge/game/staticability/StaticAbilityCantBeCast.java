@@ -21,7 +21,6 @@ import java.util.List;
 
 import forge.game.Game;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.card.CardLists;
 import forge.game.card.CardUtil;
 import forge.game.player.Player;
@@ -37,19 +36,35 @@ public class StaticAbilityCantBeCast {
         card.setCastSA(spell);
 
         final Game game = activator.getGame();
-        final CardCollection allp = new CardCollection(game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES));
-        allp.add(card);
-        for (final Card ca : allp) {
+        final boolean[] result = {false};
+        final boolean[] sawCard = {
+                game.containsStaticAbilitySourceEquivalent(card)
+        };
+        game.visitStaticAbilityModeSources(StaticAbilityMode.CantBeCast, ca -> {
+            if (ca.equals(card)) {
+                sawCard[0] = true;
+            }
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.CantBeCast)) {
                     continue;
                 }
                 if (applyCantBeCastAbility(stAb, spell, card, activator)) {
+                    result[0] = true;
+                    return false;
+                }
+            }
+            return true;
+        });
+        if (!result[0] && !sawCard[0]) {
+            for (final StaticAbility stAb : card.getStaticAbilities()) {
+                if (stAb.checkConditions(StaticAbilityMode.CantBeCast)
+                        && applyCantBeCastAbility(stAb, spell, card,
+                        activator)) {
                     return true;
                 }
             }
         }
-        return false;
+        return result[0];
     }
 
     public static boolean cantBeActivatedAbility(final SpellAbility spell, final Card card, final Player activator) {
@@ -57,32 +72,40 @@ public class StaticAbilityCantBeCast {
             return false;
         }
         final Game game = activator.getGame();
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        final boolean[] result = {false};
+        game.visitStaticAbilityModeSources(StaticAbilityMode.CantBeActivated,
+                ca -> {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.CantBeActivated)) {
                     continue;
                 }
                 if (applyCantBeActivatedAbility(stAb, spell, card, activator)) {
-                    return true;
+                    result[0] = true;
+                    return false;
                 }
             }
-        }
-        return false;
+            return true;
+        });
+        return result[0];
     }
 
     public static boolean cantPlayLandAbility(final SpellAbility spell, final Card card, final Player activator) {
         final Game game = activator.getGame();
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        final boolean[] result = {false};
+        game.visitStaticAbilityModeSources(StaticAbilityMode.CantPlayLand,
+                ca -> {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.CantPlayLand)) {
                     continue;
                 }
                 if (applyCantPlayLandAbility(stAb, card, activator)) {
-                    return true;
+                    result[0] = true;
+                    return false;
                 }
             }
-        }
-        return false;
+            return true;
+        });
+        return result[0];
     }
 
     /**
