@@ -21,9 +21,17 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import forge.card.mana.ManaCost;
+import forge.deck.construction.DeckConstructionDiagnostic;
+import forge.deck.construction.DeckConstructionRule;
+import forge.deck.construction.DeckConstructionRuleParser;
 import forge.util.TextUtil;
 import org.apache.commons.lang3.StringUtils;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.text.Normalizer;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -56,6 +64,8 @@ public final class CardRules implements ICardCharacteristics {
     private boolean unsupported;
     private Map<Integer, String> placeholderFaces;
     private String path;
+    private List<DeckConstructionRule> deckConstructionRules = Collections.emptyList();
+    private List<DeckConstructionDiagnostic> deckConstructionDiagnostics = Collections.emptyList();
 
     public CardRules(ICardFace[] faces, CardSplitType altMode, CardAiHints cah) {
         splitType = altMode;
@@ -97,6 +107,12 @@ public final class CardRules implements ICardCharacteristics {
         partnerWith = newRules.partnerWith;
         setColorID = newRules.setColorID;
         tokens = newRules.tokens;
+        deckConstructionRules = immutableCopy(newRules.deckConstructionRules);
+        deckConstructionDiagnostics = immutableCopy(newRules.deckConstructionDiagnostics);
+    }
+
+    private static <T> List<T> immutableCopy(final List<T> source) {
+        return Collections.unmodifiableList(new ArrayList<>(source));
     }
 
     private static ColorSet calculateColorIdentity(CardRules rules) {
@@ -229,6 +245,14 @@ public final class CardRules implements ICardCharacteristics {
 
     public CardAiHints getAiHints() {
         return aiHints;
+    }
+
+    public List<DeckConstructionRule> getDeckConstructionRules() {
+        return deckConstructionRules;
+    }
+
+    public List<DeckConstructionDiagnostic> getDeckConstructionDiagnostics() {
+        return deckConstructionDiagnostics;
     }
 
     public boolean isCustom() { return custom; }
@@ -586,8 +610,11 @@ public final class CardRules implements ICardCharacteristics {
         private String normalizedName = "";
         private Set<String> supportedFunctionalVariants = null;
         private Map<Integer, String> placeholderFaces = null;
+        private String invalidAlternateMode = null;
+        private String invalidAlternateModeDigest = null;
 
         private List<String> tokens = Lists.newArrayList();
+        private List<String> deckConstructionRuleDefinitions = Lists.newArrayList();
 
         // fields to build CardAiHints
         private boolean removedFromAIDecks = false;
@@ -626,7 +653,10 @@ public final class CardRules implements ICardCharacteristics {
             this.normalizedName = "";
             this.supportedFunctionalVariants = null;
             this.placeholderFaces = null;
+            this.invalidAlternateMode = null;
+            this.invalidAlternateModeDigest = null;
             this.tokens = Lists.newArrayList();
+            this.deckConstructionRuleDefinitions = Lists.newArrayList();
         }
 
         /**
@@ -635,16 +665,39 @@ public final class CardRules implements ICardCharacteristics {
          * @return the card
          */
         public final CardRules getCard() {
-            CardAiHints cah = new CardAiHints(removedFromAIDecks, removedFromRandomDecks, removedFromNonCommanderDecks, hints, needs, has);
-            if (null != faces[0]) faces[0].assignMissingFields();
+            final boolean hasConstructionRules = !this.deckConstructionRuleDefinitions.isEmpty();
+            if (!hasConstructionRules && this.invalidAlternateMode != null) {
+                throw new IllegalArgumentException("Unknown AlternateMode: " + this.invalidAlternateMode);
+            }
+            final ConstructionSource constructionSource = hasConstructionRules
+                    ? resolveConstructionSource() : null;
+            final boolean invalidConstructionLayout = constructionSource != null
+                    && constructionSource.error != null;
+            final CardSplitType effectiveAltMode = invalidConstructionLayout
+                    ? CardSplitType.None : altMode;
+            final CardFace[] effectiveFaces;
+            if (invalidConstructionLayout) {
+                effectiveFaces = new CardFace[faces.length];
+                final CardFace fallbackFace = new CardFace(fallbackConstructionName());
+                fallbackFace.setManaCost(ManaCost.NO_COST);
+                fallbackFace.setType(CardType.parse("", false));
+                fallbackFace.setOracleText("");
+                effectiveFaces[0] = fallbackFace;
+            } else {
+                effectiveFaces = faces;
+            }
+
+            CardAiHints cah = new CardAiHints(removedFromAIDecks, removedFromRandomDecks,
+                    removedFromNonCommanderDecks, hints, needs, has);
+            if (null != effectiveFaces[0]) effectiveFaces[0].assignMissingFields();
             else assert(placeholderFaces != null);
-            if (null != faces[1]) faces[1].assignMissingFields();
-            if (null != faces[2]) faces[2].assignMissingFields();
-            if (null != faces[3]) faces[3].assignMissingFields();
-            if (null != faces[4]) faces[4].assignMissingFields();
-            if (null != faces[5]) faces[5].assignMissingFields();
-            if (null != faces[6]) faces[6].assignMissingFields();
-            final CardRules result = new CardRules(faces, altMode, cah);
+            if (null != effectiveFaces[1]) effectiveFaces[1].assignMissingFields();
+            if (null != effectiveFaces[2]) effectiveFaces[2].assignMissingFields();
+            if (null != effectiveFaces[3]) effectiveFaces[3].assignMissingFields();
+            if (null != effectiveFaces[4]) effectiveFaces[4].assignMissingFields();
+            if (null != effectiveFaces[5]) effectiveFaces[5].assignMissingFields();
+            if (null != effectiveFaces[6]) effectiveFaces[6].assignMissingFields();
+            final CardRules result = new CardRules(effectiveFaces, effectiveAltMode, cah);
 
             result.normalizedName = this.normalizedName;
             result.meldWith = this.meldWith;
@@ -656,9 +709,172 @@ public final class CardRules implements ICardCharacteristics {
             }
             if (StringUtils.isNotBlank(handLife))
                 result.setVanguardProperties(handLife);
-            result.supportedFunctionalVariants = this.supportedFunctionalVariants;
-            result.placeholderFaces = this.placeholderFaces;
+            result.supportedFunctionalVariants = invalidConstructionLayout
+                    ? null : this.supportedFunctionalVariants;
+            result.placeholderFaces = invalidConstructionLayout ? null : this.placeholderFaces;
+            if (hasConstructionRules) {
+                if (invalidConstructionLayout) {
+                    result.unsupported = true;
+                    result.deckConstructionRules = Collections.emptyList();
+                    result.deckConstructionDiagnostics = Collections.singletonList(
+                            new DeckConstructionDiagnostic(
+                                    DeckConstructionDiagnostic.Code.INVALID_SOURCE_LAYOUT,
+                                    constructionSource.sourceName, null, -1, null,
+                                    constructionSource.error));
+                } else {
+                    final DeckConstructionRuleParser.Result construction = DeckConstructionRuleParser.parse(
+                            constructionSource.sourceName, this.deckConstructionRuleDefinitions);
+                    result.deckConstructionRules = immutableCopy(construction.getRules());
+                    result.deckConstructionDiagnostics = immutableCopy(construction.getDiagnostics());
+                }
+            }
             return result;
+        }
+
+        private ConstructionSource resolveConstructionSource() {
+            final String front = faceName(0);
+            if (this.invalidAlternateMode != null) {
+                return ConstructionSource.invalid(front,
+                        "Unknown AlternateMode: " + this.invalidAlternateMode);
+            }
+            if (front == null) {
+                return ConstructionSource.invalid(null,
+                        "DeckRule source layout has no determinable primary face");
+            }
+            if (altMode.getAggregationMethod() == CardSplitType.FaceSelectionMethod.COMBINE) {
+                final String back = faceName(1);
+                if (back == null) {
+                    return ConstructionSource.invalid(front,
+                            "DeckRule Split source layout is missing its other face");
+                }
+                return ConstructionSource.valid(front + " // " + back);
+            }
+            return ConstructionSource.valid(front);
+        }
+
+        private String faceName(final int index) {
+            if (faces[index] != null) {
+                return StringUtils.isBlank(faces[index].getName())
+                        ? null : faces[index].getName().strip();
+            }
+            if (placeholderFaces != null) {
+                final String placeholder = placeholderFaces.get(index);
+                if (StringUtils.isNotBlank(placeholder)) {
+                    return placeholder.strip();
+                }
+            }
+            return null;
+        }
+
+        private String fallbackConstructionName() {
+            final String filename = StringUtils.isBlank(this.normalizedName) ? null
+                    : Normalizer.normalize(this.normalizedName.strip(), Normalizer.Form.NFC);
+            final String visibleSource = filename == null ? "anonymous" : filename;
+            final StringBuilder visible = new StringBuilder();
+            int offset = 0;
+            for (int count = 0; offset < visibleSource.length() && count < 64; count++) {
+                final int codePoint = visibleSource.codePointAt(offset);
+                if (Character.isISOControl(codePoint)) {
+                    visible.append('_');
+                } else {
+                    visible.appendCodePoint(codePoint);
+                }
+                offset += Character.charCount(codePoint);
+            }
+            return "Invalid construction source [" + visible + '#' + constructionIdentityDigest(filename) + ']';
+        }
+
+        private String constructionIdentityDigest(final String filename) {
+            try {
+                final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                if (filename != null) {
+                    updateDigest(digest, "filename", filename);
+                } else {
+                    updateDigest(digest, "alternate-mode", altMode.name());
+                    updateDigest(digest, "invalid-alternate-mode", invalidAlternateMode);
+                    updateDigest(digest, "invalid-alternate-mode-digest", invalidAlternateModeDigest);
+                    updateDigest(digest, "current-face", Integer.toString(curFace));
+                    for (int index = 0; index < faces.length; index++) {
+                        final CardFace face = faces[index];
+                        updateDigest(digest, "face-name-" + index,
+                                face == null ? null : face.getName());
+                        updateDigest(digest, "face-mana-" + index,
+                                face == null || face.getManaCost() == null
+                                        ? null : face.getManaCost().toString());
+                        updateDigest(digest, "face-type-" + index,
+                                face == null || face.getType() == null
+                                        ? null : face.getType().toString());
+                        updateDigest(digest, "face-oracle-" + index,
+                                face == null ? null : face.getOracleText());
+                        updateDigest(digest, "placeholder-" + index,
+                                placeholderFaces == null ? null : placeholderFaces.get(index));
+                    }
+                    if (supportedFunctionalVariants != null) {
+                        int index = 0;
+                        for (final String variant : new TreeSet<>(supportedFunctionalVariants)) {
+                            updateDigest(digest, "variant-" + index++, variant);
+                        }
+                    }
+                    for (int index = 0; index < deckConstructionRuleDefinitions.size(); index++) {
+                        updateDigest(digest, "rule-" + index,
+                                deckConstructionRuleDefinitions.get(index));
+                    }
+                }
+                return hexadecimal(digest.digest());
+            } catch (final NoSuchAlgorithmException exception) {
+                throw new IllegalStateException("Required SHA-256 digest is unavailable", exception);
+            }
+        }
+
+        private static void updateDigest(final MessageDigest digest, final String key, final String value) {
+            updateDigestBytes(digest, key.getBytes(StandardCharsets.UTF_8));
+            if (value == null) {
+                digest.update(ByteBuffer.allocate(Integer.BYTES).putInt(-1).array());
+            } else {
+                updateDigestBytes(digest, value.getBytes(StandardCharsets.UTF_8));
+            }
+        }
+
+        private static void updateDigestBytes(final MessageDigest digest, final byte[] value) {
+            digest.update(ByteBuffer.allocate(Integer.BYTES).putInt(value.length).array());
+            digest.update(value);
+        }
+
+        private static String stableValueDigest(final String value) {
+            try {
+                final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                updateDigest(digest, "value", value);
+                return hexadecimal(digest.digest());
+            } catch (final NoSuchAlgorithmException exception) {
+                throw new IllegalStateException("Required SHA-256 digest is unavailable", exception);
+            }
+        }
+
+        private static String hexadecimal(final byte[] digest) {
+            final StringBuilder hexadecimal = new StringBuilder(digest.length * 2);
+            for (final byte value : digest) {
+                hexadecimal.append(Character.forDigit((value >>> 4) & 0x0f, 16));
+                hexadecimal.append(Character.forDigit(value & 0x0f, 16));
+            }
+            return hexadecimal.toString();
+        }
+
+        private static final class ConstructionSource {
+            private final String sourceName;
+            private final String error;
+
+            private ConstructionSource(final String sourceName, final String error) {
+                this.sourceName = sourceName;
+                this.error = error;
+            }
+
+            private static ConstructionSource valid(final String sourceName) {
+                return new ConstructionSource(sourceName, null);
+            }
+
+            private static ConstructionSource invalid(final String sourceName, final String error) {
+                return new ConstructionSource(sourceName, error);
+            }
         }
 
         public final CardRules readCard(final Iterable<String> script, String filename) {
@@ -691,6 +907,18 @@ public final class CardRules implements ICardCharacteristics {
             String key = colonPos > 0 ? line.substring(0, colonPos) : line;
             String value = colonPos > 0 ? line.substring(1+colonPos).trim() : null;
 
+            // Parse only after the complete card is available so DeckRule may
+            // safely appear before Name and never touches CardDb during loading.
+            if ("DeckRule".equals(key)) {
+                // Retain one overflow sentinel so the parser can fail closed,
+                // but do not let an untrusted card script grow this list forever.
+                if (this.deckConstructionRuleDefinitions.size()
+                        <= DeckConstructionRuleParser.MAX_RULES) {
+                    this.deckConstructionRuleDefinitions.add(value);
+                }
+                return;
+            }
+
             if (value != null) {
                 int tokIdx = value.indexOf("TokenScript$");
                 if (tokIdx > 0) {
@@ -718,7 +946,15 @@ public final class CardRules implements ICardCharacteristics {
                             this.removedFromNonCommanderDecks |= "NonCommander".equalsIgnoreCase(value);
                         }
                     } else if ("AlternateMode".equals(key)) {
-                        this.altMode = CardSplitType.smartValueOf(value);
+                        try {
+                            this.altMode = CardSplitType.smartValueOf(value);
+                        } catch (final IllegalArgumentException | NullPointerException exception) {
+                            if (this.invalidAlternateMode == null) {
+                                this.invalidAlternateMode = boundedAlternateMode(value);
+                                this.invalidAlternateModeDigest = stableValueDigest(value);
+                            }
+                            this.altMode = CardSplitType.None;
+                        }
                     } else if ("ALTERNATE".equals(key)) {
                         this.curFace = 1;
                     }
@@ -868,6 +1104,17 @@ public final class CardRules implements ICardCharacteristics {
                     }
                     break;
             }
+        }
+
+        private static String boundedAlternateMode(final String value) {
+            if (value == null) {
+                return "<null>";
+            }
+            final int codePointCount = value.codePointCount(0, value.length());
+            if (codePointCount <= 128) {
+                return value;
+            }
+            return value.substring(0, value.offsetByCodePoints(0, 128));
         }
     }
 

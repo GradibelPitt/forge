@@ -1,0 +1,37 @@
+/*
+ * One-time generator for legacy-deck-array-v1.b64.
+ *
+ * Compile and run this source ONLY against the pre-construction-rule fat JAR whose SHA-256 is
+ * EF73B18AE1906A0B2C20672DB27C988AB91FB0F8811A96BF8C388B1D71B26ED8.
+ * `serialver -classpath <jar> forge.deck.Deck` reported -8539667316828440829L.
+ *
+ * Copy this .java.txt file to GenerateLegacyDeckFixture.java, then:
+ * javac -cp <old-fat-jar> GenerateLegacyDeckFixture.java
+ * java -cp <old-fat-jar>;. GenerateLegacyDeckFixture single
+ * java -cp <old-fat-jar>;. GenerateLegacyDeckFixture array
+ */
+import forge.deck.Deck;
+
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.util.Base64;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+public final class GenerateLegacyDeckFixture {
+    public static void main(String[] args) throws Exception {
+        Deck deck = new Deck("Legacy UID Fixture");
+        Map<String, List<String>> deferred = new LinkedHashMap<>();
+        deferred.put("Main", List.of("2 Legacy Fixture Card|TST|1"));
+        deck.setDeferredSections(deferred);
+        deck.getTags().add("legacy-fixture");
+        Object graph = args.length > 0 && "single".equals(args[0]) ? deck : new Deck[] { deck };
+
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (ObjectOutputStream output = new ObjectOutputStream(bytes)) {
+            output.writeObject(graph);
+        }
+        System.out.print(Base64.getMimeEncoder(76, new byte[] {'\n'}).encodeToString(bytes.toByteArray()));
+    }
+}

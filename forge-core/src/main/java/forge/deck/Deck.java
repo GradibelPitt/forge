@@ -23,6 +23,7 @@ import forge.card.CardDb;
 import forge.card.CardEdition;
 import forge.card.CardRules;
 import forge.card.CardType;
+import forge.deck.construction.DeckConstructionLedger;
 import forge.item.IPaperCard;
 import forge.item.PaperCard;
 import forge.util.StreamUtil;
@@ -46,6 +47,8 @@ import java.util.stream.Collectors;
  */
 @SuppressWarnings("serial")
 public class Deck extends DeckBase implements Iterable<Entry<DeckSection, CardPool>> {
+    private static final long serialVersionUID = -8539667316828440829L;
+
     private final Map<DeckSection, CardPool> parts = new EnumMap<>(DeckSection.class);
     private final Set<String> tags = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
     // Supports deferring loading a deck until we actually need its contents. This works in conjunction with
@@ -61,6 +64,7 @@ public class Deck extends DeckBase implements Iterable<Entry<DeckSection, CardPo
     private Boolean lastCardArtOptimisationOptionUsed = null;
     private boolean includeCardsFromUnspecifiedSet = false;
     private transient UnplayableAICards unplayableAI = null;
+    private DeckConstructionLedger constructionLedger = DeckConstructionLedger.tracked();
 
     public Deck() {
         this("");
@@ -183,6 +187,22 @@ public class Deck extends DeckBase implements Iterable<Entry<DeckSection, CardPo
         return parts.get(deckSection);
     }
 
+    /**
+     * Returns whether card-list sections still need explicit materialization. Construction previews use this to
+     * remain read-only instead of triggering CardDb work as a hidden side effect.
+     */
+    public boolean hasDeferredSections() {
+        return deferredSections != null;
+    }
+
+    /**
+     * Returns an already materialized section without loading or re-optimizing deferred card lists.
+     * Intended for transaction code that must not change deck state while inspecting it.
+     */
+    public CardPool getLoadedSectionWithoutMaterializing(final DeckSection deckSection) {
+        return parts.get(deckSection);
+    }
+
     public boolean has(DeckSection deckSection) {
         final CardPool cp = get(deckSection);
         return cp != null && !cp.isEmpty();
@@ -234,7 +254,78 @@ public class Deck extends DeckBase implements Iterable<Entry<DeckSection, CardPo
     }
 
     public void setDeferredSections(Map<String, List<String>> deferredSections) {
-        this.deferredSections = deferredSections;
+        if (deferredSections == null) {
+            this.deferredSections = null;
+            return;
+        }
+        final String existingLedgerId = constructionLedger == null ? null : constructionLedger.getLedgerId();
+        final List<String> markerIds = new ArrayList<>();
+        boolean invalidMarker = false;
+        for (String tag : new ArrayList<>(tags)) {
+            if (!isConstructionMarker(tag)) {
+                continue;
+            }
+            tags.remove(tag);
+            final String markerId = tag.substring(DeckConstructionLedger.MARKER_PREFIX.length());
+            if (DeckConstructionLedger.isValidLedgerId(markerId)) {
+                markerIds.add(markerId);
+            } else {
+                invalidMarker = true;
+            }
+        }
+        final Map<String, List<String>> copy = new LinkedHashMap<>();
+        final List<List<String>> constructionSections = new ArrayList<>();
+        for (Entry<String, List<String>> section : deferredSections.entrySet()) {
+            final List<String> lines = section.getValue() == null
+                    ? List.of()
+                    : section.getValue();
+            if ("construction".equalsIgnoreCase(section.getKey())) {
+                constructionSections.add(lines);
+            } else {
+                copy.put(section.getKey(), lines);
+            }
+        }
+        if (invalidMarker || markerIds.size() > 1 || constructionSections.size() > 1) {
+            constructionLedger = DeckConstructionLedger.unresolved(
+                    markerIds.size() == 1 ? markerIds.get(0) : existingLedgerId,
+                    "Invalid or duplicate construction marker/section");
+        } else if (constructionSections.size() == 1 && markerIds.isEmpty()) {
+            constructionLedger = DeckConstructionLedger.unresolved(
+                    existingLedgerId == null ? DeckConstructionLedger.newLedgerId() : existingLedgerId,
+                    "Construction section exists but its marker is missing");
+        } else if (constructionSections.size() == 1) {
+            final String markerId = markerIds.isEmpty() ? null : markerIds.get(0);
+            final DeckConstructionLedger parsed = DeckConstructionLedger.parseLines(
+                    constructionSections.get(0), markerId == null ? existingLedgerId : markerId);
+            constructionLedger = markerId != null && !markerId.equals(parsed.getLedgerId())
+                    ? DeckConstructionLedger.unresolved(markerId,
+                            "Construction marker and section ids do not match")
+                    : parsed;
+        } else if (markerIds.size() == 1) {
+            constructionLedger = DeckConstructionLedger.orphaned(markerIds.get(0),
+                    "Construction marker exists but the construction section is missing");
+        } else {
+            constructionLedger = DeckConstructionLedger.untracked(existingLedgerId == null
+                    ? DeckConstructionLedger.newLedgerId()
+                    : existingLedgerId);
+        }
+        this.deferredSections = copy;
+    }
+
+    private static boolean isConstructionMarker(final String tag) {
+        return tag != null && tag.regionMatches(true, 0, DeckConstructionLedger.MARKER_PREFIX, 0,
+                DeckConstructionLedger.MARKER_PREFIX.length());
+    }
+
+    public DeckConstructionLedger getConstructionLedger() {
+        if (constructionLedger == null) {
+            constructionLedger = DeckConstructionLedger.untracked();
+        }
+        return constructionLedger;
+    }
+
+    public void setConstructionLedger(final DeckConstructionLedger ledger) {
+        constructionLedger = Objects.requireNonNull(ledger, "ledger").copy();
     }
 
     /* (non-Javadoc)
@@ -257,6 +348,7 @@ public class Deck extends DeckBase implements Iterable<Entry<DeckSection, CardPo
         result.setDraftNotes(draftNotes);
         result.setDeckFormat(deckFormat);
         result.setSourceUrl(sourceUrl);
+        result.constructionLedger = getConstructionLedger().copy();
         //noinspection ConstantValue
         if(tags != null) //Can happen deserializing old Decks.
             result.tags.addAll(this.tags);
@@ -725,18 +817,19 @@ public class Deck extends DeckBase implements Iterable<Entry<DeckSection, CardPo
         //If we deserialized an old deck that doesn't have tags, fix it here.
         if(this.tags == null)
             return new Deck(this, this.getName() == null ? "" : this.getName());
+        if (this.constructionLedger == null)
+            this.constructionLedger = DeckConstructionLedger.untracked();
         return this;
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean equals(final Object o) {
-        if (o instanceof DeckBase deckBase) {
-            boolean deckBaseEquals = super.equals(deckBase);
+        if (o instanceof Deck d) {
+            boolean deckBaseEquals = super.equals(d);
             if (!deckBaseEquals)
                 return false;
             // ok so far we made sure they do have the same name. Now onto comparing parts
-            final Deck d = (Deck) o;
             for (DeckSection deckSection : this.parts.keySet()) {
                 CardPool otherPool = d.get(deckSection);
                 CardPool thisPool = this.parts.get(deckSection);
@@ -750,7 +843,7 @@ public class Deck extends DeckBase implements Iterable<Entry<DeckSection, CardPo
                 if (!this.parts.containsKey(deckSection) && otherPool.countAll() > 0)
                     return false;
             }
-            return true;
+            return getConstructionLedger().semanticallyEquals(d.getConstructionLedger());
         }
         return false;
     }
