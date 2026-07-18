@@ -71,6 +71,16 @@ public final class PlayerSpellRuleRegistry {
         return registerCandidate(candidate, false);
     }
 
+    public PlayerSpellRule registerAfterPreflight(final String stableKey,
+            final String validCard, final String validSpellAbility,
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction,
+            final Set<String> namedCards) {
+        return registerCandidate(new PlayerSpellRule(stableKey, validCard,
+                validSpellAbility, genericReduction, manaConversion, harmony,
+                harmonyReduction, namedCards), false);
+    }
+
     /** Validates a stable registration without mutating this registry. */
     public void validateRegistration(final String stableKey,
             final String validCard, final String validSpellAbility,
@@ -105,6 +115,18 @@ public final class PlayerSpellRuleRegistry {
         final PlayerSpellRule candidate = new PlayerSpellRule(stableKey,
                 validCard, validSpellAbility, genericReduction, manaConversion,
                 harmony, harmonyReduction);
+        validateCandidate(candidate);
+        return !rules.containsKey(candidate.getKey());
+    }
+
+    public boolean wouldAddRegistration(final String stableKey,
+            final String validCard, final String validSpellAbility,
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction,
+            final Set<String> namedCards) {
+        final PlayerSpellRule candidate = new PlayerSpellRule(stableKey,
+                validCard, validSpellAbility, genericReduction, manaConversion,
+                harmony, harmonyReduction, namedCards);
         validateCandidate(candidate);
         return !rules.containsKey(candidate.getKey());
     }
@@ -182,6 +204,16 @@ public final class PlayerSpellRuleRegistry {
             final boolean harmony, final int harmonyReduction) {
         new PlayerSpellRule(stableKey, validCard, validSpellAbility,
                 genericReduction, manaConversion, harmony, harmonyReduction);
+    }
+
+    public static void validateRuleDefinition(final String stableKey,
+            final String validCard, final String validSpellAbility,
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction,
+            final Set<String> namedCards) {
+        new PlayerSpellRule(stableKey, validCard, validSpellAbility,
+                genericReduction, manaConversion, harmony, harmonyReduction,
+                namedCards);
     }
 
     private PlayerSpellRule registerCandidate(final PlayerSpellRule candidate,
@@ -434,7 +466,8 @@ public final class PlayerSpellRuleRegistry {
                     .append(rule.getGenericReduction()).append(',')
                     .append(encode(rule.getManaConversion())).append(',')
                     .append(rule.isHarmony()).append(',')
-                    .append(rule.getHarmonyReduction());
+                    .append(rule.getHarmonyReduction()).append(',')
+                    .append(encode(String.join("\u001F", rule.getNamedCards())));
         }
         return result.toString();
     }
@@ -459,7 +492,7 @@ public final class PlayerSpellRuleRegistry {
         final Map<String, PlayerSpellRule> restored = new LinkedHashMap<>();
         for (int i = 1; i < entries.length; i++) {
             final String[] fields = entries[i].split(",", -1);
-            if (fields.length != 5 && fields.length != 7) {
+            if (fields.length != 5 && fields.length != 7 && fields.length != 8) {
                 throw new IllegalArgumentException("Invalid player spell rule state entry");
             }
             final int reduction;
@@ -486,9 +519,12 @@ public final class PlayerSpellRuleRegistry {
                             "Invalid player spell rule Harmony reduction", ex);
                 }
             }
+            final Set<String> namedCards = fields.length == 8
+                    ? Set.of(decode(fields[7]).split("\u001F", -1)) : Set.of();
             final PlayerSpellRule rule = new PlayerSpellRule(
                     decode(fields[0]), decode(fields[1]), decode(fields[2]),
-                    reduction, decode(fields[4]), harmony, harmonyReduction);
+                    reduction, decode(fields[4]), harmony, harmonyReduction,
+                    namedCards);
             if (restored.putIfAbsent(rule.getKey(), rule) != null) {
                 throw new IllegalArgumentException("Duplicate player spell rule key: "
                         + rule.getKey());

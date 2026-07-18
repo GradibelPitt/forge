@@ -63,6 +63,7 @@ Type=Custom_Set
 64 R 符文秘银杖 @Custom
 65 R 弃暗投明 @Custom
 66 U 转生 @Custom
+67 U 神秘访客 @Custom
 68 M 裂魂者阿扎莉娜 @Custom
 69 M 妒意收割者 @Custom
 71 R 大地坠饰 @Custom

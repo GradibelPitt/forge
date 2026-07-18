@@ -8,6 +8,8 @@ import forge.game.mana.ManaConversionMatrix;
 import forge.game.spellability.SpellAbility;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -45,18 +47,27 @@ public final class PlayerSpellRule {
     private final String manaConversion;
     private final boolean harmony;
     private final int harmonyReduction;
+    private final Set<String> namedCards;
 
     PlayerSpellRule(final String key, final String validCard,
             final String validSpellAbility, final int genericReduction,
             final String manaConversion) {
         this(key, validCard, validSpellAbility, genericReduction,
-                manaConversion, false, 0);
+                manaConversion, false, 0, Set.of());
     }
 
     PlayerSpellRule(final String key, final String validCard,
             final String validSpellAbility, final int genericReduction,
             final String manaConversion, final boolean harmony,
             final int harmonyReduction) {
+        this(key, validCard, validSpellAbility, genericReduction,
+                manaConversion, harmony, harmonyReduction, Set.of());
+    }
+
+    PlayerSpellRule(final String key, final String validCard,
+            final String validSpellAbility, final int genericReduction,
+            final String manaConversion, final boolean harmony,
+            final int harmonyReduction, final Set<String> namedCards) {
         this.key = requireText(key, "key");
         validCards = splitRestrictions(validCard, "Card");
         validSpellAbilities = splitRestrictions(validSpellAbility, "Spell");
@@ -85,6 +96,7 @@ public final class PlayerSpellRule {
         }
         this.harmony = harmony;
         this.harmonyReduction = harmonyReduction;
+        this.namedCards = normalizeNames(namedCards);
         if (genericReduction == 0 && this.manaConversion.isEmpty()
                 && !harmony) {
             throw new IllegalArgumentException(
@@ -120,6 +132,10 @@ public final class PlayerSpellRule {
         return harmonyReduction;
     }
 
+    Set<String> getNamedCards() {
+        return namedCards;
+    }
+
     String[] getValidCardRestrictionsForCoverage() {
         return validCards.clone();
     }
@@ -143,6 +159,7 @@ public final class PlayerSpellRule {
         return card != null && sa != null && sa.isSpell()
                 && !sa.isCopied() && !card.isCopiedSpell()
                 && sa.getActivatingPlayer() == player
+                && matchesName(card)
                 && card.isValid(validCards, player, null, sa)
                 && sa.isValid(validSpellAbilities, player, null, sa);
     }
@@ -150,6 +167,7 @@ public final class PlayerSpellRule {
     boolean grantsHarmony(final Player player, final Card card) {
         if (!harmony || card == null || card.isCopiedSpell()
                 || card.getOwner() != player
+                || !matchesName(card)
                 || !card.isValid(validCards, player, null, null)) {
             return false;
         }
@@ -189,12 +207,38 @@ public final class PlayerSpellRule {
         return harmony && card != null && card.getOwner() == player
                 && sa != null && sa.isSpell()
                 && !sa.isCopied() && !card.isCopiedSpell()
+                && matchesName(card)
                 && card.isValid(validCards, player, null, sa)
                 && sa.isValid(validSpellAbilities, player, null, sa);
     }
 
     private String getEffectiveManaConversion() {
         return harmony ? HARMONY_MANA_CONVERSION : manaConversion;
+    }
+
+    private boolean matchesName(final Card card) {
+        if (namedCards.isEmpty()) {
+            return true;
+        }
+        for (final String name : namedCards) {
+            if (card.sharesNameWith(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Set<String> normalizeNames(final Set<String> names) {
+        if (names == null || names.isEmpty()) {
+            return Set.of();
+        }
+        final Set<String> result = new LinkedHashSet<>();
+        for (final String name : names) {
+            if (name != null && !name.trim().isEmpty()) {
+                result.add(name.trim());
+            }
+        }
+        return Collections.unmodifiableSet(result);
     }
 
     private static String requireText(final String value, final String name) {
@@ -432,13 +476,14 @@ public final class PlayerSpellRule {
                 && key.equals(rule.key)
                 && Arrays.equals(validCards, rule.validCards)
                 && Arrays.equals(validSpellAbilities, rule.validSpellAbilities)
-                && manaConversion.equals(rule.manaConversion);
+                && manaConversion.equals(rule.manaConversion)
+                && namedCards.equals(rule.namedCards);
     }
 
     @Override
     public int hashCode() {
         int result = Objects.hash(key, genericReduction, manaConversion,
-                harmony, harmonyReduction);
+                harmony, harmonyReduction, namedCards);
         result = 31 * result + Arrays.hashCode(validCards);
         result = 31 * result + Arrays.hashCode(validSpellAbilities);
         return result;

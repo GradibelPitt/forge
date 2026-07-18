@@ -67,16 +67,43 @@ public class GrantSpellRuleEffect extends SpellAbilityEffect {
                     "GrantSpellRule Stacking must be True or False");
         }
         final boolean stacking = Boolean.parseBoolean(stackingValue);
+        final String nameSnapshot = sa.getParamOrDefault("NameSnapshot", "");
+        if (!nameSnapshot.isEmpty() && !"OpponentCards".equals(nameSnapshot)) {
+            throw new IllegalArgumentException(
+                    "GrantSpellRule NameSnapshot must be OpponentCards");
+        }
 
-        PlayerSpellRuleRegistry.validateRuleDefinition(ruleKey, validCards,
-                validSpellAbilities, genericReduction, manaConversion,
-                harmony, harmonyReduction);
         final Set<Player> players = new LinkedHashSet<>();
         for (final Player player : getDefinedPlayersOrTargeted(sa)) {
             if (player == null || !player.isInGame()) {
                 continue;
             }
             players.add(player);
+        }
+
+        final java.util.Map<Player, Set<String>> namedCards =
+                new java.util.LinkedHashMap<>();
+        for (final Player player : players) {
+            final Set<String> names = new LinkedHashSet<>();
+            if ("OpponentCards".equals(nameSnapshot)) {
+                for (final Player opponent : player.getOpponents()) {
+                    for (final Card card : opponent.getAllCards()) {
+                        if (card != null && card.getName() != null
+                                && !card.getName().isEmpty()) {
+                            names.add(card.getName());
+                        }
+                    }
+                }
+                // An empty snapshot must match no cards, not become the
+                // unfiltered form used by legacy player spell rules.
+                if (names.isEmpty()) {
+                    names.add("\uE000");
+                }
+            }
+            namedCards.put(player, names);
+            PlayerSpellRuleRegistry.validateRuleDefinition(ruleKey, validCards,
+                    validSpellAbilities, genericReduction, manaConversion,
+                    harmony, harmonyReduction, names);
         }
 
         // Forge resolves effects on one game thread. Preflight every target
@@ -98,7 +125,8 @@ public class GrantSpellRuleEffect extends SpellAbilityEffect {
                 final boolean addsRule = player.getSpellRuleRegistry()
                         .wouldAddRegistration(ruleKey, validCards,
                                 validSpellAbilities, genericReduction,
-                                manaConversion, harmony, harmonyReduction);
+                                manaConversion, harmony, harmonyReduction,
+                                namedCards.get(player));
                 if (harmony && ((addsRule && !player.getSpellRuleRegistry()
                         .hasHarmonyCoverage(validCards, validSpellAbilities))
                         || player.getSpellRuleRegistry()
@@ -117,7 +145,8 @@ public class GrantSpellRuleEffect extends SpellAbilityEffect {
             } else {
                 player.getSpellRuleRegistry().registerAfterPreflight(ruleKey,
                         validCards, validSpellAbilities, genericReduction,
-                        manaConversion, harmony, harmonyReduction);
+                        manaConversion, harmony, harmonyReduction,
+                        namedCards.get(player));
             }
         }
         for (final Player player : refreshPlayers) {
