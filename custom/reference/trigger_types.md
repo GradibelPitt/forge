@@ -114,6 +114,7 @@ These must be written exactly as spelled:
 - `DiscardedAll`
 - `Discover`
 - `Drawn`
+- `DrawnAll`
 - `DungeonCompleted`
 - `Evolved`
 - `ExcessDamage`

@@ -8,6 +8,14 @@
 - **Java implementation:** `Keyword.java` 注册数值关键字；`CardFactoryUtil.java` 建立进场放置耐久指示物的替代式效应与最后一个耐久指示物被移去时的牺牲触发器；`CounterEnumType.java` 注册耐久与秘银指示物。
 - **Edge cases:** 耐久本身不会按回合自动移去指示物；只有其他费用或效应移去最后一个耐久指示物时才会触发牺牲。
 
+## DrawnAll（批次抓牌触发）
+
+- **Status:** 已实现；供“抓一张或数张牌时”这类每个抓牌批次只触发一次的异能使用。
+- **DSL:** `T:Mode$ DrawnAll | ValidPlayer$ <player>`；本批次实际抓到的牌张数通过 `TriggerCount$Amount` 取得，实际牌集合为 `TriggeredCards`。
+- **Java implementation:** `TriggerType.DrawnAll`、`TriggerDrawnAll.java` 与 `Player.drawCards(...)` 的批次完成路径。原有 `Drawn` 仍按每张牌单独触发，未改变其他卡牌语义。
+- **Edge cases:** 只统计本次 `drawCards` 实际抓到的牌；被替代、被禁止或因牌库不足而未抓到的部分不计入，实际为零时不触发。
+
+
 ## ColorChoice（有色费用择一减免）
 
 - **Status:** 已实现，供 `ReduceCost` 静态异能使用。

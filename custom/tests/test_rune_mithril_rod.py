@@ -21,13 +21,13 @@ ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 SOURCE_ORACLE = (
     "Durability 2 (This permanent enters with two durability counters on it. "
     "When the last durability counter is removed from it, sacrifice it.)\\n"
-    "Whenever you draw a card, put a mithril counter on CARDNAME.\\n"
+    "Whenever you draw one or more cards, put that many mithril counters on CARDNAME.\\n"
     "{T}, Remove two mithril counters from CARDNAME: Spells in your hand perpetually cost {1} less to cast. "
     "Remove a durability counter from CARDNAME."
 )
 ZH_ORACLE = (
     "耐久2（此永久物进战场时上面有两个耐久指示物。当最后一个耐久指示物从其上移去时，将它牺牲。）\\n"
-    "每当你抓一张牌时，在符文秘银杖上放置一个秘银指示物。\\n"
+    "每当你抓一张或数张牌时，在符文秘银杖上放置等量的秘银指示物。\\n"
     "{T}，从符文秘银杖上移去两个秘银指示物：你手中的咒语牌永久地减少{1}来施放。"
     "从符文秘银杖上移去一个耐久指示物。"
 )
@@ -42,11 +42,17 @@ class RuneMithrilRodContractTest(unittest.TestCase):
         self.assertIn("Types:Artifact", text)
         self.assertIn("K:Durability:2", text)
         self.assertIn(
-            "T:Mode$ Drawn | ValidCard$ Card.YouCtrl | TriggerZones$ Battlefield | "
-            "Execute$ TrigMithril | TriggerDescription$ Whenever you draw a card, "
-            "put a mithril counter on CARDNAME.",
+            "T:Mode$ DrawnAll | ValidPlayer$ You | TriggerZones$ Battlefield | "
+            "Execute$ TrigMithril | TriggerDescription$ Whenever you draw one or more cards, "
+            "put that many mithril counters on CARDNAME.",
             text,
         )
+        self.assertIn(
+            "SVar:TrigMithril:DB$ PutCounter | Defined$ Self | CounterType$ MITHRIL | "
+            "CounterNum$ X",
+            text,
+        )
+        self.assertIn("SVar:X:TriggerCount$Amount", text)
 
     def test_ability_reduces_hand_spells_then_removes_durability(self):
         text = CARD.read_text(encoding="utf-8")

@@ -52,7 +52,7 @@ VALID_TRIGGER_TYPES = {
     "counteraddedall", "countered", "counterremoved", "counterremovedonce", "crankcontraption", "crewed", 
     "cycled", "damageall", "damagedealtonce", "damagedone", "damagedoneonce", "damagedoneoncebycontroller", 
     "damagepreventedonce", "daytimechanges", "destroyed", "devoured", "discarded", "discardedall", "discover", 
-    "drawn", "dungeoncompleted", "evolved", "excessdamage", "excessdamageall", "enlisted", "exerted", "exiled", 
+    "drawn", "drawnall", "dungeoncompleted", "evolved", "excessdamage", "excessdamageall", "enlisted", "exerted", "exiled",
     "exploited", "explores", "fight", "fightonce", "flippedcoin", "forage", "foretell", "fullyunlock", "givegift", 
     "immediate", "investigated", "landplayed", "lifechanged", "lifegained", "lifelost", "lifelostall", 
     "losesgame", "manaadded", "manaexpend", "manifestdread", "mentored", "milled", "milledonce", "milledall", 

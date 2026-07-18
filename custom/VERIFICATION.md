@@ -1,5 +1,7 @@
 # Forge DIY Verification Status
 
+- 2026-07-18 规范“符文秘银杖”第二个效果：规则文改为“每当你抓一张或数张牌时，在符文秘银杖上放置等量的秘银指示物”；新增 `DrawnAll` 批次触发，每次 `drawCards` 只产生一个触发并以实际抓到的牌张数设置 `TriggerCount$Amount`，既有 `Drawn` 仍保持逐张语义。实际请求抓5张而牌库仅3张的 Java 集成测试确认只产生一个、数量为3的触发；目标机制与疲劳回归3/3、卡牌契约3/3、单卡 lint 与 DIY 全量317/317均通过。`forge-game` 全量197项中195项通过，两个失败仍位于工作区既有 `PlayerSpellRuleRegistryTest` 法术力转换状态测试，与本次批次抓牌路径无关。
+
 - 2026-07-17 更正 `转生` 费用：用户的 `B/W` 表示“黑或白”，不是 `{W}{B}`。脚本费用已改为 Forge 混血语法 `W/B`（游戏中显示 `{W/B}`），仅需支付黑或白之一；其他脚本、中文文本和卡图保持不变。本条取代下方新增记录中的双色费用表述。
 
 - 2026-07-17 新增 `转生`：`{W/B}` 瞬间，消灭目标生物；仅当该生物牌确实因此进入坟墓场时，依其拥有者操控移回战场。实现复用官方 `Come Back Wrong` 已验证的 `Destroy | RememberDestroyed`、`ChangeZone` 与清理链，未授予施放者操控权，且不会把衍生物作为“生物牌”移回。用户提供图像确认为纯原画，原文件备份为 `tools/card-artwork/codex-clipboard-f4c61216-eb2d-4496-81a4-7997c818548f.png`，标准动态牌框裁图为 `cards/pictures/PH01/转生.artcrop.jpg`（512×374 RGB JPEG）。新增 3 项契约测试；目标测试、单卡 lint 和 DIY 全量 300 项测试均通过。`tools/install_to_forge.ps1` 已同步本机，脚本、版本表与卡图的源／部署 SHA-256 均逐对一致。简中条目已写入 `forge-gui/res/languages/cardnames-zh-CN.txt`；需重启 Forge 或在开发者模式重载资源后进行客户端实测。

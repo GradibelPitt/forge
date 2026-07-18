@@ -1172,7 +1172,7 @@ public class Player extends GameEntity implements Comparable<Player> {
 
         for (int i = 0; i < n; i++) {
             if (gameStarted && !canDraw()) {
-                return drawn;
+                break;
             }
             drawn.addAll(doDraw(toReveal, cause, params, zone));
         }
@@ -1182,6 +1182,16 @@ public class Player extends GameEntity implements Comparable<Player> {
             if (e.getValue().size() > 1) {
                 game.getAction().revealTo(e.getValue(), e.getKey(), "Revealing cards drawn from ");
             }
+        }
+
+        if (gameStarted && !drawn.isEmpty()) {
+            final Map<AbilityKey, Object> runParams = AbilityKey.mapFromPlayer(this);
+            if (params != null) {
+                runParams.putAll(params);
+            }
+            runParams.put(AbilityKey.Cards, new CardCollection(drawn));
+            runParams.put(AbilityKey.Cause, cause);
+            game.getTriggerHandler().runTrigger(TriggerType.DrawnAll, runParams, false);
         }
         return drawn;
     }
