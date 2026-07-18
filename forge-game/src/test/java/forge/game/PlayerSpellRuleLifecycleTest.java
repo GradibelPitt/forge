@@ -77,6 +77,7 @@ public class PlayerSpellRuleLifecycleTest {
             player.setTeam(1);
             game.getPhaseHandler().devModeSet(PhaseType.MAIN1, player);
         }
+
     }
 
     private static final class TestLobbyPlayer extends LobbyPlayer

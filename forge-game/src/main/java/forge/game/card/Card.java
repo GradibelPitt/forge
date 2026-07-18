@@ -3082,7 +3082,9 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
 
         // CantBlockBy static abilities
         if (game != null && isCreature() && isInPlay()) {
-            for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+            for (final Card ca : game.getStaticAbilityModeSources(
+                    StaticAbilityMode.CantBlockBy,
+                    StaticAbilityMode.MinMaxBlocker)) {
                 if (equals(ca)) {
                     continue;
                 }

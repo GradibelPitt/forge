@@ -33,6 +33,7 @@ import forge.game.spellability.SpellAbility;
 import forge.game.staticability.StaticAbility;
 import forge.game.staticability.StaticAbilityBlockRestrict;
 import forge.game.staticability.StaticAbilityCantAttackBlock;
+import forge.game.staticability.StaticAbilityMode;
 import forge.game.staticability.StaticAbilityMustBlock;
 import forge.game.trigger.TriggerType;
 import forge.game.zone.ZoneType;
@@ -289,7 +290,9 @@ public class CombatUtil {
         final Cost attackCost = new Cost(ManaCost.ZERO, true);
         boolean hasCost = false;
         // Sort abilities to apply them in proper order
-        for (final Card card : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card card : game.getStaticAbilityModeSources(
+                StaticAbilityMode.CantAttackUnless,
+                StaticAbilityMode.OptionalAttackCost)) {
             for (final StaticAbility stAb : card.getStaticAbilities()) {
                 final Cost additionalCost = stAb.getAttackCost(attacker, defender, attackersWithOptionalCost);
                 if (null != additionalCost) {
@@ -335,7 +338,8 @@ public class CombatUtil {
         Cost blockCost = new Cost(ManaCost.ZERO, true);
         // Sort abilities to apply them in proper order
         boolean noCost = true;
-        for (Card card : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (Card card : game.getStaticAbilityModeSources(
+                StaticAbilityMode.CantBlockUnless)) {
             for (final StaticAbility stAb : card.getStaticAbilities()) {
                 Cost c1 = stAb.getBlockCost(blocker, attacker);
                 if (c1 != null) {

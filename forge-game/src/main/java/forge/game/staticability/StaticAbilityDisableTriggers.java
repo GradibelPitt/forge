@@ -26,7 +26,7 @@ public class StaticAbilityDisableTriggers {
                 cardList = game.getLastStateBattlefield();
             }
         } else {
-            cardList = game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES);
+            cardList = game.getStaticAbilityModeSources(StaticAbilityMode.DisableTriggers);
         }
 
         for (final Card ca : cardList) {

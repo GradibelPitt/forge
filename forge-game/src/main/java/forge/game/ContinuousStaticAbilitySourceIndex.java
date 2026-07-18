@@ -806,6 +806,41 @@ final class ContinuousStaticAbilitySourceIndex {
                 visitor);
     }
 
+    synchronized CardCollection snapshotStaticAbilityModeSources(
+            final Iterable<StaticAbilityMode> modes) {
+        final Map<Integer, ModeLocation> earliestByCardId =
+                new LinkedHashMap<>();
+        final EnumSet<StaticAbilityMode> uniqueModes =
+                EnumSet.noneOf(StaticAbilityMode.class);
+        for (final StaticAbilityMode mode : modes) {
+            if (mode == null || !uniqueModes.add(mode)) {
+                continue;
+            }
+            visitStaticAbilityModeSources(mode, card -> {
+                final ModeLocation location = modeLocations.get(
+                        new IdentityKey(card));
+                if (location == null) {
+                    return true;
+                }
+                final ModeLocation previous = earliestByCardId.get(
+                        card.getId());
+                if (previous == null || MODE_LOCATION_ORDER.compare(
+                        location, previous) < 0) {
+                    earliestByCardId.put(card.getId(), location);
+                }
+                return true;
+            });
+        }
+        final List<ModeLocation> ordered = new ArrayList<>(
+                earliestByCardId.values());
+        ordered.sort(MODE_LOCATION_ORDER);
+        final CardCollection result = new CardCollection();
+        for (final ModeLocation location : ordered) {
+            result.add(location.card);
+        }
+        return result;
+    }
+
     synchronized boolean visitCurrentContinuousSources(
             final Visitor<Card> visitor) {
         ensureInitialized();

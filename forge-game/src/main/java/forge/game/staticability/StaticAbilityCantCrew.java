@@ -2,12 +2,11 @@ package forge.game.staticability;
 
 import forge.game.card.Card;
 import forge.game.card.CardCollection;
-import forge.game.zone.ZoneType;
 
 public class StaticAbilityCantCrew {
 
     public static boolean cantCrew(final Card card) {
-        CardCollection list = new CardCollection(card.getGame().getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES));
+        CardCollection list = new CardCollection(card.getGame().getStaticAbilityModeSources(StaticAbilityMode.CantCrew));
         list.add(card);
         for (final Card ca : list) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {

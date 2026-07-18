@@ -39,6 +39,13 @@ public class PlayerSpellRuleGameCopierTest extends SimulationTest {
 
         final Card originalCard = addCardToZone(
                 "Divination", originalPlayer, ZoneType.Hand);
+        final Card originalPairFirst = addCardToZone(
+                "Memnite", originalPlayer, ZoneType.Battlefield);
+        final Card originalPairSecond = addCardToZone(
+                "Ornithopter", originalPlayer, ZoneType.Battlefield);
+        originalPairFirst.setPairedWith(originalPairSecond);
+        originalPairSecond.setPairedWith(originalPairFirst);
+        originalGame.getAction().checkStaticAbilities(false);
         final GameCopier copier = new GameCopier(originalGame);
         final Game copiedGame = copier.makeCopy();
         final Player copiedPlayer = (Player) copier.find(originalPlayer);
@@ -55,6 +62,12 @@ public class PlayerSpellRuleGameCopierTest extends SimulationTest {
                 .toStateString(), opponentState);
 
         final Card copiedCard = (Card) copier.find(originalCard);
+        final Card copiedPairFirst = (Card) copier.find(originalPairFirst);
+        final Card copiedPairSecond = (Card) copier.find(originalPairSecond);
+        Assert.assertNotSame(copiedPairFirst, originalPairFirst);
+        Assert.assertNotSame(copiedPairSecond, originalPairSecond);
+        Assert.assertSame(copiedPairFirst.getPairedWith(), copiedPairSecond);
+        Assert.assertSame(copiedPairSecond.getPairedWith(), copiedPairFirst);
         final SpellAbility copiedSpell = copiedCard.getFirstSpellAbility();
         copiedSpell.setActivatingPlayer(copiedPlayer);
         Assert.assertEquals(copiedRegistry.getGenericReduction(
@@ -91,5 +104,15 @@ public class PlayerSpellRuleGameCopierTest extends SimulationTest {
         originalRegistry.clear();
         Assert.assertEquals(copiedRegistry.toStateString(),
                 independentlyRebuiltCopyState);
+
+        copiedPairSecond.getCurrentState().removeCardTypes(true);
+        copiedGame.getAction().checkStaticAbilities(false);
+        Assert.assertNull(copiedPairFirst.getPairedWith());
+        Assert.assertNull(copiedPairSecond.getPairedWith());
+        Assert.assertSame(originalPairFirst.getPairedWith(),
+                originalPairSecond,
+                "simulation cleanup cannot mutate original pair identities");
+        Assert.assertSame(originalPairSecond.getPairedWith(),
+                originalPairFirst);
     }
 }

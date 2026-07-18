@@ -29,6 +29,8 @@ import forge.game.staticability.StaticAbility;
 import forge.game.staticability.StaticAbilityAlternativeCost;
 import forge.game.staticability.StaticAbilityCantAttach;
 import forge.game.staticability.StaticAbilityCantBeCast;
+import forge.game.staticability.StaticAbilityCantDraw;
+import forge.game.staticability.StaticAbilityCantGainLosePayLife;
 import forge.game.staticability.StaticAbilityCantTarget;
 import forge.game.staticability.StaticAbilityCastWithFlash;
 import forge.game.staticability.StaticAbilityManaConvert;
@@ -347,6 +349,72 @@ public class ContinuousStaticAbilitySourceIndexTest {
         Assert.assertEquals(fixture.index().diagnostics()
                 .modeSnapshotLocationCopies(), 0L,
                 "20k stable early-exit queries must not copy 400m entries");
+    }
+
+    @Test
+    public void remainingCantDrawQueryVisitsOnlyItsIndexedSource() {
+        final Fixture fixture = new Fixture(
+                "remaining static query migration benchmark");
+        fixture.game.visitStaticAbilityModeSources(
+                StaticAbilityMode.CantDraw, ignored -> true);
+        for (int i = 0; i < LARGE_TEST3_BATTLEFIELD_SIZE; i++) {
+            fixture.player.getZone(ZoneType.Battlefield)
+                    .add(fixture.card("unrelated permanent " + i));
+        }
+        final Card drawLimit = fixture.modeSource("draw limit",
+                StaticAbilityMode.CantDraw);
+        fixture.player.getZone(ZoneType.Battlefield).add(drawLimit);
+        fixture.game.visitStaticAbilityModeSources(
+                StaticAbilityMode.CantDraw, ignored -> true);
+        fixture.index().resetDiagnostics();
+
+        final int queryCount = 100;
+        for (int i = 0; i < queryCount; i++) {
+            Assert.assertEquals(StaticAbilityCantDraw.canDrawAmount(
+                    fixture.player, 1), 0);
+        }
+
+        final ContinuousStaticAbilitySourceIndex.Diagnostics diagnostics =
+                fixture.index().diagnostics();
+        Assert.assertEquals(diagnostics.modeSourceVisits(),
+                (long) queryCount,
+                "the production CantDraw path must visit only its one "
+                        + "indexed source, regardless of battlefield size");
+        Assert.assertEquals(diagnostics.modeCandidateExaminations(),
+                (long) queryCount,
+                "100 stable queries may examine at most one candidate each");
+        Assert.assertEquals(diagnostics.modeSnapshotLocationCopies(), 0L,
+                "stable migrated queries must reuse the mode snapshot");
+    }
+
+    @Test
+    public void multiModeSnapshotsPreserveLegacyOrderAndDeduplicateCards() {
+        final Fixture fixture = new Fixture("multi-mode source snapshot");
+        final Card battlefield = fixture.modeSource("battlefield gain",
+                StaticAbilityMode.CantGainLife);
+        final Card graveyard = fixture.modeSource("graveyard change",
+                StaticAbilityMode.CantChangeLife);
+        final Card exileDual = fixture.modeSource("exile dual",
+                StaticAbilityMode.CantGainLife);
+        exileDual.addStaticAbility("Mode$ CantChangeLife | EffectZone$ All");
+        fixture.player.getZone(ZoneType.Battlefield).add(battlefield);
+        fixture.player.getZone(ZoneType.Graveyard).add(graveyard);
+        fixture.player.getZone(ZoneType.Exile).add(exileDual);
+
+        final CardCollection sources =
+                fixture.game.getStaticAbilityModeSources(
+                        StaticAbilityMode.CantGainLife,
+                        StaticAbilityMode.CantChangeLife);
+        Assert.assertEquals(sources.size(), 3,
+                "a card advertising both requested modes must appear once");
+        Assert.assertSame(sources.get(0), graveyard);
+        Assert.assertSame(sources.get(1), battlefield);
+        Assert.assertSame(sources.get(2), exileDual);
+        Assert.assertTrue(StaticAbilityCantGainLosePayLife
+                .anyCantGainLife(fixture.player));
+        Assert.assertTrue(StaticAbilityCantGainLosePayLife
+                .anyCantLoseLife(fixture.player),
+                "CantChangeLife must participate in both life queries");
     }
 
     @Test

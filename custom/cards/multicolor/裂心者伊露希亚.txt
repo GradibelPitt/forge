@@ -5,7 +5,7 @@ PT:1/3
 T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigConjure | TriggerDescription$ When CARDNAME enters, conjure a duplicate of each card in your opponents' hands into your hand. At the beginning of your next end step, exile the cards conjured this way.
 SVar:TrigConjure:DB$ MakeCard | Conjure$ True | DefinedName$ ValidHand Card.OppCtrl | Zone$ Hand | RememberMade$ True | SubAbility$ DBDelay
 SVar:DBDelay:DB$ DelayedTrigger | DelayedTriggerDefinedPlayer$ You | Mode$ Phase | Phase$ End of Turn | Execute$ TrigExile | RememberObjects$ Remembered | SubAbility$ DBCleanup | TriggerDescription$ At the beginning of your next end step, exile the cards conjured this way.
-SVar:TrigExile:DB$ ChangeZone | Defined$ DelayTriggerRemembered | Origin$ All | Destination$ Exile
+SVar:TrigExile:DB$ ChangeZone | Defined$ DelayTriggerRemembered | Origin$ Hand | Destination$ Exile
 SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
 AI:RemoveDeck:All
-Oracle:当裂心者伊露希亚进战场时，将你对手手中每张牌的复制品各一张化生到你的手中。在你的下一个结束步骤开始时，放逐以此法化生的牌。
+Oracle:当裂心者伊露希亚进战场时，将你对手手中每张牌的复制品各一张化生到你的手中。在你的下一个结束步骤开始时，放逐以此法化生且仍在手中的牌。

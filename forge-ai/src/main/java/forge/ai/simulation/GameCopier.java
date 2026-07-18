@@ -282,6 +282,7 @@ public class GameCopier {
             }
             // TODO: Verify that the above relationships are preserved bi-directionally or not.
         }
+        newGame.rebuildBattlefieldDerivedState();
     }
 
     private static PaperCard hidden_info_card = new PaperCard(CardRules.fromScript(Lists.newArrayList("Name:hidden", "Types:Artifact", "Oracle:")), "", CardRarity.Common);

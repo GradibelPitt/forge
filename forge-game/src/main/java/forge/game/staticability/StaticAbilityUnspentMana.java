@@ -10,14 +10,14 @@ import forge.card.mana.ManaAtom;
 import forge.game.Game;
 import forge.game.card.Card;
 import forge.game.player.Player;
-import forge.game.zone.ZoneType;
 
 public class StaticAbilityUnspentMana {
 
     public static Collection<Byte> getManaToKeep(final Player player) {
         final Game game = player.getGame();
         Set<Byte> result = Sets.newHashSet();
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : game.getStaticAbilityModeSources(
+                StaticAbilityMode.UnspentMana)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.UnspentMana)) {
                     continue;
@@ -30,7 +30,8 @@ public class StaticAbilityUnspentMana {
 
     public static boolean hasManaBurn(final Player player) {
         final Game game = player.getGame();
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : game.getStaticAbilityModeSources(
+                StaticAbilityMode.ManaBurn)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.ManaBurn)) {
                     continue;

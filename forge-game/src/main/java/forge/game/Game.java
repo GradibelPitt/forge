@@ -563,6 +563,19 @@ public class Game {
         return continuousStaticAbilitySourceIndex
                 .visitStaticAbilityModeSources(mode, visitor);
     }
+    /**
+     * Returns an ordered mutable snapshot containing only sources which can
+     * currently provide the requested static-ability mode. Prefer
+     * {@link #visitStaticAbilityModeSources(StaticAbilityMode, Visitor)} for
+     * early-exit hot paths; this compatibility facade lets legacy collection
+     * queries migrate off full static-source-zone scans without changing
+     * their existing iteration and local-list mutation semantics.
+     */
+    public final CardCollection getStaticAbilityModeSources(
+            final StaticAbilityMode... modes) {
+        return continuousStaticAbilitySourceIndex
+                .snapshotStaticAbilityModeSources(Arrays.asList(modes));
+    }
     public final boolean visitStaticAbilityModeSources(
             final StaticAbilityMode mode, final Iterable<ZoneType> zones,
             final Visitor<Card> visitor) {

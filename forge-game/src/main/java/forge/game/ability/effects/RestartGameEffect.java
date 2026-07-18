@@ -23,6 +23,9 @@ public class RestartGameEffect extends SpellAbilityEffect {
     public void resolve(SpellAbility sa) {
         final Player activator = sa.getActivatingPlayer();
         final Game game = activator.getGame();
+        // The Game object is reused, so invalidate all pre-restart input
+        // tokens while allowing fresh scopes in the new epoch.
+        game.getAction().terminateInputActions();
         FCollectionView<Player> players = game.getPlayers();
 
         // Don't grab Ante Zones

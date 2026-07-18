@@ -5,7 +5,6 @@ import forge.game.GameEntity;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
 import forge.game.player.Player;
-import forge.game.zone.ZoneType;
 import forge.util.collect.FCollectionView;
 
 import java.util.ArrayList;
@@ -19,7 +18,8 @@ public class StaticAbilityMustAttack {
     public static List<GameEntity> entitiesMustAttack(final Card attacker) {
         final List<GameEntity> entityList = new ArrayList<>();
         final Game game = attacker.getGame();
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : game.getStaticAbilityModeSources(
+                StaticAbilityMode.MustAttack)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.MustAttack)) {
                     continue;
@@ -47,7 +47,9 @@ public class StaticAbilityMustAttack {
 
     public static Multimap<GameEntity, StaticAbility> mustAttackSpecific(final Player attackingPlayer, final FCollectionView<GameEntity> possibleDefenders) {
         Multimap<GameEntity, StaticAbility> result = MultimapBuilder.hashKeys(possibleDefenders.size()).arrayListValues().build();
-        for (final Card ca : attackingPlayer.getGame().getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : attackingPlayer.getGame()
+                .getStaticAbilityModeSources(
+                        StaticAbilityMode.PlayerMustAttack)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.PlayerMustAttack)) {
                     continue;
@@ -67,7 +69,8 @@ public class StaticAbilityMustAttack {
 
     public static Multimap<Card, StaticAbility> getAttackRequirements(final Card card, Iterable<Card> other) {
         Multimap<Card, StaticAbility> result = MultimapBuilder.hashKeys().arrayListValues().build();
-        for (final Card ca : card.getGame().getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : card.getGame().getStaticAbilityModeSources(
+                StaticAbilityMode.AttackRequirement)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.AttackRequirement)) {
                     continue;

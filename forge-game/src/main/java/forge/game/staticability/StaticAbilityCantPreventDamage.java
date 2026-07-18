@@ -2,12 +2,11 @@ package forge.game.staticability;
 
 import forge.game.card.Card;
 import forge.game.card.CardCollection;
-import forge.game.zone.ZoneType;
 
 public class StaticAbilityCantPreventDamage {
 
     public static boolean cantPreventDamage(final Card source, final boolean isCombat) {
-        CardCollection list = new CardCollection(source.getGame().getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES));
+        CardCollection list = new CardCollection(source.getGame().getStaticAbilityModeSources(StaticAbilityMode.CantPreventDamage));
         list.add(source);
         for (final Card ca : list) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {

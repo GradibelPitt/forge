@@ -2,6 +2,7 @@ import os
 import sys
 import re
 import argparse
+import unicodedata
 
 # Custom card names may contain non-ASCII characters. Keep diagnostics usable
 # when the invoking Windows console defaults to a legacy code page.
@@ -33,7 +34,7 @@ VALID_API_TYPES = {
     "reorderzone", "repeat", "repeateach", "replacecounter", "replaceeffect", "replacemana", "replacedamage", 
     "replacetoken", "replacesplitdamage", "restartgame", "reveal", "revealhand", "reverseturnorder", 
     "ringtemptsyou", "rolldice", "rollplanardice", "runchaos", "sacrifice", "sacrificeall", "scry", 
-    "seek", "setinmotion", "setlife", "setstate", "shuffle", "skipphase", "skipturn", "stealsamename", "storesvar",
+    "seek", "setinmotion", "setlife", "setstate", "shuffle", "skipphase", "skipturn", "stealsamename", "storesvar", 
     "subgame", "surveil", "switchblock", "takeinitiative", "tap", "tapall", "taporuntap", "taporuntapall", 
     "timetravel", "token", "twopiles", "unattach", "unattachall", "unlockdoor", "untap", "untapall", 
     "venture", "villainouschoice", "vote", "winsgame", "blankline", "damageresolve", "changezoneresolve", 
@@ -74,6 +75,87 @@ VALID_REPLACEMENT_TYPES = {
     "rolldice", "rollplanardice", "scry", "setinmotion", "tap", "transform", "turnfaceup", "untap"
 }
 
+DECK_RULE_MODES = {"ADD_FIXED", "CHOOSE_ONE", "ALLOW"}
+DECK_RULE_CONSTRAINTS = {
+    "FORMAT_CARD_POOL",
+    "COMMANDER_COLOR_IDENTITY",
+    "COPY_LIMIT",
+    "SECTION",
+    "BANNED_OR_RESTRICTED",
+}
+DECK_RULE_SECTIONS = {
+    "MAIN", "SIDEBOARD", "COMMANDER", "AVATAR", "PLANES", "SCHEMES",
+    "CONSPIRACY", "DUNGEON", "ATTRACTIONS", "CONTRAPTIONS",
+}
+DECK_RULE_FIELD_DISPLAY = {
+    "ID": "Id",
+    "MODE": "Mode",
+    "TARGET": "Target",
+    "CARD": "Card",
+    "AMOUNT": "Amount",
+    "CANDIDATES": "Candidates",
+    "CONSTRAINT": "Constraint",
+    "CARDINALITY": "Cardinality",
+}
+MAX_DECK_RULES_PER_CARD = 100
+MAX_DECK_RULE_LINE_LENGTH = 16384
+MAX_DECK_RULE_FIELD_LENGTH = 8192
+MAX_DECK_RULE_FIELDS = 16
+MAX_RULE_ID_LENGTH = 1024
+MAX_CARD_NAME_LENGTH = 4096
+MAX_DECK_RULE_AMOUNT = 1000
+MAX_DECK_RULE_CANDIDATES = 1000
+FACE_SETTER_KEYS = {
+    "A", "Colors", "Defense", "Draft", "FlavorName", "K", "Loyalty",
+    "Lights", "ManaCost", "Oracle", "PT", "R", "S", "SVar", "T",
+    "Text", "Types", "Variant",
+}
+
+
+def _java_trim(value):
+    start = 0
+    end = len(value)
+    while start < end and ord(value[start]) <= 0x20:
+        start += 1
+    while end > start and ord(value[end - 1]) <= 0x20:
+        end -= 1
+    return value[start:end]
+
+
+def _java_is_whitespace(character):
+    codepoint = ord(character)
+    if 0x09 <= codepoint <= 0x0d or 0x1c <= codepoint <= 0x1f:
+        return True
+    if codepoint in (0x00a0, 0x2007, 0x202f):
+        return False
+    return unicodedata.category(character) in ("Zs", "Zl", "Zp")
+
+
+def _java_strip(value):
+    start = 0
+    end = len(value)
+    while start < end and _java_is_whitespace(value[start]):
+        start += 1
+    while end > start and _java_is_whitespace(value[end - 1]):
+        end -= 1
+    return value[start:end]
+
+
+def _contains_forbidden_deck_rule_control(value):
+    return any(ord(character) <= 0x1f or ord(character) == 0x7f for character in value)
+
+
+def _exceeds_utf8_limit(value, maximum_bytes):
+    return len(value) > maximum_bytes or len(value.encode("utf-8")) > maximum_bytes
+
+
+def _resolve_deck_rule_face_name(actual_name, placeholder_name):
+    selected_name = actual_name if actual_name is not None else placeholder_name
+    if selected_name is None:
+        return None
+    stripped_name = _java_strip(selected_name)
+    return stripped_name if stripped_name else None
+
 def transform_name(card_name):
     # Match Forge's CardStorageReader.transformName Java method
     chars = []
@@ -108,6 +190,223 @@ def parse_pip_params(pip_str):
             params[part] = True
     return params
 
+
+def _parse_deck_rule_params(rule_text, line_num, errors):
+    params = {}
+    raw_segments = rule_text.split("|")
+    if len(raw_segments) > MAX_DECK_RULE_FIELDS:
+        errors.append(
+            f"Line {line_num}: DeckRule may contain at most "
+            f"{MAX_DECK_RULE_FIELDS} fields."
+        )
+        return params
+
+    for raw_segment in raw_segments:
+        segment = _java_strip(raw_segment)
+        if _exceeds_utf8_limit(raw_segment, MAX_DECK_RULE_FIELD_LENGTH):
+            errors.append(
+                f"Line {line_num}: DeckRule field exceeds "
+                f"{MAX_DECK_RULE_FIELD_LENGTH} UTF-8 bytes."
+            )
+            continue
+        if not segment or "$" not in segment:
+            errors.append(
+                f"Line {line_num}: DeckRule parameter must use 'Name$ value' syntax."
+            )
+            continue
+
+        raw_name, raw_value = raw_segment.split("$", 1)
+        name = _java_strip(raw_name)
+        value = _java_strip(raw_value)
+        if not name:
+            errors.append(
+                f"Line {line_num}: DeckRule parameter must use 'Name$ value' syntax."
+            )
+            continue
+        canonical_name = name.upper()
+        if canonical_name == "ID" and _contains_forbidden_deck_rule_control(raw_value):
+            errors.append(
+                f"Line {line_num}: DeckRule Id contains a forbidden control character."
+            )
+        if canonical_name in params:
+            errors.append(f"Line {line_num}: DeckRule has duplicate parameter '{name}'.")
+            continue
+        if not value:
+            errors.append(f"Line {line_num}: DeckRule parameter '{name}' must have a value.")
+            continue
+        params[canonical_name] = value
+    return params
+
+
+def _require_deck_rule_params(params, required, line_num, errors):
+    for name in required:
+        if name not in params:
+            display_name = DECK_RULE_FIELD_DISPLAY.get(name, name)
+            errors.append(
+                f"Line {line_num}: DeckRule missing required parameter '{display_name}'."
+            )
+
+
+def _display_deck_rule_field(name):
+    return DECK_RULE_FIELD_DISPLAY.get(name, name.title())
+
+
+def _normalize_deck_rule_display(value):
+    return unicodedata.normalize("NFC", _java_strip(value))
+
+
+def _canonical_deck_rule_card_name(card_name):
+    normalized = unicodedata.normalize("NFC", card_name)
+    return unicodedata.normalize("NFC", normalized.upper())
+
+
+def _deck_rule_card_name_exceeds_limit(card_name):
+    display_name = _normalize_deck_rule_display(card_name)
+    if _exceeds_utf8_limit(display_name, MAX_CARD_NAME_LENGTH):
+        return True
+    canonical_name = _canonical_deck_rule_card_name(display_name)
+    return _exceeds_utf8_limit(canonical_name, MAX_CARD_NAME_LENGTH)
+
+
+def _lint_deck_rule(rule_text, line_num, seen_ids):
+    errors = []
+    if _exceeds_utf8_limit(rule_text, MAX_DECK_RULE_LINE_LENGTH):
+        errors.append(
+            f"Line {line_num}: DeckRule line exceeds "
+            f"{MAX_DECK_RULE_LINE_LENGTH} UTF-8 bytes."
+        )
+        return errors
+
+    params = _parse_deck_rule_params(rule_text, line_num, errors)
+    _require_deck_rule_params(params, ("ID", "MODE"), line_num, errors)
+
+    rule_id = params.get("ID")
+    if rule_id:
+        normalized_rule_id = _normalize_deck_rule_display(rule_id)
+        if _exceeds_utf8_limit(normalized_rule_id, MAX_RULE_ID_LENGTH):
+            errors.append(
+                f"Line {line_num}: DeckRule Id exceeds "
+                f"{MAX_RULE_ID_LENGTH} UTF-8 bytes."
+            )
+        if normalized_rule_id in seen_ids:
+            errors.append(f"Line {line_num}: duplicate DeckRule Id '{rule_id}'.")
+        else:
+            seen_ids.add(normalized_rule_id)
+
+    cardinality = params.get("CARDINALITY", "ONCE_PER_DECK")
+    if cardinality.upper() != "ONCE_PER_DECK":
+        errors.append(
+            f"Line {line_num}: unsupported Cardinality '{cardinality}'; "
+            "only ONCE_PER_DECK is supported."
+        )
+
+    mode_value = params.get("MODE")
+    if not mode_value:
+        return errors
+    mode = mode_value.upper()
+    if mode not in DECK_RULE_MODES:
+        errors.append(f"Line {line_num}: unknown Mode '{mode_value}' in DeckRule.")
+        safe_names = {
+            "ID", "MODE", "CARDINALITY", "TARGET", "CARD", "AMOUNT",
+            "CANDIDATES", "CONSTRAINT",
+        }
+        for name in params:
+            if name not in safe_names:
+                errors.append(
+                    f"Line {line_num}: unexpected DeckRule parameter "
+                    f"'{_display_deck_rule_field(name)}'."
+                )
+        return errors
+
+    required = {"ID", "MODE"}
+    allowed = {"ID", "MODE", "CARDINALITY"}
+    constraint = None
+    if mode == "ADD_FIXED":
+        required.update(("TARGET", "CARD", "AMOUNT"))
+        allowed.update(("TARGET", "CARD", "AMOUNT"))
+    elif mode == "CHOOSE_ONE":
+        required.update(("TARGET", "CANDIDATES", "AMOUNT"))
+        allowed.update(("TARGET", "CANDIDATES", "AMOUNT"))
+    else:
+        required.update(("CONSTRAINT", "CARD"))
+        allowed.update(("CONSTRAINT", "CARD"))
+        constraint_value = params.get("CONSTRAINT")
+        if constraint_value:
+            constraint = constraint_value.upper()
+            if constraint not in DECK_RULE_CONSTRAINTS:
+                errors.append(
+                    f"Line {line_num}: unknown Constraint '{constraint_value}' in DeckRule."
+                )
+            elif constraint == "SECTION":
+                required.add("TARGET")
+                allowed.add("TARGET")
+
+    _require_deck_rule_params(params, required, line_num, errors)
+
+    for name in params:
+        if name not in allowed:
+            if mode == "ALLOW" and name == "TARGET" and constraint:
+                errors.append(
+                    f"Line {line_num}: unexpected parameter 'Target' for Mode ALLOW "
+                    f"with Constraint {constraint}."
+                )
+            else:
+                errors.append(
+                    f"Line {line_num}: unexpected parameter "
+                    f"'{_display_deck_rule_field(name)}' for Mode {mode}."
+                )
+
+    target = params.get("TARGET")
+    if "TARGET" in allowed and target and target.upper() not in DECK_RULE_SECTIONS:
+        errors.append(f"Line {line_num}: unknown Target deck section '{target}'.")
+
+    if mode in ("ADD_FIXED", "CHOOSE_ONE"):
+        amount = params.get("AMOUNT")
+        valid_amount = False
+        if amount and re.fullmatch(r"[+-]?[0-9]+", amount):
+            unsigned = amount.lstrip("+")
+            if not unsigned.startswith("-"):
+                significant = unsigned.lstrip("0") or "0"
+                if len(significant) <= 4:
+                    valid_amount = 1 <= int(significant) <= MAX_DECK_RULE_AMOUNT
+        if amount and not valid_amount:
+            errors.append(
+                f"Line {line_num}: DeckRule Amount must be an integer from 1 through "
+                f"{MAX_DECK_RULE_AMOUNT}."
+            )
+
+    if mode in ("ADD_FIXED", "ALLOW") and "CARD" in params:
+        if _deck_rule_card_name_exceeds_limit(params["CARD"]):
+            errors.append(
+                f"Line {line_num}: DeckRule Card exceeds "
+                f"{MAX_CARD_NAME_LENGTH} UTF-8 bytes."
+            )
+
+    if mode == "CHOOSE_ONE" and "CANDIDATES" in params:
+        candidates = [_java_strip(candidate) for candidate in params["CANDIDATES"].split(";")]
+        canonical_candidates = {
+            _canonical_deck_rule_card_name(candidate) for candidate in candidates if candidate
+        }
+        oversized_candidate = any(
+            candidate and _deck_rule_card_name_exceeds_limit(candidate)
+            for candidate in candidates
+        )
+        if oversized_candidate:
+            errors.append(
+                f"Line {line_num}: DeckRule Candidate name exceeds "
+                f"{MAX_CARD_NAME_LENGTH} UTF-8 bytes."
+            )
+        if (
+            any(not candidate for candidate in candidates)
+            or not 1 <= len(canonical_candidates) <= MAX_DECK_RULE_CANDIDATES
+        ):
+            errors.append(
+                f"Line {line_num}: DeckRule Candidates must contain from 1 through "
+                f"{MAX_DECK_RULE_CANDIDATES} non-empty card names; empty entries are not allowed."
+            )
+
+    return errors
+
 def lint_file(file_path):
     print(f"Linting custom card script: {file_path}")
     if not os.path.exists(file_path):
@@ -123,32 +422,79 @@ def lint_file(file_path):
     types = None
     svars = set()
     svar_refs = []  # Tuples of (svar_name, line_num, source)
+    deck_rule_ids = set()
+    deck_rule_count = 0
+    face_names = [None] * 7
+    placeholder_face_names = [None] * 7
+    face_mana_costs = [None] * 7
+    face_types = [None] * 7
+    current_face = 0
+    alternate_mode = "None"
+    alternate_mode_error = None
+    known_alternate_modes = {
+        "None", "Transform", "Meld", "Split", "Flip", "Adventure",
+        "Omen", "Modal", "Prepare", "Specialize", "DoubleFaced",
+    }
 
     with open(file_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
     for idx, line in enumerate(lines):
         line_num = idx + 1
-        raw_line = line.strip()
+        source_line = line.rstrip("\r\n")
+        raw_line = _java_trim(source_line)
         
         # Skip empty lines or comments
         if not raw_line or raw_line.startswith("#"):
+            continue
+
+        if raw_line == "ALTERNATE":
+            current_face = 1
             continue
 
         if ":" not in raw_line:
             errors.append(f"Line {line_num}: Missing colon separator: '{raw_line}'")
             continue
 
-        key, val = raw_line.split(":", 1)
-        key = key.strip()
-        val = val.strip()
+        key, raw_value = raw_line.split(":", 1)
+        val = _java_trim(raw_value)
+
+        needs_face = key in FACE_SETTER_KEYS and not (key == "Text" and not _java_strip(val))
+        if needs_face and face_names[current_face] is None:
+            errors.append(
+                f"Line {line_num}: face field '{key}' requires an initialized face; "
+                "Name must precede it and CopyFaceFrom placeholders cannot receive face fields."
+            )
+            continue
 
         if key == "Name":
-            card_name = val
+            face_names[current_face] = val
+            face_mana_costs[current_face] = None
+            face_types[current_face] = None
+        elif key == "AlternateMode":
+            if val not in known_alternate_modes and alternate_mode_error is None:
+                alternate_mode_error = (line_num, val)
+            alternate_mode = "Transform" if val == "DoubleFaced" else val
+        elif key == "ALTERNATE":
+            current_face = 1
+        elif key == "CopyFaceFrom":
+            placeholder_face_names[current_face] = val
+        elif key.startswith("SPECIALIZE"):
+            specialize_faces = {
+                "WHITE": 2,
+                "BLUE": 3,
+                "BLACK": 4,
+                "RED": 5,
+                "GREEN": 6,
+            }
+            if val in specialize_faces:
+                current_face = specialize_faces[val]
         elif key == "ManaCost":
-            mana_cost = val
+            if face_names[current_face] is not None:
+                face_mana_costs[current_face] = val
         elif key == "Types":
-            types = val
+            if face_names[current_face] is not None:
+                face_types[current_face] = val
         elif key == "SVar":
             if ":" not in val:
                 errors.append(f"Line {line_num}: SVar must contain a colon separator: 'SVar:{val}'")
@@ -184,6 +530,17 @@ def lint_file(file_path):
                         f"Line {line_num}: DeckMinimum must specify a positive integer "
                         "(for example, 'K:DeckMinimum:31')."
                     )
+
+        elif key == "DeckRule":
+            deck_rule_count += 1
+            if deck_rule_count <= MAX_DECK_RULES_PER_CARD:
+                errors.extend(_lint_deck_rule(val, line_num, deck_rule_ids))
+            elif deck_rule_count == MAX_DECK_RULES_PER_CARD + 1:
+                errors.append(
+                    f"Line {line_num}: DeckRule supports at most "
+                    f"{MAX_DECK_RULES_PER_CARD} DeckRule lines per card; "
+                    "remaining DeckRule lines were not linted."
+                )
 
         elif key in ("A", "T", "S", "R"):
             # Check formatting (pipes should have spaces around them usually, or at least be clean)
@@ -235,12 +592,79 @@ def lint_file(file_path):
                     else:
                         errors.append(f"Line {line_num}: Replacement line missing Event$ replacement type.")
 
+    filename_main_face_name = (
+        face_names[0] if face_names[0] is not None else placeholder_face_names[0]
+    )
+    filename_other_face_name = (
+        face_names[1] if face_names[1] is not None else placeholder_face_names[1]
+    )
+    if (
+        alternate_mode == "Split"
+        and filename_main_face_name is not None
+        and filename_other_face_name is not None
+    ):
+        card_name = f"{filename_main_face_name} // {filename_other_face_name}"
+    else:
+        card_name = filename_main_face_name
+
+    construction_main_face_name = _resolve_deck_rule_face_name(
+        face_names[0], placeholder_face_names[0]
+    )
+    construction_other_face_name = _resolve_deck_rule_face_name(
+        face_names[1], placeholder_face_names[1]
+    )
+    construction_source_name = None
+    source_name_resolved = False
+    if alternate_mode_error is not None:
+        if deck_rule_count:
+            error_line, invalid_mode = alternate_mode_error
+            errors.append(
+                f"Line {error_line}: cannot determine DeckRule source name for "
+                f"unsupported AlternateMode '{invalid_mode}'."
+            )
+    elif construction_main_face_name is None:
+        if deck_rule_count:
+            errors.append(
+                "DeckRule cannot determine DeckRule source name: primary face name is missing."
+            )
+    elif alternate_mode == "Split":
+        if construction_other_face_name is None:
+            if deck_rule_count:
+                errors.append(
+                    "DeckRule cannot determine DeckRule source name: Split requires both face names."
+                )
+        else:
+            construction_source_name = (
+                f"{construction_main_face_name} // {construction_other_face_name}"
+            )
+            source_name_resolved = True
+    else:
+        construction_source_name = construction_main_face_name
+        source_name_resolved = True
+
+    if deck_rule_count and source_name_resolved:
+        if _contains_forbidden_deck_rule_control(construction_source_name):
+            errors.append(
+                "DeckRule source card name contains a forbidden control character."
+            )
+        if _deck_rule_card_name_exceeds_limit(construction_source_name):
+            errors.append(
+                f"DeckRule source card name exceeds "
+                f"{MAX_CARD_NAME_LENGTH} UTF-8 bytes."
+            )
+
+    main_face_is_placeholder = (
+        face_names[0] is None and placeholder_face_names[0] is not None
+    )
+    mana_cost = face_mana_costs[0]
+    types = face_types[0]
+
     # Validation Checks
     if not card_name:
         errors.append("Missing required field: 'Name'")
-    if not mana_cost:
+    if not mana_cost and not main_face_is_placeholder:
         errors.append("Missing required field: 'ManaCost'")
-    if not types:
+    if not types and not main_face_is_placeholder:
         errors.append("Missing required field: 'Types'")
 
     # Validate filename matching convention

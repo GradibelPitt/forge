@@ -22,7 +22,6 @@ import forge.game.Game;
 import forge.game.card.Card;
 import forge.game.card.CardCollection;
 import forge.game.zone.Zone;
-import forge.game.zone.ZoneType;
 
 public class StaticAbilityCountersRemain {
 
@@ -32,7 +31,7 @@ public class StaticAbilityCountersRemain {
         }
 
         final Game game = card.getGame();
-        final CardCollection allp = new CardCollection(game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES));
+        final CardCollection allp = new CardCollection(game.getStaticAbilityModeSources(StaticAbilityMode.CountersRemain));
         allp.add(card);
         for (final Card ca : allp) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {

@@ -15,7 +15,6 @@
 - **Java implementation:** `TriggerType.DrawnAll`、`TriggerDrawnAll.java` 与 `Player.drawCards(...)` 的批次完成路径。原有 `Drawn` 仍按每张牌单独触发，未改变其他卡牌语义。
 - **Edge cases:** 只统计本次 `drawCards` 实际抓到的牌；被替代、被禁止或因牌库不足而未抓到的部分不计入，实际为零时不触发。
 
-
 ## ColorChoice（有色费用择一减免）
 
 - **Status:** 已实现，供 `ReduceCost` 静态异能使用。

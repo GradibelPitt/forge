@@ -4,13 +4,12 @@ import forge.game.Game;
 import forge.game.GameEntity;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.zone.ZoneType;
 
 public class StaticAbilityAttackRestrict {
 
     static public Integer globalAttackRestrict(Game game) {
         Integer max = null;
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : game.getStaticAbilityModeSources(StaticAbilityMode.AttackRestrict)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.AttackRestrict)
                         || stAb.hasParam("ValidDefender")) {
@@ -29,7 +28,7 @@ public class StaticAbilityAttackRestrict {
     static public Integer attackRestrictNum(GameEntity defender) {
         final Game game = defender.getGame();
         Integer num = null;
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : game.getStaticAbilityModeSources(StaticAbilityMode.AttackRestrict)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.AttackRestrict)
                         || !stAb.hasParam("ValidDefender")) {

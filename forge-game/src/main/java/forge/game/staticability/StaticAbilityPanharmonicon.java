@@ -46,7 +46,7 @@ public class StaticAbilityPanharmonicon {
                 cardList = game.getLastStateBattlefield();
             }
         } else {
-            cardList = game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES);
+            cardList = game.getStaticAbilityModeSources(StaticAbilityMode.Panharmonicon);
         }
 
         // Checks only the battlefield, as those effects only work from there

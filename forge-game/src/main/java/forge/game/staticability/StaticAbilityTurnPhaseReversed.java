@@ -3,7 +3,6 @@ package forge.game.staticability;
 import forge.game.Game;
 import forge.game.card.Card;
 import forge.game.player.Player;
-import forge.game.zone.ZoneType;
 
 public class StaticAbilityTurnPhaseReversed {
     public static boolean isTurnReversed(Player player) {
@@ -17,7 +16,7 @@ public class StaticAbilityTurnPhaseReversed {
     {
         boolean result = false;
         final Game game = player.getGame();
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : game.getStaticAbilityModeSources(mode)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(mode)) {
                     continue;

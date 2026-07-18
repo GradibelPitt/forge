@@ -28,7 +28,6 @@ import forge.game.card.CardCollection;
 import forge.game.cost.Cost;
 import forge.game.keyword.Keyword;
 import forge.game.player.Player;
-import forge.game.zone.ZoneType;
 
 /**
  * The Class StaticAbility_CantBeCast.
@@ -46,7 +45,8 @@ public class StaticAbilityCantAttackBlock {
             return true;
         }
 
-        for (final Card ca : attacker.getGame().getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : attacker.getGame().getStaticAbilityModeSources(
+                StaticAbilityMode.CantAttack)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.CantAttack)) {
                     continue;
@@ -125,7 +125,8 @@ public class StaticAbilityCantAttackBlock {
     }
 
     public static boolean canAttackDefender(final Card card, final GameEntity target) {
-        for (final Card ca : card.getGame().getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : card.getGame().getStaticAbilityModeSources(
+                StaticAbilityMode.CanAttackDefender)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.CanAttackDefender)) {
                     continue;
@@ -157,7 +158,8 @@ public class StaticAbilityCantAttackBlock {
         }
 
         CardCollection list = new CardCollection(blocker);
-        list.addAll(blocker.getGame().getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES));
+        list.addAll(blocker.getGame().getStaticAbilityModeSources(
+                StaticAbilityMode.CantBlock));
         for (final Card ca : list) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.CantBlock)) {
@@ -183,7 +185,8 @@ public class StaticAbilityCantAttackBlock {
 
     public static boolean canBlockTapped(final Card card)  {
         final Game game = card.getGame();
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : game.getStaticAbilityModeSources(
+                StaticAbilityMode.BlockTapped)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.BlockTapped)) {
                     continue;
@@ -210,7 +213,8 @@ public class StaticAbilityCantAttackBlock {
         if (blocker != null) {
             list.add(blocker);
         }
-        list.addAll(attacker.getGame().getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES));
+        list.addAll(attacker.getGame().getStaticAbilityModeSources(
+                StaticAbilityMode.CantBlockBy));
         for (final Card ca : list) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.CantBlockBy)) {
@@ -274,7 +278,8 @@ public class StaticAbilityCantAttackBlock {
     }
 
     public static boolean canBlockIfReach(final Card attacker, final Card blocker) {
-        for (final Card ca : attacker.getGame().getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : attacker.getGame().getStaticAbilityModeSources(
+                StaticAbilityMode.CanBlockIfReach)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.CanBlockIfReach)) {
                     continue;
@@ -374,7 +379,8 @@ public class StaticAbilityCantAttackBlock {
         if (!attacker.isSick()) {
             return true;
         }
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : game.getStaticAbilityModeSources(
+                StaticAbilityMode.CanAttackIfHaste)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.CanAttackIfHaste)) {
                     continue;
@@ -407,7 +413,8 @@ public class StaticAbilityCantAttackBlock {
         }
 
         final Game game = attacker.getGame();
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : game.getStaticAbilityModeSources(
+                StaticAbilityMode.MinMaxBlocker)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.MinMaxBlocker)) {
                     continue;
@@ -441,7 +448,8 @@ public class StaticAbilityCantAttackBlock {
 
     public static boolean attackVigilance(final Card card)  {
         final Game game = card.getGame();
-        for (final Card ca : game.getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
+        for (final Card ca : game.getStaticAbilityModeSources(
+                StaticAbilityMode.AttackVigilance)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.AttackVigilance)) {
                     continue;

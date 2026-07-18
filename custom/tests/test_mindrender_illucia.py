@@ -15,7 +15,7 @@ ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
     "当裂心者伊露希亚进战场时，将你对手手中每张牌的复制品各一张化生到你的手中。"
-    "在你的下一个结束步骤开始时，放逐以此法化生的牌。"
+    "在你的下一个结束步骤开始时，放逐以此法化生且仍在手中的牌。"
 )
 
 
@@ -46,7 +46,7 @@ class MindrenderIlluciaContractTest(unittest.TestCase):
         )
         self.assertIn(
             "SVar:TrigExile:DB$ ChangeZone | Defined$ DelayTriggerRemembered | "
-            "Origin$ All | Destination$ Exile",
+            "Origin$ Hand | Destination$ Exile",
             text,
         )
         self.assertIn("SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True", text)
