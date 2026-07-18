@@ -35,6 +35,38 @@ public class MakeCardEffectTest {
     }
 
     @Test
+    public void randomStartingDeckNonlandsPreferDifferentNamesBeforeDuplicates() {
+        final CardPool startingDeck = new CardPool();
+        startingDeck.add(paper("Alpha", "Creature Wizard"), 4);
+        startingDeck.add(paper("Beta", "Sorcery"), 3);
+        startingDeck.add(paper("Gamma", "Artifact"), 2);
+        startingDeck.add(paper("Island", "Basic Land Island"), 20);
+
+        final List<String> names = MakeCardEffect.getRandomNonlandStartingDeckNames(
+                startingDeck, 4, new java.util.Random(7));
+
+        Assert.assertEquals(names.size(), 4);
+        Assert.assertEquals(names.subList(0, 3).stream().distinct().count(), 3L,
+                "one copy of every different nonland name must be chosen before a duplicate");
+        Assert.assertFalse(names.contains("Island"));
+    }
+
+    @Test
+    public void randomStartingDeckNonlandsStopWhenTheDeckHasFewerThanTwentyCandidates() {
+        final CardPool startingDeck = new CardPool();
+        startingDeck.add(paper("Alpha", "Creature Wizard"), 2);
+        startingDeck.add(paper("Beta", "Instant"), 1);
+        startingDeck.add(paper("Swamp", "Basic Land Swamp"), 20);
+
+        final List<String> names = MakeCardEffect.getRandomNonlandStartingDeckNames(
+                startingDeck, 20, new java.util.Random(11));
+
+        Assert.assertEquals(names.size(), 3);
+        Assert.assertEquals(names.stream().filter("Alpha"::equals).count(), 2L);
+        Assert.assertEquals(names.stream().filter("Beta"::equals).count(), 1L);
+    }
+
+    @Test
     public void cancelledSpellbookChoiceStopsWithoutAddingAnEmptyCardName() {
         final List<String> names = new ArrayList<>();
 

@@ -21,8 +21,11 @@ import forge.util.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 public class MakeCardEffect extends SpellAbilityEffect {
     @Override
@@ -72,6 +75,15 @@ public class MakeCardEffect extends SpellAbilityEffect {
                     names.addAll(getLegendaryPermanentStartingDeckNames(
                             player.getRegisteredPlayer().getDeck().getMain(),
                             sa.getParamOrDefault("ExcludeName", "")));
+                } else if (def.equals("RandomOpponentStartingDeckNonlands")) {
+                    final PlayerCollection opponents = player.getRegisteredOpponents();
+                    if (!opponents.isEmpty()) {
+                        names.addAll(getRandomNonlandStartingDeckNames(
+                                opponents.get(0).getRegisteredPlayer().getDeck().getMain(),
+                                AbilityUtils.calculateAmount(source,
+                                        sa.getParamOrDefault("DefinedNameAmount", "20"), sa),
+                                MyRandom.getRandom()));
+                    }
                 } else {
                     cards = AbilityUtils.getDefinedCards(source, def, sa);
                 }
@@ -261,6 +273,39 @@ public class MakeCardEffect extends SpellAbilityEffect {
             }
         }
         return names;
+    }
+
+    static List<String> getRandomNonlandStartingDeckNames(final CardPool startingDeck,
+            final int maximum, final Random random) {
+        final Map<String, Integer> copiesByName = new LinkedHashMap<>();
+        for (final Map.Entry<PaperCard, Integer> entry : startingDeck) {
+            final PaperCard paperCard = entry.getKey();
+            if (!paperCard.getRules().getType().isLand()) {
+                copiesByName.merge(paperCard.getName(), entry.getValue(), Integer::sum);
+            }
+        }
+
+        final List<String> differentNames = new ArrayList<>(copiesByName.keySet());
+        Collections.shuffle(differentNames, random);
+        final List<String> selected = new ArrayList<>();
+        for (final String name : differentNames) {
+            if (selected.size() >= maximum) {
+                return selected;
+            }
+            selected.add(name);
+            copiesByName.computeIfPresent(name, (ignored, count) -> count - 1);
+        }
+
+        final List<String> duplicateCopies = new ArrayList<>();
+        for (final Map.Entry<String, Integer> entry : copiesByName.entrySet()) {
+            for (int i = 0; i < entry.getValue(); i++) {
+                duplicateCopies.add(entry.getKey());
+            }
+        }
+        Collections.shuffle(duplicateCopies, random);
+        selected.addAll(duplicateCopies.subList(0,
+                Math.min(Math.max(0, maximum - selected.size()), duplicateCopies.size())));
+        return selected;
     }
 
     private List<ICardFace> parseFaces(final SpellAbility sa, final String param) {
