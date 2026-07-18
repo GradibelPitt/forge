@@ -63,3 +63,4 @@ Type=Custom_Set
 64 R 符文秘银杖 @Custom
 65 R 弃暗投明 @Custom
 66 U 转生 @Custom
+68 M 裂魂者阿扎莉娜 @Custom

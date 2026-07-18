@@ -1,0 +1,12 @@
+Name:裂魂者阿扎莉娜
+ManaCost:4 U U U
+Types:Legendary Creature Human Cleric Warlock
+PT:7/7
+K:DeckMinimum:20
+T:Mode$ NewGame | TriggerZones$ Hand,Library | Execute$ CopyOpponentDeck | Static$ True | TriggerDescription$ Before the game begins, randomly duplicate twenty nonland cards from your opponent's starting deck, then shuffle the duplicates into your library.
+SVar:CopyOpponentDeck:DB$ MakeCard | Conjure$ True | DefinedName$ RandomOpponentStartingDeckNonlands | DefinedNameAmount$ 20 | Zone$ Library
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ DrawToSeven | TriggerDescription$ When CARDNAME enters the battlefield, draw cards until you have seven cards in hand.
+SVar:DrawToSeven:DB$ Draw | Defined$ You | NumCards$ CardsToSeven | ConditionCheckSVar$ HandCount | ConditionSVarCompare$ LT7
+SVar:HandCount:Count$ValidHand Card.YouOwn
+SVar:CardsToSeven:Number$7/Minus.HandCount
+Oracle:When your deck contains CARDNAME, your minimum deck size is reduced to twenty cards.\nBefore the game begins, randomly duplicate twenty nonland cards from your opponent's starting deck, then shuffle the duplicates into your library.\nWhen CARDNAME enters the battlefield, draw cards until you have seven cards in hand.
