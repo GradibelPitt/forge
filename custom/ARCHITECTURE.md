@@ -37,6 +37,7 @@
 - `forge-game/src/main/java/forge/game/GameAction.java`：伤害批次及区域移动与 Boarding 的集成点。
 - `forge-game/src/main/java/forge/game/combat/CombatUtil.java`：Superreach 阻挡规则。
 - `forge-game/src/main/java/forge/game/ability/ApiType.java` 与 `ability/effects/CardDiscoverEffect.java`：炉石式发现 AbilityFactory API。
+- `forge-game/src/main/java/forge/game/ability/effects/StealSameNameEffect.java`：按战场、手牌、牌库、坟墓场的固定顺序取得目标对手的同名牌；战场对象更改操控者，其他对象以原实体转移到施放者手中并更改拥有者。
 - `forge-game/src/main/java/forge/game/ability/effects/MakeCardEffect.java`：霍格的 `StartingDeckLegendaryPermanents` 专用来源；直接遍历注册主牌 `CardPool` 的计数条目和 `PaperCard` 类型元数据，不扫描全局卡库，也不物化临时候选 `Card`。
 - `forge-game/src/main/java/forge/game/player/Player.java` 与 `ability/effects/TakeFatigueEffect.java`：每位玩家的单调疲劳计数、空牌库抽牌替代路径和可复用 `TakeFatigue` API。
 - `forge-game/src/main/java/forge/game/player/PlayerSpellRuleRegistry.java`、`cost/CostAdjustment.java`、`mana/ManaCostBeingPaid.java`、`staticability/StaticAbilityManaConvert.java`、`keyword/HarmonyKeyword.java` 与 `ability/effects/GrantSpellRuleEffect.java`：无需卡牌承载的玩家级永久施法规则；按稳定键登记，多玩家结算先对所有去重目标做无副作用预检再统一提交。`Harmony` 按牌的拥有者注册表在游戏内 `Card`／`CardView` 动态投射可见“调和”标签，并使用专用先有色后通用减费；标签差分刷新公开牌，隐藏牌堆只用 epoch 惰性失效，不修改共享卡库规则对象。费用与支付热路径只按相关牌手规则数执行，不扫描卡牌数据库；既有静态异能兼容扫描保持原行为。

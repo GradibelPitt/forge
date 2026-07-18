@@ -33,7 +33,7 @@ VALID_API_TYPES = {
     "reorderzone", "repeat", "repeateach", "replacecounter", "replaceeffect", "replacemana", "replacedamage", 
     "replacetoken", "replacesplitdamage", "restartgame", "reveal", "revealhand", "reverseturnorder", 
     "ringtemptsyou", "rolldice", "rollplanardice", "runchaos", "sacrifice", "sacrificeall", "scry", 
-    "seek", "setinmotion", "setlife", "setstate", "shuffle", "skipphase", "skipturn", "storesvar", 
+    "seek", "setinmotion", "setlife", "setstate", "shuffle", "skipphase", "skipturn", "stealsamename", "storesvar",
     "subgame", "surveil", "switchblock", "takeinitiative", "tap", "tapall", "taporuntap", "taporuntapall", 
     "timetravel", "token", "twopiles", "unattach", "unattachall", "unlockdoor", "untap", "untapall", 
     "venture", "villainouschoice", "vote", "winsgame", "blankline", "damageresolve", "changezoneresolve", 

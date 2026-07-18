@@ -64,3 +64,4 @@ Type=Custom_Set
 65 R 弃暗投明 @Custom
 66 U 转生 @Custom
 68 M 裂魂者阿扎莉娜 @Custom
+69 M 妒意收割者 @Custom

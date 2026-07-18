@@ -248,6 +248,7 @@ These must be written exactly as spelled (case-insensitive in Forge but capitali
 - `Shuffle`
 - `SkipPhase`
 - `SkipTurn`
+- `StealSameName`
 - `StoreSVar`
 - `Subgame`
 - `Surveil`

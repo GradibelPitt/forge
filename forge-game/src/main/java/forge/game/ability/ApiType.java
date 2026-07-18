@@ -192,6 +192,7 @@ public enum ApiType {
     SkipPhase (SkipPhaseEffect.class),
     SkipTurn (SkipTurnEffect.class),
     StoreSVar (StoreSVarEffect.class),
+    StealSameName (StealSameNameEffect.class),
     Subgame (SubgameEffect.class),
     Surveil (SurveilEffect.class),
     SwitchBlock (SwitchBlockEffect.class),

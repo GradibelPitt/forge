@@ -1,0 +1,7 @@
+Name:妒意收割者
+ManaCost:1 B U
+Types:Legendary Creature Vampire Venthyr
+PT:4/3
+T:Mode$ SpellCast | ValidCard$ Card | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigSteal | TriggerDescription$ 在你释放一个咒语后，从你对手的战场上，手中，牌库或坟墓场如顺手牵羊般地拿走一张与该咒语同名的牌或永久物。
+SVar:TrigSteal:DB$ StealSameName | ValidTgts$ Opponent
+Oracle:在你释放一个咒语后，从你对手的战场上，手中，牌库或坟墓场如顺手牵羊般地拿走一张与该咒语同名的牌或永久物。
