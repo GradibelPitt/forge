@@ -65,3 +65,4 @@ Type=Custom_Set
 66 U 转生 @Custom
 68 M 裂魂者阿扎莉娜 @Custom
 69 M 妒意收割者 @Custom
+71 R 大地坠饰 @Custom
