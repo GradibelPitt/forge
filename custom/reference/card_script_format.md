@@ -107,6 +107,11 @@ Defines variables referenced in the card's abilities. SVars can store numbers, f
     SVar:X:Count$CardColor_Green_Battlefield
     ```
 
+For a command-zone effect created with `DB$ Effect | SetChosenNumber$ X`, a
+continuous play permission may use `MayPlayAltManaCost$ ChosenNumber`. Forge
+snapshots that chosen number into the alternative generic mana cost when the
+permission is applied.
+
 ---
 
 ## 🤖 AI and Deckbuilder Hints

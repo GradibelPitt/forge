@@ -69,4 +69,5 @@ Type=Custom_Set
 70 M 裂心者伊露希亚 @Custom
 71 R 大地坠饰 @Custom
 72 U 造物协议 @Custom
+73 M 传送门操控师斯奇拉 @Custom
 74 M 召唤师达克玛洛 @Custom

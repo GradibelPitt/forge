@@ -1,0 +1,14 @@
+Name:传送门操控师斯奇拉
+ManaCost:2 U U
+Types:Legendary Creature Werewolf Wizard
+PT:4/5
+K:Prowess
+T:Mode$ DiscardedAll | ValidPlayer$ You | ValidCard$ Card.Instant,Card.Sorcery | TriggerZones$ Battlefield | ResolvedLimit$ 1 | Execute$ TrigAlternativeCost | TriggerDescription$ Whenever you discard one or more instant or sorcery cards, until end of turn, you may pay {X} rather than pay the mana cost for an instant or sorcery spell you cast, where X is the least mana value among those cards. Do this only once each turn.
+SVar:TrigAlternativeCost:DB$ Effect | SetChosenNumber$ X | StaticAbilities$ MayPlay | Duration$ UntilEndOfTurn
+SVar:MayPlay:Mode$ Continuous | MayPlay$ True | MayPlayAltManaCost$ ChosenNumber | MayPlayLimit$ 1 | MayPlayDontGrantZonePermissions$ True | Affected$ Instant,Sorcery | AffectedZone$ Hand,Graveyard,Library,Exile,Command | Description$ Until end of turn, you may pay {X} rather than pay the mana cost for an instant or sorcery spell you cast.
+SVar:X:TriggerObjectsCards$LeastCardManaCost
+A:AB$ Scry | Cost$ R Discard<1/Card> | ScryNum$ 1 | SubAbility$ DBDraw | SpellDescription$ Scry 1, then draw a card.
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 1
+DeckHas:Ability$Discard
+DeckHints:Type$Instant|Sorcery & Ability$Discard
+Oracle:灵技\n每当你弃一张或数张瞬间或法术牌时，你施放瞬间或法术咒语时可以支付{X}，而不支付其法术力费用，X等同于这些牌中最小的法术力值。每回合只能如此作一次。\n{R}，弃一张牌：占卜1，然后抓一张牌。

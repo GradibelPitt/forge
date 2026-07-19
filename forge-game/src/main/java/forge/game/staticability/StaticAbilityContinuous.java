@@ -890,6 +890,10 @@ public final class StaticAbilityContinuous {
                 String mayPlayAltCost = mayPlayAltManaCost;
 
                 if (mayPlayAltCost != null) {
+                    if (mayPlayAltCost.contains("ChosenNumber")) {
+                        mayPlayAltCost = mayPlayAltCost.replace("ChosenNumber",
+                                Integer.toString(hostCard.getChosenNumber()));
+                    }
                     if (mayPlayAltCost.contains("ConvertedManaCost")) {
                         final String costcmc = Integer.toString(affectedCard.getCMC());
                         mayPlayAltCost = mayPlayAltCost.replace("ConvertedManaCost", costcmc);
