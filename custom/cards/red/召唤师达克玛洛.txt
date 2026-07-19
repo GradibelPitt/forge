@@ -1,0 +1,10 @@
+Name:召唤师达克玛洛
+ManaCost:2 R R
+Types:Legendary Creature Zombie Warlock
+PT:4/4
+K:Deathtouch
+S:Mode$ Panharmonicon | ValidMode$ ChangesZone,ChangesZoneAll | ValidCard$ Permanent.YouCtrl | ValidCause$ Permanent | Origin$ Battlefield | Description$ If a permanent leaving the battlefield causes a triggered ability of a permanent you control to trigger, that ability triggers an additional time.
+A:AB$ PutCounter | Cost$ B Sac<1/Permanent.!token/nontoken permanent> | Defined$ Self | CounterType$ P1P1 | CounterNum$ 1 | SubAbility$ CreateMunitions | SpellDescription$ Put a +1/+1 counter on CARDNAME. Create a colorless artifact token named Munitions with "When this token leaves the battlefield, it deals 2 damage to any target."
+SVar:CreateMunitions:DB$ Token | TokenScript$ c_a_dakmaro_munitions | TokenOwner$ You
+DeckHas:Ability$Sacrifice|Counters|Token
+Oracle:Deathtouch\nIf a permanent leaving the battlefield causes a triggered ability of a permanent you control to trigger, that ability triggers an additional time.\n{B}, Sacrifice a nontoken permanent: Put a +1/+1 counter on CARDNAME. Create a colorless artifact token named Munitions with "When this token leaves the battlefield, it deals 2 damage to any target."
