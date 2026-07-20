@@ -38,6 +38,7 @@ import forge.game.player.PlayerView;
 import forge.game.spellability.SpellAbilityView;
 import forge.game.zone.ZoneType;
 import forge.gamemodes.match.DrawOfferMessage;
+import forge.gamemodes.match.MatchGameFailureCleanup;
 import forge.gamemodes.match.YieldMarker;
 import forge.gamemodes.net.NetworkGuiGame;
 import forge.gamemodes.match.HostedMatch;
@@ -587,6 +588,16 @@ public class MatchController extends NetworkGuiGame {
         if (Forge.disposeTextures)
             ImageCache.getInstance().disposeTextures();
         //view = null;
+    }
+
+    @Override
+    public void afterGameFailure(final String message) {
+        FThreads.invokeInEdtNowOrLater(() ->
+                MatchGameFailureCleanup.runAll(List.of(
+                        this::afterGameEnd,
+                        () -> FOptionPane.showErrorDialog(message,
+                                Forge.getLocalizer().getMessageorUseDefault(
+                                        "lblError", "Error")))));
     }
 
     public void resetPlayerPanels() {
