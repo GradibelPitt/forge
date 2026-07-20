@@ -4,6 +4,8 @@ import forge.game.Game;
 import forge.game.GameRules;
 import forge.game.GameType;
 import forge.game.Match;
+import forge.gamemodes.net.ProtocolMethod;
+import forge.gui.interfaces.IGuiGame;
 import forge.util.Lang;
 import forge.util.Localizer;
 import org.junit.jupiter.api.BeforeAll;
@@ -11,10 +13,15 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
+import java.lang.reflect.Proxy;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HostedMatchTest {
@@ -62,6 +69,36 @@ class HostedMatchTest {
                 newRootGame, guiMutations::incrementAndGet));
         assertEquals(5, hostedMatch.subGameCount);
         assertEquals(2, guiMutations.get());
+    }
+
+    @Test
+    void failedGameUsesFailureSpecificGuiShutdownWhileNormalEndDoesNot() {
+        final List<String> callbacks = new ArrayList<>();
+        final IGuiGame gui = (IGuiGame) Proxy.newProxyInstance(
+                IGuiGame.class.getClassLoader(), new Class<?>[] { IGuiGame.class },
+                (proxy, method, args) -> {
+                    if (method.getName().startsWith("afterGame")) {
+                        callbacks.add(method.getName()
+                                + (args == null ? "" : ":" + args[0]));
+                    }
+                    return null;
+                });
+
+        HostedMatch.notifyGuiAfterGameEnd(gui, false, null);
+        HostedMatch.notifyGuiAfterGameEnd(gui, true,
+                "The match exited because of an unexpected error.");
+
+        assertEquals(List.of(
+                "afterGameEnd",
+                "afterGameFailure:The match exited because of an unexpected error."),
+                callbacks);
+    }
+
+    @Test
+    void failureCallbackIsRegisteredForNetworkClientsWithItsMessage() {
+        assertNotNull(ProtocolMethod.afterGameFailure.getMethod());
+        assertArrayEquals(new Class<?>[] { String.class },
+                ProtocolMethod.afterGameFailure.getArgTypes());
     }
 
     private static Game createGame(final Game maingame, final String title) {

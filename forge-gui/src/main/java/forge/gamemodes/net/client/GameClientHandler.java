@@ -63,7 +63,8 @@ final class GameClientHandler extends GameProtocolHandler<IGuiGame> implements I
         if (GuiBase.getInterface().isLibgdxPort()
                 && (!protocolMethod.getReturnType().equals(Void.TYPE)
                     || protocolMethod == ProtocolMethod.message
-                    || protocolMethod == ProtocolMethod.showErrorDialog)) {
+                    || protocolMethod == ProtocolMethod.showErrorDialog
+                    || protocolMethod == ProtocolMethod.afterGameFailure)) {
             return false;
         }
         return super.shouldDispatchToGuiThread(protocolMethod);

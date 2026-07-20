@@ -1383,13 +1383,35 @@ public class AbilityUtils {
         // check conditions
         if (sa.metConditions()) {
             if (sa.isWrapper() || StringUtils.isBlank(sa.getParam("UnlessCost"))) {
-                sa.resolve();
+                if (!resolveEffectSafely(sa, game)) {
+                    return;
+                }
             } else {
                 handleUnlessCost(sa, game);
                 return;
             }
         }
         resolveSubAbilities(sa, game);
+    }
+
+    private static boolean resolveEffectSafely(final SpellAbility sa,
+            final Game game) {
+        try {
+            sa.resolve();
+            return true;
+        } catch (final RecoverableEffectException failure) {
+            final String sourceName = sa.getHostCard() == null
+                    ? "<unknown>" : sa.getHostCard().getName();
+            final String template = Localizer.getInstance()
+                    .getMessageorUseDefault("lblRecoverableEffectSkipped",
+                            "A recoverable error skipped an effect of %s: %s");
+            final String message = String.format(template, sourceName,
+                    failure.getMessage());
+            game.getGameLog().add(GameLogEntryType.INFORMATION, message);
+            System.err.println(message);
+            failure.printStackTrace(System.err);
+            return false;
+        }
     }
 
     private static void handleUnlessCost(final SpellAbility sa, final Game game) {
@@ -1406,7 +1428,9 @@ public class AbilityUtils {
         String unlessCost = sa.getParam("UnlessCost").trim();
         Cost cost = calculateUnlessCost(sa, unlessCost, true);
         if (cost == null) {
-            sa.resolve();
+            if (!resolveEffectSafely(sa, game)) {
+                return;
+            }
             resolveSubAbilities(sa, game);
             return;
         }
@@ -1425,7 +1449,9 @@ public class AbilityUtils {
         }
 
         if (alreadyPaid == isSwitched) {
-            sa.resolve();
+            if (!resolveEffectSafely(sa, game)) {
+                return;
+            }
         }
 
         if (alreadyPaid && execSubsWhenPaid || !alreadyPaid && execSubsWhenNotPaid) { // switched refers only to main ability!

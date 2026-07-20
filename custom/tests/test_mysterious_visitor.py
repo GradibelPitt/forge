@@ -36,7 +36,7 @@ class MysteriousVisitorContractTest(unittest.TestCase):
             "SVar:GrantOpponentNameHarmony:DB$ GrantSpellRule | Defined$ You | "
             "RuleKey$ MysteriousVisitor.OpponentNames | ValidCards$ Card | "
             "ValidSA$ Spell | NameSnapshot$ OpponentCards | Harmony$ True | "
-            "HarmonyReduction$ 3 | Duration$ Permanent",
+            "HarmonyReduction$ 3 | Stacking$ True | Duration$ Permanent",
             text,
         )
         self.assertNotIn("ReduceGeneric$", text)

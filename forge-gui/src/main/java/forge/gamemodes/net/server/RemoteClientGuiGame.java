@@ -319,6 +319,11 @@ public class RemoteClientGuiGame extends NetworkGuiGame implements IHasForgeLog 
     }
 
     @Override
+    public void afterGameFailure(final String message) {
+        syncAndSend(ProtocolMethod.afterGameFailure, message);
+    }
+
+    @Override
     public void showCombat() {
         syncAndSend(ProtocolMethod.showCombat);
     }

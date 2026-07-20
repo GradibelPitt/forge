@@ -5,7 +5,10 @@ import forge.game.GameRules;
 import forge.game.GameType;
 import forge.game.Match;
 import forge.game.ability.AbilityFactory;
+import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
+import forge.game.cost.Cost;
+import forge.game.spellability.Spell;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
 import forge.util.Lang;
@@ -91,12 +94,85 @@ public class PlayerSpellRuleNameSnapshotTest {
                 card(fixture.game, fixture.first, "Any Name")));
     }
 
+    @Test
+    public void stackingOpponentSnapshotsRemainScopedAndAccumulateForOverlappingNames() {
+        final Fixture fixture = new Fixture("stacking opponent names snapshots");
+        fixture.second.getZone(ZoneType.Library).add(
+                card(fixture.game, fixture.second, "Shared Name"));
+        final Card source = card(fixture.game, fixture.first, "Source");
+        final SpellAbility grant = AbilityFactory.getAbility(
+                "DB$ GrantSpellRule | Defined$ You | RuleKey$ opponent-names "
+                        + "| ValidCards$ Card | ValidSA$ Spell "
+                        + "| NameSnapshot$ OpponentCards | Harmony$ True "
+                        + "| HarmonyReduction$ 3 | Stacking$ True "
+                        + "| Duration$ Permanent", source);
+        grant.setActivatingPlayer(fixture.first);
+
+        grant.resolve();
+        fixture.second.getZone(ZoneType.Library).add(
+                card(fixture.game, fixture.second, "Second Snapshot Name"));
+        grant.resolve();
+
+        final SpellAbility shared = spell(fixture, "Shared Name");
+        final SpellAbility secondOnly = spell(fixture, "Second Snapshot Name");
+        final SpellAbility unrelated = spell(fixture, "Unrelated Name");
+        Assert.assertEquals(fixture.first.getSpellRuleRegistry().size(), 2);
+        Assert.assertEquals(fixture.first.getSpellRuleRegistry()
+                .getHarmonyReduction(shared.getHostCard(), shared), 6);
+        Assert.assertEquals(fixture.first.getSpellRuleRegistry()
+                .getHarmonyReduction(secondOnly.getHostCard(), secondOnly), 3);
+        Assert.assertEquals(fixture.first.getSpellRuleRegistry()
+                .getHarmonyReduction(unrelated.getHostCard(), unrelated), 0);
+        Assert.assertFalse(fixture.first.getSpellRuleRegistry()
+                .grantsHarmony(unrelated.getHostCard()));
+    }
+
+    @Test
+    public void conflictingPreflightIsSkippedWithoutEscapingAbilityResolution() {
+        final Fixture fixture = new Fixture("recoverable opponent names conflict");
+        fixture.second.getZone(ZoneType.Library).add(
+                card(fixture.game, fixture.second, "First Snapshot Name"));
+        final Card source = card(fixture.game, fixture.first, "Source");
+        final SpellAbility grant = AbilityFactory.getAbility(
+                "DB$ GrantSpellRule | Defined$ You | RuleKey$ opponent-names "
+                        + "| ValidCards$ Card | ValidSA$ Spell "
+                        + "| NameSnapshot$ OpponentCards | Harmony$ True "
+                        + "| HarmonyReduction$ 3 | Duration$ Permanent", source);
+        grant.setActivatingPlayer(fixture.first);
+        grant.resolve();
+        final String beforeConflict = fixture.first.getSpellRuleRegistry()
+                .toStateString();
+        fixture.second.getZone(ZoneType.Library).add(
+                card(fixture.game, fixture.second, "Changed Snapshot Name"));
+
+        AbilityUtils.resolve(grant);
+
+        Assert.assertEquals(fixture.first.getSpellRuleRegistry()
+                .toStateString(), beforeConflict);
+        Assert.assertTrue(fixture.game.getGameLog().getAllEntries().stream()
+                .anyMatch(entry -> entry.message().contains("recoverable error")));
+    }
+
     private static Card card(final Game game, final Player owner,
             final String name) {
         final Card card = new Card(game.nextCardId(), game);
         card.setName(name);
         card.setOwner(owner);
         return card;
+    }
+
+    private static SpellAbility spell(final Fixture fixture, final String name) {
+        final Card card = card(fixture.game, fixture.first, name);
+        card.setZone(fixture.first.getZone(ZoneType.Hand));
+        final Spell spell = new Spell(card, Cost.Zero) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public void resolve() {
+            }
+        };
+        spell.setActivatingPlayer(fixture.first);
+        return spell;
     }
 
     private static final class Fixture {

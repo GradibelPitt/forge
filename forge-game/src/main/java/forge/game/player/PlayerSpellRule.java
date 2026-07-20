@@ -136,6 +136,14 @@ public final class PlayerSpellRule {
         return namedCards;
     }
 
+    boolean coversNamedCards(final Set<String> requestedNames) {
+        if (namedCards.isEmpty()) {
+            return true;
+        }
+        return requestedNames != null && !requestedNames.isEmpty()
+                && namedCards.containsAll(requestedNames);
+    }
+
     String[] getValidCardRestrictionsForCoverage() {
         return validCards.clone();
     }

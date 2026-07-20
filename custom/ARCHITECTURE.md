@@ -42,8 +42,10 @@
 - 同一文件的 `RandomOpponentStartingDeckNonlands` 来源用于裂魂者阿扎莉娜：读取注册对手的主牌 `CardPool`，排除地牌，随机优先不同牌名后再从剩余副本补足指定数量。
 - `forge-game/src/main/java/forge/game/player/Player.java` 与 `ability/effects/TakeFatigueEffect.java`：每位玩家的单调疲劳计数、空牌库抽牌替代路径和可复用 `TakeFatigue` API。
 - `forge-game/src/main/java/forge/game/trigger/TriggerDrawnAll.java`、`TriggerType.java` 与 `player/Player.java`：每次 `drawCards` 完成后按实际抓牌集合产生一个 `DrawnAll` 批次触发，同时保留既有 `Drawn` 逐张触发。
-- `forge-game/src/main/java/forge/game/player/PlayerSpellRuleRegistry.java`、`cost/CostAdjustment.java`、`mana/ManaCostBeingPaid.java`、`staticability/StaticAbilityManaConvert.java`、`keyword/HarmonyKeyword.java` 与 `ability/effects/GrantSpellRuleEffect.java`：无需卡牌承载的玩家级永久施法规则；按稳定键登记，多玩家结算先对所有去重目标做无副作用预检再统一提交。`Harmony` 按牌的拥有者注册表在游戏内 `Card`／`CardView` 动态投射可见“调和”标签，并使用专用先有色后通用减费；标签差分刷新公开牌，隐藏牌堆只用 epoch 惰性失效，不修改共享卡库规则对象。费用与支付热路径只按相关牌手规则数执行，不扫描卡牌数据库；既有静态异能兼容扫描保持原行为。
+- `forge-game/src/main/java/forge/game/player/PlayerSpellRuleRegistry.java`、`cost/CostAdjustment.java`、`mana/ManaCostBeingPaid.java`、`staticability/StaticAbilityManaConvert.java`、`keyword/HarmonyKeyword.java` 与 `ability/effects/GrantSpellRuleEffect.java`：无需卡牌承载的玩家级永久施法规则；按稳定键登记，多玩家结算先对所有去重目标做无副作用预检再统一提交。显式叠加会把每次 `NameSnapshot` 一并写入独立规则，名称范围也参与 Harmony 覆盖／视图刷新判定。`Harmony` 按牌的拥有者注册表在游戏内 `Card`／`CardView` 动态投射可见“调和”标签，并使用专用先有色后通用减费；标签差分刷新公开牌，隐藏牌堆只用 epoch 惰性失效，不修改共享卡库规则对象。费用与支付热路径只按相关牌手规则数执行，不扫描卡牌数据库；既有静态异能兼容扫描保持原行为。
 - `forge-game/src/main/java/forge/game/ability/effects/BranchEffect.java`：分支能力解析；需将父能力的替代效应对象传入被选中的子能力。
+- `forge-game/src/main/java/forge/game/ability/RecoverableEffectException.java` 与 `AbilityUtils.resolveEffectSafely`：只接住明确保证当前效果尚未写入游戏状态的异常，跳过该效果并记录日志；未标记异常继续上抛。
+- `forge-gui/src/main/java/forge/gamemodes/match/HostedMatch.java`、`MatchGameFailureCleanup.java`、`gui/interfaces/IGuiGame.java`、联机 `ProtocolMethod.afterGameFailure`／`GameClientHandler`，以及桌面 `CMatchUI`／`FNavigationBar`：未知异常统一清空输入、结束后端游戏、走失败专用 GUI 回调；失败清理逐步执行，某个非致命清理步骤再次抛错也不能阻止后续控制器退出、强制关页和错误弹窗。桌面强制关闭比赛页而不调用 `VMatchUI.onClosing()`，因此不会弹认输确认或留下仍指向已销毁后端的比赛页；libGDX 联机客户端把此阻塞弹窗链与既有错误弹窗一样留在网络线程调度，避免 GL 线程互等。
 
 对应 Java 测试位于各模块的 `src/test/java/`。
 

@@ -35,6 +35,7 @@ public enum ProtocolMethod implements IHasForgeLog {
     setGameView         (Mode.SERVER, Void.TYPE, GameView.class, Long.TYPE),
     openView            (Mode.SERVER, Void.TYPE, TrackableCollection/*PlayerView*/.class),
     afterGameEnd        (Mode.SERVER, Void.TYPE),
+    afterGameFailure    (Mode.SERVER, Void.TYPE, String.class),
     showCombat          (Mode.SERVER, Void.TYPE),
     showPromptMessage   (Mode.SERVER, Void.TYPE, PlayerView.class, String.class, CardView.class),
     updateDrawOffer     (Mode.SERVER, Void.TYPE, DrawOfferMessage.Status.class),

@@ -49,6 +49,17 @@ public class BugReporter {
      * null.
      */
     public static void reportException(final Throwable ex, final String message) {
+        reportException(ex, message, true);
+    }
+
+    /** Logs and submits an exception without opening the generic crash dialog. */
+    public static void reportExceptionWithoutDialog(final Throwable ex,
+            final String message) {
+        reportException(ex, message, false);
+    }
+
+    private static void reportException(final Throwable ex,
+            final String message, final boolean showDialog) {
         if (ex == null) {
             return;
         }
@@ -81,7 +92,7 @@ public class BugReporter {
         }
         if (isSentryEnabled()) {
             sendSentry();
-        } else {
+        } else if (showDialog) {
             GuiBase.getInterface().showBugReportDialog(Localizer.getInstance().getMessageorUseDefault("lblReportCrash", "Report a Crash"), sb.toString(), true);
         }
     }

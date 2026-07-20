@@ -3,6 +3,6 @@ ManaCost:U U
 Types:Creature Human Cleric Warlock
 PT:2/3
 T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ GrantOpponentNameHarmony | TriggerDescription$ When CARDNAME enters, cards you own with names shared by an opponent's cards gain harmony and "This spell costs {3} less to cast" for the rest of the game.
-SVar:GrantOpponentNameHarmony:DB$ GrantSpellRule | Defined$ You | RuleKey$ MysteriousVisitor.OpponentNames | ValidCards$ Card | ValidSA$ Spell | NameSnapshot$ OpponentCards | Harmony$ True | HarmonyReduction$ 3 | Duration$ Permanent
+SVar:GrantOpponentNameHarmony:DB$ GrantSpellRule | Defined$ You | RuleKey$ MysteriousVisitor.OpponentNames | ValidCards$ Card | ValidSA$ Spell | NameSnapshot$ OpponentCards | Harmony$ True | HarmonyReduction$ 3 | Stacking$ True | Duration$ Permanent
 AI:RemoveDeck:All
 Oracle:当神秘访客进战场时，你手牌和牌库中与任一对手的牌同名的牌永久获得调和（你可以用任意颜色的法术力支付此咒语的法术力费用）和“此咒语的施放费用减少{3}”。

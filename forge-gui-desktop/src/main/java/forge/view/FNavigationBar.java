@@ -158,15 +158,23 @@ public class FNavigationBar extends FTitleBarBase {
     }
 
     public void closeTab(final FScreen screen) {
+        closeTab(screen, false);
+    }
+
+    public void closeTab(final FScreen screen, final boolean force) {
         final NavigationTab tab = getTab(screen);
         if (tab != null) {
-            closeTab(tab);
+            closeTab(tab, force);
         }
     }
 
     private void closeTab(final NavigationTab tab) {
+        closeTab(tab, false);
+    }
+
+    private void closeTab(final NavigationTab tab, final boolean force) {
         if (tab == null) { return; }
-        if (!tab.screen.onClosing()) { return; } //give screen a chance to perform special close handling and/or cancel closing tab
+        if (!TabClosePolicy.allowClose(force, tab.screen::onClosing)) { return; }
 
         if (tab.selected) {
             //return to Home screen if selected tab closed

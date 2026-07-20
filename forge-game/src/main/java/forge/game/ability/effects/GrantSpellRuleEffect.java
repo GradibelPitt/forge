@@ -114,9 +114,10 @@ public class GrantSpellRuleEffect extends SpellAbilityEffect {
                 player.getSpellRuleRegistry().validateStackingRegistration(
                         ruleKey, validCards, validSpellAbilities,
                         genericReduction, manaConversion, harmony,
-                        harmonyReduction);
+                        harmonyReduction, namedCards.get(player));
                 if (harmony && (!player.getSpellRuleRegistry()
-                        .hasHarmonyCoverage(validCards, validSpellAbilities)
+                        .hasHarmonyCoverage(validCards, validSpellAbilities,
+                                namedCards.get(player))
                         || player.getSpellRuleRegistry()
                                 .hasPendingHarmonyViewRefresh())) {
                     refreshPlayers.add(player);
@@ -141,7 +142,8 @@ public class GrantSpellRuleEffect extends SpellAbilityEffect {
                 player.getSpellRuleRegistry().registerStackingAfterPreflight(
                         ruleKey,
                         validCards, validSpellAbilities, genericReduction,
-                        manaConversion, harmony, harmonyReduction);
+                        manaConversion, harmony, harmonyReduction,
+                        namedCards.get(player));
             } else {
                 player.getSpellRuleRegistry().registerAfterPreflight(ruleKey,
                         validCards, validSpellAbilities, genericReduction,

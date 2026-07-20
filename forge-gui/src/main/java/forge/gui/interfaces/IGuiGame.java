@@ -69,6 +69,13 @@ public interface IGuiGame {
 
     void afterGameEnd();
 
+    default void afterGameFailure(final String message) {
+        afterGameEnd();
+        showErrorDialog(message,
+                Localizer.getInstance().getMessageorUseDefault(
+                        "lblError", "Error"));
+    }
+
     void showCombat();
 
     default void showPromptMessage(PlayerView playerView, String message) {

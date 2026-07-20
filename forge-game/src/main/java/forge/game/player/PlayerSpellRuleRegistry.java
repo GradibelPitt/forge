@@ -1,5 +1,6 @@
 package forge.game.player;
 
+import forge.game.ability.RecoverableEffectException;
 import forge.game.card.Card;
 import forge.game.mana.ManaConversionMatrix;
 import forge.game.spellability.SpellAbility;
@@ -170,21 +171,46 @@ public final class PlayerSpellRuleRegistry {
      */
     public boolean hasHarmonyCoverage(final String validCard,
             final String validSpellAbility) {
+        return hasHarmonyCoverage(validCard, validSpellAbility, Set.of());
+    }
+
+    public boolean hasHarmonyCoverage(final String validCard,
+            final String validSpellAbility, final Set<String> namedCards) {
         final PlayerSpellRule probe = new PlayerSpellRule(
                 "harmony-coverage-probe", validCard, validSpellAbility,
-                0, "", true, 0);
+                0, "", true, 0, namedCards);
         for (final String requestedCardRestriction
                 : probe.getValidCardRestrictionsForCoverage()) {
-            boolean covered = false;
-            for (final PlayerSpellRule rule : rules.values()) {
-                if (rule.isHarmony() && rule.coversPaymentScope(probe,
-                        requestedCardRestriction)) {
-                    covered = true;
-                    break;
+            final Set<String> requestedNames = probe.getNamedCards();
+            if (requestedNames.isEmpty()) {
+                boolean covered = false;
+                for (final PlayerSpellRule rule : rules.values()) {
+                    if (rule.isHarmony() && rule.coversPaymentScope(probe,
+                            requestedCardRestriction)
+                            && rule.coversNamedCards(requestedNames)) {
+                        covered = true;
+                        break;
+                    }
                 }
-            }
-            if (!covered) {
-                return false;
+                if (!covered) {
+                    return false;
+                }
+            } else {
+                for (final String requestedName : requestedNames) {
+                    boolean nameCovered = false;
+                    for (final PlayerSpellRule rule : rules.values()) {
+                        if (rule.isHarmony() && rule.coversPaymentScope(probe,
+                                requestedCardRestriction)
+                                && rule.coversNamedCards(
+                                        Set.of(requestedName))) {
+                            nameCovered = true;
+                            break;
+                        }
+                    }
+                    if (!nameCovered) {
+                        return false;
+                    }
+                }
             }
         }
         return true;
@@ -224,7 +250,8 @@ public final class PlayerSpellRuleRegistry {
             final boolean expandsHarmonyVisibility = candidate.isHarmony()
                     && !hasHarmonyCoverage(
                             candidate.getValidCardRestriction(),
-                            candidate.getValidSpellAbilityRestriction());
+                            candidate.getValidSpellAbilityRestriction(),
+                            candidate.getNamedCards());
             rules.put(candidate.getKey(), candidate);
             if (expandsHarmonyVisibility) {
                 advanceHarmonyEpoch();
@@ -246,7 +273,8 @@ public final class PlayerSpellRuleRegistry {
     private void validateCandidate(final PlayerSpellRule candidate) {
         final PlayerSpellRule existing = rules.get(candidate.getKey());
         if (existing != null && !existing.equals(candidate)) {
-            throw new IllegalArgumentException("Spell rule key already has different data: "
+            throw new RecoverableEffectException(
+                    "Spell rule key already has different data: "
                     + candidate.getKey());
         }
     }
@@ -263,11 +291,22 @@ public final class PlayerSpellRuleRegistry {
             final String validCard, final String validSpellAbility,
             final int genericReduction, final String manaConversion,
             final boolean harmony, final int harmonyReduction) {
+        return registerStacking(baseKey, validCard, validSpellAbility,
+                genericReduction, manaConversion, harmony, harmonyReduction,
+                Set.of());
+    }
+
+    public PlayerSpellRule registerStacking(final String baseKey,
+            final String validCard, final String validSpellAbility,
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction,
+            final Set<String> namedCards) {
         final PlayerSpellRule candidate = prepareStackingRegistration(baseKey,
                 validCard, validSpellAbility, genericReduction, manaConversion,
-                harmony, harmonyReduction);
+                harmony, harmonyReduction, namedCards);
         final boolean expandsHarmonyVisibility = candidate.isHarmony()
-                && !hasHarmonyCoverage(validCard, validSpellAbility);
+                && !hasHarmonyCoverage(validCard, validSpellAbility,
+                        candidate.getNamedCards());
         rules.put(candidate.getKey(), candidate);
         stackingSequence++;
         if (expandsHarmonyVisibility) {
@@ -285,11 +324,22 @@ public final class PlayerSpellRuleRegistry {
             final String validCard, final String validSpellAbility,
             final int genericReduction, final String manaConversion,
             final boolean harmony, final int harmonyReduction) {
+        return registerStackingAfterPreflight(baseKey, validCard,
+                validSpellAbility, genericReduction, manaConversion, harmony,
+                harmonyReduction, Set.of());
+    }
+
+    public PlayerSpellRule registerStackingAfterPreflight(final String baseKey,
+            final String validCard, final String validSpellAbility,
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction,
+            final Set<String> namedCards) {
         final PlayerSpellRule candidate = prepareStackingRegistration(baseKey,
                 validCard, validSpellAbility, genericReduction, manaConversion,
-                harmony, harmonyReduction);
+                harmony, harmonyReduction, namedCards);
         final boolean expandsHarmonyVisibility = candidate.isHarmony()
-                && !hasHarmonyCoverage(validCard, validSpellAbility);
+                && !hasHarmonyCoverage(validCard, validSpellAbility,
+                        candidate.getNamedCards());
         rules.put(candidate.getKey(), candidate);
         stackingSequence++;
         if (expandsHarmonyVisibility) {
@@ -310,14 +360,26 @@ public final class PlayerSpellRuleRegistry {
             final String validCard, final String validSpellAbility,
             final int genericReduction, final String manaConversion,
             final boolean harmony, final int harmonyReduction) {
+        validateStackingRegistration(baseKey, validCard, validSpellAbility,
+                genericReduction, manaConversion, harmony, harmonyReduction,
+                Set.of());
+    }
+
+    public void validateStackingRegistration(final String baseKey,
+            final String validCard, final String validSpellAbility,
+            final int genericReduction, final String manaConversion,
+            final boolean harmony, final int harmonyReduction,
+            final Set<String> namedCards) {
         prepareStackingRegistration(baseKey, validCard, validSpellAbility,
-                genericReduction, manaConversion, harmony, harmonyReduction);
+                genericReduction, manaConversion, harmony, harmonyReduction,
+                namedCards);
     }
 
     private PlayerSpellRule prepareStackingRegistration(final String baseKey,
             final String validCard, final String validSpellAbility,
             final int genericReduction, final String manaConversion,
-            final boolean harmony, final int harmonyReduction) {
+            final boolean harmony, final int harmonyReduction,
+            final Set<String> namedCards) {
         if (baseKey == null || baseKey.trim().isEmpty()) {
             throw new IllegalArgumentException("baseKey must not be blank");
         }
@@ -328,7 +390,7 @@ public final class PlayerSpellRuleRegistry {
         final String uniqueKey = baseKey.trim() + "#" + nextSequence;
         final PlayerSpellRule candidate = new PlayerSpellRule(uniqueKey,
                 validCard, validSpellAbility, genericReduction, manaConversion,
-                harmony, harmonyReduction);
+                harmony, harmonyReduction, namedCards);
         if (rules.containsKey(uniqueKey)) {
             throw new IllegalStateException(
                     "Player spell rule stacking key already exists: " + uniqueKey);

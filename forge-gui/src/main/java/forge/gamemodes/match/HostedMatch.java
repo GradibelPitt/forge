@@ -395,14 +395,16 @@ public class HostedMatch {
     }
 
     private void scheduleFailedGameFinalizer(final Game failedGame, final Throwable failure) {
+        final String failureMessage = Localizer.getInstance()
+                .getMessageorUseDefault("lblMatchExitedUnexpectedError",
+                        "The match exited because of an unexpected error. "
+                                + "The match page was closed to prevent a stale interface.");
         FThreads.invokeInEdtNowOrLater(() -> new MatchGameFailureFinalizer(
                 () -> game == failedGame,
-                this::endCurrentGame,
+                () -> endCurrentGameAfterFailure(failureMessage),
                 this::markMatchOverAndNotifyOnce,
-                error -> BugReporter.reportException(error,
-                        Localizer.getInstance().getMessageorUseDefault(
-                                "lblMatchClosedAfterUnexpectedError",
-                                "The match was closed after an unexpected error to prevent a stale input state.")),
+                error -> BugReporter.reportExceptionWithoutDialog(error,
+                        failureMessage),
                 HostedMatch::logSecondaryMatchFailure).finish(failure));
     }
 
@@ -451,6 +453,15 @@ public class HostedMatch {
     }
 
     public void endCurrentGame() {
+        endCurrentGame(false, null);
+    }
+
+    private void endCurrentGameAfterFailure(final String failureMessage) {
+        endCurrentGame(true, failureMessage);
+    }
+
+    private void endCurrentGame(final boolean failed,
+            final String failureMessage) {
         if (game == null) { return; }
         final Game endingGame = game;
         boolean isMatchOver = game.getView().isMatchOver();
@@ -458,26 +469,69 @@ public class HostedMatch {
         game = null;
         activeControllerTracker.clear(endingGame);
 
-        for (final PlayerControllerHuman humanController : humanControllers) {
-            if (humanController.getGui() instanceof forge.gamemodes.net.server.RemoteClientGuiGame ngg) {
-                forge.gui.control.GameEventForwarder fwd = ngg.getForwarder();
-                if (fwd != null) {
-                    for (PlayerControllerHuman allHc : humanControllers) {
-                        allHc.getInputQueue().deleteObserver(fwd);
-                    }
-                }
-                ngg.shutdownForwarder();
+        if (failed) {
+            final List<PlayerControllerHuman> controllers =
+                    new ArrayList<>(humanControllers);
+            final List<Runnable> shutdownSteps = new ArrayList<>();
+            for (final PlayerControllerHuman humanController : controllers) {
+                shutdownSteps.add(() -> shutdownRemoteForwarder(
+                        humanController, controllers));
+                shutdownSteps.add(() -> humanController.getGui()
+                        .setGameSpeed(PlaybackSpeed.NORMAL));
+                shutdownSteps.add(() -> humanController.getYieldController()
+                        .clearAutoYields());
+                shutdownSteps.add(() -> notifyGuiAfterGameEnd(
+                        humanController.getGui(), true, failureMessage));
+                shutdownSteps.add(() -> humanController.getGui()
+                        .updateDayTime(null));
             }
+            try {
+                MatchGameFailureCleanup.runAll(shutdownSteps);
+            } finally {
+                humanControllers.clear();
+            }
+            return;
+        }
+
+        for (final PlayerControllerHuman humanController : humanControllers) {
+            shutdownRemoteForwarder(humanController, humanControllers);
             humanController.getGui().setGameSpeed(PlaybackSpeed.NORMAL);
             humanController.getYieldController().clearAutoYields();
 
             //conceded
             if (humanCount > 0 || !GuiBase.getInterface().isLibgdxPort() || !isMatchOver) {
-                humanController.getGui().afterGameEnd();
+                notifyGuiAfterGameEnd(humanController.getGui(), failed,
+                        failureMessage);
             }
             humanController.getGui().updateDayTime(null);
         }
         humanControllers.clear();
+    }
+
+    private static void shutdownRemoteForwarder(
+            final PlayerControllerHuman humanController,
+            final Iterable<PlayerControllerHuman> allControllers) {
+        if (!(humanController.getGui()
+                instanceof forge.gamemodes.net.server.RemoteClientGuiGame ngg)) {
+            return;
+        }
+        final forge.gui.control.GameEventForwarder forwarder =
+                ngg.getForwarder();
+        if (forwarder != null) {
+            for (final PlayerControllerHuman controller : allControllers) {
+                controller.getInputQueue().deleteObserver(forwarder);
+            }
+        }
+        ngg.shutdownForwarder();
+    }
+
+    static void notifyGuiAfterGameEnd(final IGuiGame gui,
+            final boolean failed, final String failureMessage) {
+        if (failed) {
+            gui.afterGameFailure(failureMessage);
+        } else {
+            gui.afterGameEnd();
+        }
     }
 
     public void pause() {

@@ -67,6 +67,7 @@ import forge.game.spellability.StackItemView;
 import forge.game.zone.ZoneType;
 import forge.util.IHasForgeLog;
 import forge.gamemodes.match.DrawOfferMessage;
+import forge.gamemodes.match.MatchGameFailureCleanup;
 import forge.gamemodes.match.YieldMarker;
 import forge.gamemodes.net.NetworkGuiGame;
 import forge.interfaces.IGameController;
@@ -109,6 +110,8 @@ import forge.screens.match.menus.CMatchUIMenus;
 import forge.screens.match.views.VDrawOfferDialog;
 import forge.screens.match.views.VField;
 import forge.screens.match.views.VHand;
+import forge.sound.MusicPlaylist;
+import forge.sound.SoundSystem;
 import forge.toolbox.FButton;
 import forge.toolbox.FLabel;
 import forge.toolbox.FOptionPane;
@@ -1297,6 +1300,26 @@ public final class CMatchUI
             Singletons.getView().getNavigationBar().closeTab(screen);
             LinkHandler.clearWeakReferencesNow();
         });
+    }
+
+    @Override
+    public void afterGameFailure(final String message) {
+        final Runnable stopMatchTimer = super::afterGameEnd;
+        FThreads.invokeInEdtNowOrLater(() -> MatchGameFailureCleanup.runAll(
+                List.of(
+                        stopMatchTimer,
+                        () -> Singletons.getView().getLpnDocument()
+                                .remove(targetingOverlay.getPanel()),
+                        () -> SoundSystem.instance.setBackgroundMusic(
+                                MusicPlaylist.MENUS),
+                        () -> Singletons.getView().getNavigationBar()
+                                .closeTab(screen, true),
+                        LinkHandler::clearWeakReferencesNow,
+                        () -> FThreads.invokeInEdtLater(() ->
+                                SOptionPane.showErrorDialog(message,
+                                        Localizer.getInstance()
+                                                .getMessageorUseDefault(
+                                                        "lblError", "Error"))))));
     }
 
     @Override
