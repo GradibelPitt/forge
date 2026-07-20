@@ -18,13 +18,10 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "乐队经理牛头人酋长.artcro
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 SOURCE_ORACLE = (
-    "When CARDNAME enters, discover a card from your sideboard with a name that hasn't "
-    "been chosen this way, then put it into your hand."
+    "When CARDNAME enters, discover a card in your sideboard that hasn't been chosen "
+    "this way, then put it into your hand."
 )
-ZH_ORACLE = (
-    "当乐队经理牛头人酋长进战场时，从你的备牌中发现一张牌名未以此法选择过的牌，"
-    "并将该牌置入你的手牌。"
-)
+ZH_ORACLE = "当乐队经理牛头人酋长进战场时，发现一张在你备牌中且未以此法选择过的牌，将其置入你手中。"
 
 
 class BandManagerEliteTaurenChieftainContractTest(unittest.TestCase):

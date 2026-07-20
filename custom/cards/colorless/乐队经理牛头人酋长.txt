@@ -2,6 +2,6 @@ Name:乐队经理牛头人酋长
 ManaCost:4
 Types:Legendary Creature Minotaur
 PT:4/4
-T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDiscover | TriggerDescription$ When CARDNAME enters, discover a card from your sideboard with a name that hasn't been chosen this way, then put it into your hand.
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDiscover | TriggerDescription$ When CARDNAME enters, discover a card in your sideboard that hasn't been chosen this way, then put it into your hand.
 SVar:TrigDiscover:DB$ CardDiscover | Defined$ You | Source$ Sideboard | SourceController$ You | ValidCards$ Card.YouOwn+doesNotShareNameWith Remembered | OptionCount$ 3 | Destination$ Hand | RememberChosen$ True
-Oracle:When CARDNAME enters, discover a card from your sideboard with a name that hasn't been chosen this way, then put it into your hand.
+Oracle:When CARDNAME enters, discover a card in your sideboard that hasn't been chosen this way, then put it into your hand.
