@@ -80,11 +80,11 @@
 ## CardDiscover
 
 - **Status:** 已迁移到 `D:\Forge\forge-latest` 并通过 Forge Game 针对性测试；新版桌面 JAR 已构建，尚未记录其安装或客户端对局实测。
-- **Player-facing behavior:** 从指定候选池使用 Forge 现有过滤器筛选，按内部牌名去重并随机展示最多三个选项；玩家选择一张置入手牌。没有候选则不展示。
-- **DSL design:** 独立 AbilityFactory API `DB$ CardDiscover`，配合 `Defined$`、`Source$`、`SourceController$`、`ValidCards$`、`OptionCount$` 和 `Destination$`。`RememberChosen$ True` 会记录实际移入目标区域的所选牌，供同一能力链的延迟触发器精确引用；省略时不会改变既有记忆状态。最终参数必须在实现测试中验证，不能因本段设计而跳过解析验证。
+- **Player-facing behavior:** 从指定候选池使用 Forge 现有过滤器筛选，按内部牌名去重并随机展示最多三个选项；玩家选择一张置入手牌。没有候选则不展示。候选池可来自卡牌数据库、指定牌手的牌库或备牌。
+- **DSL design:** 独立 AbilityFactory API `DB$ CardDiscover`，配合 `Defined$`、`Source$ CardDatabase|Library|Sideboard`、`SourceController$`、`ValidCards$`、`OptionCount$` 和 `Destination$`。`RememberChosen$ True` 只在选择完成且牌实际移入目标区域后记录所选牌，不记录仅展示而未选择的选项；配合 `ValidCards$ Card+doesNotShareNameWith Remembered` 可在后续发现中排除所有与真正选过的牌同名的候选。省略 `RememberChosen$ True` 时不会改变既有记忆状态。最终参数必须在实现测试中验证，不能因本段设计而跳过解析验证。
 - **Java implementation:** `forge-game/.../ability/ApiType.java` 注册，`ability/effects/CardDiscoverEffect.java` 实现；不修改 Forge 已有 MTG `DiscoverEffect`。
-- **Tests:** `forge-game/src/test/java/forge/game/ability/effects/CardDiscoverEffectTest.java`；`tests/test_airborne_bandit.py`。
-- **Edge cases:** 条件必须复用 `ValidCards$`/`Card.isValid`；同名不同版本不重复；不足三个显示实际数量；数据库来源创建新牌，牌库来源移动实际对象且不洗牌。
+- **Tests:** `forge-game/src/test/java/forge/game/ability/effects/CardDiscoverEffectTest.java`；`tests/test_airborne_bandit.py`；`tests/test_band_manager_elite_tauren_chieftain.py`。
+- **Edge cases:** 条件必须复用 `ValidCards$`/`Card.isValid`；同名不同版本不重复；不足三个显示实际数量；数据库来源创建新牌，牌库与备牌来源移动实际对象且不洗牌。`doesNotShareNameWith Remembered` 按已选牌名排除同名候选，但不能把只出现过而未选择的发现选项之牌名加入排除集合。
 
 ## ReplaceCards（批量数据库牌池替换）
 

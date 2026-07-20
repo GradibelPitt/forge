@@ -10,6 +10,8 @@ import forge.game.GameType;
 import forge.game.Match;
 import forge.game.ability.AbilityFactory;
 import forge.game.card.Card;
+import forge.game.card.CardCollection;
+import forge.game.card.CardLists;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
@@ -96,6 +98,67 @@ public class CardDiscoverEffectTest {
         source.clearRemembered();
         CardDiscoverEffect.rememberChosen(source, false, discovered);
         Assert.assertFalse(Iterables.contains(source.getRemembered(), discovered));
+    }
+
+    @Test
+    public void sideboardDiscoverExcludesOnlyCardsActuallyChosen() {
+        final GameRules rules = new GameRules(GameType.Constructed);
+        final Game game = new Game(Collections.emptyList(), rules,
+                new Match(rules, Collections.emptyList(), "CardDiscover sideboard test"));
+        final Player controller = new Player("Discover controller", game, 1);
+        game.getPlayers().add(controller);
+        controller.setTeam(1);
+
+        final Card source = new Card(game.nextCardId(), game);
+        source.setName("Band Manager Elite Tauren Chieftain");
+        source.setOwner(controller);
+        source.setController(controller, game.getNextTimestamp());
+        controller.getZone(ZoneType.Battlefield).add(source);
+
+        final Card chosen = new Card(game.nextCardId(), game);
+        chosen.setName("Chosen Card");
+        chosen.setOwner(controller);
+        chosen.setController(controller, game.getNextTimestamp());
+        controller.getZone(ZoneType.Sideboard).add(chosen);
+
+        final Card offeredButNotChosen = new Card(game.nextCardId(), game);
+        offeredButNotChosen.setName("Offered Card");
+        offeredButNotChosen.setOwner(controller);
+        offeredButNotChosen.setController(controller, game.getNextTimestamp());
+        controller.getZone(ZoneType.Sideboard).add(offeredButNotChosen);
+
+        final Card neverOffered = new Card(game.nextCardId(), game);
+        neverOffered.setName("Fresh Card");
+        neverOffered.setOwner(controller);
+        neverOffered.setController(controller, game.getNextTimestamp());
+        controller.getZone(ZoneType.Sideboard).add(neverOffered);
+
+        final Card sameNameAsChosen = new Card(game.nextCardId(), game);
+        sameNameAsChosen.setName("Chosen Card");
+        sameNameAsChosen.setOwner(controller);
+        sameNameAsChosen.setController(controller, game.getNextTimestamp());
+        controller.getZone(ZoneType.Sideboard).add(sameNameAsChosen);
+
+        final SpellAbility discover = AbilityFactory.getAbility(
+                "DB$ CardDiscover | Defined$ You | Source$ Sideboard | SourceController$ You "
+                        + "| ValidCards$ Card.YouOwn+doesNotShareNameWith Remembered | OptionCount$ 3 "
+                        + "| Destination$ Hand | RememberChosen$ True",
+                source);
+        discover.setActivatingPlayer(controller);
+
+        final List<Card> firstOptions = Arrays.asList(chosen, offeredButNotChosen);
+        Assert.assertTrue(firstOptions.contains(offeredButNotChosen));
+        CardDiscoverEffect.rememberChosen(source, true, chosen);
+
+        final CardCollection candidates = CardDiscoverEffect.buildZoneCandidates(discover, "Sideboard");
+        final CardCollection nextEligible = CardLists.getValidCards(candidates,
+                "Card.YouOwn+doesNotShareNameWith Remembered", controller, source, discover);
+
+        Assert.assertEquals(CardDiscoverEffect.sourceZone("Sideboard"), ZoneType.Sideboard);
+        Assert.assertFalse(nextEligible.contains(chosen));
+        Assert.assertFalse(nextEligible.contains(sameNameAsChosen));
+        Assert.assertTrue(nextEligible.contains(offeredButNotChosen));
+        Assert.assertTrue(nextEligible.contains(neverOffered));
     }
 
     @Test

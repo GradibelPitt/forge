@@ -71,7 +71,7 @@ public class CardDiscoverEffect extends SpellAbilityEffect {
                             + options.size() + " option(s).");
                 }
             } else {
-                final CardCollection candidates = buildLibraryCandidates(sa, source);
+                final CardCollection candidates = buildZoneCandidates(sa, source);
                 final CardCollection validCandidates = CardLists.getValidCards(candidates, valid,
                         player, host, sa);
                 options = selectUniqueOptions(validCandidates, optionCount, random);
@@ -80,7 +80,7 @@ public class CardDiscoverEffect extends SpellAbilityEffect {
                 continue;
             }
 
-            final ZoneType origin = source.equalsIgnoreCase("Library") ? ZoneType.Library : ZoneType.None;
+            final ZoneType origin = sourceZone(source);
             final Card chosen = player.getController().chooseSingleCardForZoneChange(destination,
                     Collections.singletonList(origin), sa, new CardCollection(options), null,
                     "Choose a card to discover", false, player);
@@ -116,19 +116,30 @@ public class CardDiscoverEffect extends SpellAbilityEffect {
         }
     }
 
-    private static CardCollection buildLibraryCandidates(final SpellAbility sa,
+    static CardCollection buildZoneCandidates(final SpellAbility sa,
             final String source) {
         final CardCollection candidates = new CardCollection();
-        if (source.equalsIgnoreCase("Library")) {
+        final ZoneType sourceZone = sourceZone(source);
+        if (ZoneType.Library.equals(sourceZone) || ZoneType.Sideboard.equals(sourceZone)) {
             final List<Player> owners = AbilityUtils.getDefinedPlayers(sa.getHostCard(),
                     sa.getParamOrDefault("SourceController", "You"), sa);
             for (final Player owner : owners) {
                 if (owner != null && owner.isInGame()) {
-                    candidates.addAll(owner.getCardsIn(ZoneType.Library));
+                    candidates.addAll(owner.getCardsIn(sourceZone));
                 }
             }
         }
         return candidates;
+    }
+
+    static ZoneType sourceZone(final String source) {
+        if ("Library".equalsIgnoreCase(source)) {
+            return ZoneType.Library;
+        }
+        if ("Sideboard".equalsIgnoreCase(source)) {
+            return ZoneType.Sideboard;
+        }
+        return ZoneType.None;
     }
 
     static List<Card> selectDatabaseOptions(final Iterable<PaperCard> paperCards,

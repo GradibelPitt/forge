@@ -72,3 +72,4 @@ Type=Custom_Set
 73 M 传送门操控师斯奇拉 @Custom
 74 M 召唤师达克玛洛 @Custom
 75 R 木偶剧场 @Custom
+76 M 乐队经理牛头人酋长 @Custom
