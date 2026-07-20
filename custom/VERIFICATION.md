@@ -1,5 +1,7 @@
 # Forge DIY Verification Status
 
+- 2026-07-20 新增 `木偶剧场`：`{2}{U}{U}` 神器，PH01 #75，耐久 2。起动费用为横置并移去一个耐久指示物；为保证 Forge 的数据库化生路径始终存在实体牌，目标规范为不由你操控的非衍生生物。结算使用原生 `MakeCard | Conjure$ True | DefinedName$ Targeted` 化生复制品到手牌，再以 `Animate | ManaCost$ 1 | Power$ 1 | Toughness$ 1 | Duration$ Perpetual` 将其法术力费用永久设为 `{1}`、基础力量和防御力永久设为 1/1，未修改 Java。用户原图确认是纯原画并逐字节备份，输入与备份 SHA-256 均为 `62769AFD50A60D04DF4634F294960B338A655CE0D3E135A20ABE7AF41F684363`；标准动态牌框裁图为 1920×1401 RGB JPEG，源码／本机缓存 SHA-256 均为 `F1A644845C27CC63E54FC66502BAC50C9F7F11AD8B6DA3FCF86640BBD6B53268`。目标契约 3/3、单卡 lint 与 DIY 全量 327/327 均通过。`tools/install_to_forge.ps1` 已同步；卡牌脚本源码／profile SHA-256 均为 `8088A8C8C2B498633D723A419362F06E91A7E3436C585760E879CB0FCF7CBE26`，PH01 版本表源码／profile SHA-256 均为 `3615532809E18B0507A0FA577383259CEEDB37CB634336714B1B5927F5A0632B`。简中源码已加入规范措辞；安装脚本仍不单独同步语言资源，当前运行仓库本地 payload 尚无该条目。检查时没有运行中的 Forge 进程；下次启动或资源重载后仍需客户端验证目标选择、耐久耗尽牺牲、复制品费用与基础身材。
+
 - 2026-07-18 修正 `空降歹徒` 的简体中文描述语病，现为“如果本回合有一个海盗在你的操控下进战场，你可以从手牌中免费施放这张牌。”；源码 `forge-gui/res/languages/cardnames-zh-CN.txt` 与本机运行包 `forge-diy-runtime/app/res/languages/cardnames-zh-CN.txt` 的目标条目逐字一致。`tests.test_parachute_brigand` 4/4 与单卡 lint 均通过。当前 Forge PID 39672 启动于修改前，需重启客户端后重新载入中文资源。
 
 - 2026-07-18 规范“符文秘银杖”第二个效果：规则文改为“每当你抓一张或数张牌时，在符文秘银杖上放置等量的秘银指示物”；新增 `DrawnAll` 批次触发，每次 `drawCards` 只产生一个触发并以实际抓到的牌张数设置 `TriggerCount$Amount`，既有 `Drawn` 仍保持逐张语义。实际请求抓5张而牌库仅3张的 Java 集成测试确认只产生一个、数量为3的触发；目标机制与疲劳回归3/3、卡牌契约3/3、单卡 lint 与 DIY 全量317/317均通过。`forge-game` 全量197项中195项通过，两个失败仍位于工作区既有 `PlayerSpellRuleRegistryTest` 法术力转换状态测试，与本次批次抓牌路径无关。

@@ -1,0 +1,8 @@
+Name:木偶剧场
+ManaCost:2 U U
+Types:Artifact
+K:Durability:2
+A:AB$ MakeCard | Cost$ T SubCounter<1/DURABILITY> | Conjure$ True | TgtPrompt$ Select target nontoken creature you don't control | ValidTgts$ Creature.YouDontCtrl+!token | DefinedName$ Targeted | Zone$ Hand | RememberMade$ True | SubAbility$ DBAnimate | SpellDescription$ Conjure a duplicate of target nontoken creature you don't control into your hand. Its mana cost perpetually becomes {1}, and it perpetually has base power and toughness 1/1.
+SVar:DBAnimate:DB$ Animate | Defined$ Remembered | ManaCost$ 1 | Power$ 1 | Toughness$ 1 | Duration$ Perpetual | SubAbility$ DBCleanup | StackDescription$ None
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+Oracle:Durability 2 (This permanent enters with two durability counters on it. When the last durability counter is removed from it, sacrifice it.)\n{T}, Remove a durability counter from CARDNAME: Conjure a duplicate of target nontoken creature you don't control into your hand. Its mana cost perpetually becomes {1}, and it perpetually has base power and toughness 1/1.
