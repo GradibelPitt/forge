@@ -1,0 +1,11 @@
+Name:悠闲的曲奇
+ManaCost:1 B B
+Types:Legendary Creature Frog Pirate Shaman
+PT:2/2
+K:Flash
+T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Creature.!token+YouCtrl+Other | TriggerZones$ Battlefield | Execute$ TrigNameCard | TriggerDescription$ Whenever another nontoken creature you control dies, conjure a random creature card with mana value X onto the battlefield, where X is 1 plus that creature's mana value.
+SVar:TrigNameCard:DB$ NameCard | AtRandom$ True | ValidCards$ Creature.cmcEQX | SubAbility$ DBConjure
+SVar:DBConjure:DB$ MakeCard | Name$ ChosenName | Conjure$ True | Zone$ Battlefield | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearNamedCard$ True
+SVar:X:TriggeredCard$CardManaCost/Plus.1
+Oracle:Flash\nWhenever another nontoken creature you control dies, conjure a random creature card with mana value X onto the battlefield, where X is 1 plus that creature's mana value.

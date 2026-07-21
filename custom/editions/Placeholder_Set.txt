@@ -74,3 +74,6 @@ Type=Custom_Set
 75 R 木偶剧场 @Custom
 76 M 乐队经理牛头人酋长 @Custom
 77 M 米斯塔·维斯塔 @Custom
+78 M 惬意的沃金 @Custom
+79 M 面具变装大师 @Custom
+80 M 悠闲的曲奇 @Custom

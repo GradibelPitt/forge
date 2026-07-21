@@ -1,0 +1,10 @@
+Name:惬意的沃金
+ManaCost:1 W W
+Types:Legendary Creature Troll Monk
+PT:3/3
+K:Lifelink
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigCounters | TriggerDescription$ When CARDNAME enters, choose two other target creatures. For each of those creatures, put a number of +1/+1 counters on it equal to the other creature's power.
+SVar:TrigCounters:DB$ PutCounter | Defined$ Targeted | CounterType$ P1P1 | CounterNumPerDefined$ X | ValidTgts$ Creature.Other | TargetMin$ 2 | TargetMax$ 2 | TargetUnique$ True | TgtPrompt$ Select two other target creatures
+SVar:X:Count$Valid Targeted.Other$CardPower
+A:AB$ PutCounter | Cost$ G Sac<1/Creature.powerEQ1+toughnessEQ1> | ValidTgts$ Creature | CounterType$ P1P1 | CounterNum$ 2 | TgtPrompt$ Select target creature | SpellDescription$ Put two +1/+1 counters on target creature.
+Oracle:Lifelink\nWhen CARDNAME enters, choose two other target creatures. For each of those creatures, put a number of +1/+1 counters on it equal to the other creature's power.\n{G}, Sacrifice a 1/1 creature: Put two +1/+1 counters on target creature.

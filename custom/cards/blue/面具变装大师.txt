@@ -1,0 +1,9 @@
+Name:面具变装大师
+ManaCost:1 U U
+Types:Legendary Creature Shapeshifter
+PT:3/2
+K:Changeling
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDiscover | TriggerDescription$ When CARDNAME enters, discover a nonblue planeswalker.
+SVar:TrigDiscover:DB$ CardDiscover | Defined$ You | Source$ CardDatabase | ValidCards$ Planeswalker.nonBlue | OptionCount$ 3 | Destination$ Hand
+A:AB$ CopySpellAbility | Cost$ B PayLife<2> | ActivationLimit$ 1 | TargetType$ Activated.YouCtrl | ValidTgts$ Card.nonCreature | TgtPrompt$ Select target activated ability you control from a noncreature source | MayChooseTarget$ True | SpellDescription$ Copy target activated ability you control from a noncreature source. You may choose new targets for the copy. Activate only once each turn. (Mana abilities can't be targeted.)
+Oracle:Changeling\nWhen CARDNAME enters, discover a nonblue planeswalker.\n{B}, Pay 2 life: Copy target activated ability you control from a noncreature source. You may choose new targets for the copy. Activate only once each turn.
