@@ -1,0 +1,11 @@
+Name:米斯塔·维斯塔
+ManaCost:4 R G
+Types:Legendary Creature Troll Monk
+PT:5/5
+K:Vigilance
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigRebound | TriggerDescription$ When CARDNAME enters, until the end of your next turn, instant and sorcery spells you control have rebound.
+SVar:TrigRebound:DB$ Effect | StaticAbilities$ GrantRebound | Duration$ UntilTheEndOfYourNextTurn
+SVar:GrantRebound:Mode$ Continuous | AddKeyword$ Rebound | Affected$ Instant.YouCtrl,Sorcery.YouCtrl | AffectedZone$ Stack | Description$ Instant and sorcery spells you control have rebound.
+A:AB$ Tap | Cost$ U Return<1/Land/land> | ValidTgts$ Creature | SubAbility$ DBStun | SpellDescription$ Tap target creature. Put a stun counter on it.
+SVar:DBStun:DB$ PutCounter | Defined$ Targeted | CounterType$ Stun | CounterNum$ 1
+Oracle:Vigilance\nWhen CARDNAME enters, until the end of your next turn, instant and sorcery spells you control have rebound.\n{U}, Return a land you control to its owner's hand: Tap target creature. Put a stun counter on it.

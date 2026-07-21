@@ -73,3 +73,4 @@ Type=Custom_Set
 74 M 召唤师达克玛洛 @Custom
 75 R 木偶剧场 @Custom
 76 M 乐队经理牛头人酋长 @Custom
+77 M 米斯塔·维斯塔 @Custom
