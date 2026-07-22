@@ -72,7 +72,7 @@ Registers a source-independent spell cost or mana-payment rule on a player for t
   ```
 
 ### 9. `StealSameName`
-Takes one card from a targeted opponent whose name matches the `Card` object of the enclosing trigger. It checks zones in the fixed order Battlefield, Hand, Library, Graveyard and never falls through to a lower-priority zone when a match exists in a higher one. A battlefield match changes control in place; a hand, library, or graveyard match moves that existing card object to the activating player's hand and transfers ownership.
+Takes one card from a targeted opponent whose name matches the `Card` object of the enclosing trigger. It checks zones in the fixed order Battlefield, Hand, Library, Graveyard and never falls through to a lower-priority zone when a match exists in a higher one. Within that zone it takes the first matching object without opening a player-choice UI, so repeated triggers cannot create a sequence of native selection windows. A battlefield match changes control in place; a hand, library, or graveyard match moves that existing card object to the activating player's hand and transfers ownership. No match is a silent no-op.
 - **Parameters**: `ValidTgts$ Opponent`
 - **Trigger input**: the enclosing trigger must supply `AbilityKey.Card`, as `SpellCast` does.
 - **Example**:

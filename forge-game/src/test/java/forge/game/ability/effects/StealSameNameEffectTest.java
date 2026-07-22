@@ -54,7 +54,7 @@ public class StealSameNameEffectTest {
                 StealSameNameEffect.findFirstMatchingZone(cardsByZone, "Stolen Spell");
 
         Assert.assertEquals(selection.zone(), ZoneType.Battlefield);
-        Assert.assertSame(selection.cards().get(0), battlefield);
+        Assert.assertSame(selection.card(), battlefield);
     }
 
     @Test
@@ -69,13 +69,13 @@ public class StealSameNameEffectTest {
         final StealSameNameEffect.Selection librarySelection =
                 StealSameNameEffect.findFirstMatchingZone(cardsByZone, "Stolen Spell");
         Assert.assertEquals(librarySelection.zone(), ZoneType.Library);
-        Assert.assertSame(librarySelection.cards().get(0), library);
+        Assert.assertSame(librarySelection.card(), library);
 
         cardsByZone.remove(ZoneType.Library);
         final StealSameNameEffect.Selection graveyardSelection =
                 StealSameNameEffect.findFirstMatchingZone(cardsByZone, "Stolen Spell");
         Assert.assertEquals(graveyardSelection.zone(), ZoneType.Graveyard);
-        Assert.assertSame(graveyardSelection.cards().get(0), graveyard);
+        Assert.assertSame(graveyardSelection.card(), graveyard);
     }
 
     @Test
@@ -120,6 +120,25 @@ public class StealSameNameEffectTest {
                 "the API must move the existing card rather than make a copy");
         Assert.assertEquals(stolen.getOwner(), fixture.activator);
         Assert.assertEquals(stolen.getController(), fixture.activator);
+    }
+
+    @Test
+    public void repeatedResolutionExhaustsSameNameCardsWithoutControllerUi() {
+        final Fixture fixture = new Fixture("StealSameName repeated");
+        final int matchingCards = 64;
+        for (int i = 0; i < matchingCards; i++) {
+            fixture.card(fixture.opponent, "Stolen Spell", ZoneType.Library);
+        }
+        final SpellAbility ability = fixture.ability("Stolen Spell");
+        final StealSameNameEffect effect = new StealSameNameEffect();
+
+        for (int i = 0; i < matchingCards + 16; i++) {
+            effect.resolve(ability);
+        }
+
+        Assert.assertTrue(fixture.opponent.getCardsIn(ZoneType.Library).isEmpty());
+        Assert.assertEquals(
+                fixture.activator.getCardsIn(ZoneType.Hand).size(), matchingCards);
     }
 
     private static final class Fixture {

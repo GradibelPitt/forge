@@ -4,7 +4,6 @@ import forge.game.Game;
 import forge.game.ability.AbilityKey;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
@@ -26,11 +25,7 @@ public class StealSameNameEffect extends SpellAbilityEffect {
             ZoneType.Library,
             ZoneType.Graveyard);
 
-    record Selection(ZoneType zone, List<Card> cards) {
-        Selection {
-            cards = List.copyOf(cards);
-        }
-    }
+    record Selection(ZoneType zone, Card card) {}
 
     static Selection findFirstMatchingZone(
             final Map<ZoneType, ? extends Iterable<Card>> cardsByZone,
@@ -43,14 +38,10 @@ public class StealSameNameEffect extends SpellAbilityEffect {
             if (cards == null) {
                 continue;
             }
-            final CardCollection matches = new CardCollection();
             for (final Card card : cards) {
                 if (card != null && Objects.equals(name, card.getName())) {
-                    matches.add(card);
+                    return new Selection(zone, card);
                 }
-            }
-            if (!matches.isEmpty()) {
-                return new Selection(zone, matches);
             }
         }
         return null;
@@ -89,21 +80,7 @@ public class StealSameNameEffect extends SpellAbilityEffect {
             return;
         }
 
-        final Card chosen;
-        if (selection.cards().size() == 1) {
-            chosen = selection.cards().get(0);
-        } else {
-            final CardCollection choices = new CardCollection(selection.cards());
-            final CardCollection selected = new CardCollection(
-                    activator.getController().chooseCardsForEffect(
-                            choices, sa,
-                            "Choose a card named " + triggeringCard.getName(),
-                            1, 1, false, null));
-            if (selected.isEmpty()) {
-                return;
-            }
-            chosen = selected.get(0);
-        }
+        final Card chosen = selection.card();
 
         final Game game = activator.getGame();
         if (selection.zone() == ZoneType.Battlefield) {
