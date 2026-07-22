@@ -102,6 +102,15 @@ class HearthstoneParadiseTrioContractTest(unittest.TestCase):
         )
         self.assertIn("SVar:DBCleanup:DB$ Cleanup | ClearNamedCard$ True", text)
         self.assertIn("SVar:X:TriggeredCard$CardManaCost/Plus.1", text)
+        self.assertIn(
+            "A:AB$ Pump | Cost$ G Sac<1/Creature> | Defined$ Self | "
+            "NumAtt$ +Y | NumDef$ +Y",
+            text,
+        )
+        self.assertIn(
+            "SVar:Y:Count$ThisTurnEntered_Battlefield_Creature.!token",
+            text,
+        )
         self.assertNotIn("???", text)
 
     def test_registration_localization_and_art(self):
@@ -115,7 +124,8 @@ class HearthstoneParadiseTrioContractTest(unittest.TestCase):
         self.assertTrue(any(line.startswith("面具变装大师|面具变装大师|") for line in localization))
         cookie_line = next(line for line in localization if line.startswith("悠闲的曲奇|悠闲的曲奇|"))
         self.assertNotIn("???", cookie_line)
-        self.assertNotIn("{G}", cookie_line)
+        self.assertIn("{G}，牺牲一个生物", cookie_line)
+        self.assertIn("本回合进战场的非衍生生物总数", cookie_line)
 
         for backup, crop in ART_CASES:
             self.assertTrue(backup.is_file())

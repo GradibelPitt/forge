@@ -8,4 +8,6 @@ SVar:TrigNameCard:DB$ NameCard | AtRandom$ True | ValidCards$ Creature.cmcEQX | 
 SVar:DBConjure:DB$ MakeCard | Name$ ChosenName | Conjure$ True | Zone$ Battlefield | SubAbility$ DBCleanup
 SVar:DBCleanup:DB$ Cleanup | ClearNamedCard$ True
 SVar:X:TriggeredCard$CardManaCost/Plus.1
-Oracle:Flash\nWhenever another nontoken creature you control dies, conjure a random creature card with mana value X onto the battlefield, where X is 1 plus that creature's mana value.
+A:AB$ Pump | Cost$ G Sac<1/Creature> | Defined$ Self | NumAtt$ +Y | NumDef$ +Y | SpellDescription$ CARDNAME gets +X/+X until end of turn, where X is the number of nontoken creatures that entered the battlefield this turn.
+SVar:Y:Count$ThisTurnEntered_Battlefield_Creature.!token
+Oracle:Flash\nWhenever another nontoken creature you control dies, conjure a random creature card with mana value X onto the battlefield, where X is 1 plus that creature's mana value.\n{G}, Sacrifice a creature: CARDNAME gets +X/+X until end of turn, where X is the number of nontoken creatures that entered the battlefield this turn.
