@@ -33,6 +33,7 @@
 
 ## Current implemented state
 
+- 桌面主页已退役独立的 Quest、Puzzle 与 Gauntlet 模式：不再注册其侧栏入口、首页文档、成就集合或启动期 Quest 存档加载，普通牌组保存也不再刷新 Gauntlet 单例；旧 `EDocID` 名称仅以空文档保留给源码和既有布局兼容。单人构筑、轮抓、现开、多人联机、普通 Commander/EDH、牌组编辑器及其共享预组牌数据保持可用；Bazaar 的 Quest 状态改为仅在显式打开该旧视图时延迟创建。
 - 测试牌已从 `PH01` 拆分到独立 `TEST` 版本；凡内部名称含 `test`（不区分大小写）的牌只登记在 `editions/Test_Set.txt`。`PH01` 保留正式 DIY 卡牌及其原收藏编号。
 - `Superreach`、`Ignore Superreach`、`Boarding`、`IgnoreDeckLimits` 和 `DeckMinimum` 已在当前 Forge 源码中找到实现或使用点。
 - 破链灾星霍格通过 `StartingDeckLegendaryPermanents` 直接枚举注册牌手当前主牌 `CardPool`，开局复制其中其他传奇永久物，并提供传奇规则徽记与超级延势；复制结果不依赖结算时的手牌/牌库状态，也不会像数据库发现那样物化全卡池候选。

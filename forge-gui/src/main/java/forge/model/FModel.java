@@ -99,9 +99,7 @@ public final class FModel {
         a.put(GameType.Constructed, new ConstructedAchievements());
         a.put(GameType.Draft, new DraftAchievements());
         a.put(GameType.Sealed, new SealedAchievements());
-        a.put(GameType.Quest, new QuestAchievements());
         a.put(GameType.PlanarConquest, new PlanarConquestAchievements());
-        a.put(GameType.Puzzle, new PuzzleAchievements());
         a.put(GameType.Adventure, new AdventureAchievements());
         return a;
     });
@@ -379,9 +377,9 @@ public final class FModel {
     public static AchievementCollection getAchievements(GameType gameType) {
         // Translate gameType to appropriate type if needed
         return switch (gameType) {
-            case Constructed, Draft, Sealed, Quest, PlanarConquest, Puzzle, Adventure -> achievements.get().get(gameType);
+            case Constructed, Draft, Sealed, PlanarConquest, Adventure -> achievements.get().get(gameType);
             case AdventureEvent -> achievements.get().get(GameType.Adventure);
-            case QuestDraft -> achievements.get().get(GameType.Quest);
+            case Quest, QuestDraft, Puzzle -> achievements.get().get(GameType.Constructed);
             default -> achievements.get().get(GameType.Constructed);
         };
     }

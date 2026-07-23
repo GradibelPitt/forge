@@ -24,8 +24,6 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
-import java.io.IOException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -43,8 +41,6 @@ import com.google.common.collect.Lists;
 import forge.ImageCache;
 import forge.Singletons;
 import forge.gamemodes.match.HostedMatch;
-import forge.gamemodes.quest.data.QuestPreferences.QPref;
-import forge.gamemodes.quest.io.QuestDataIO;
 import forge.gui.SOverlayUtils;
 import forge.gui.framework.FScreen;
 import forge.gui.framework.InvalidLayoutFileException;
@@ -52,7 +48,6 @@ import forge.gui.framework.SLayoutIO;
 import forge.gui.framework.SOverflowUtil;
 import forge.gui.framework.SResizingUtil;
 import forge.gui.util.SOptionPane;
-import forge.localinstance.properties.ForgeConstants;
 import forge.localinstance.properties.ForgePreferences;
 import forge.localinstance.properties.ForgePreferences.FPref;
 import forge.localinstance.skin.FSkinProp;
@@ -261,20 +256,6 @@ public enum FControl implements KeyEventDispatcher {
         display = FView.SINGLETON_INSTANCE.getLpnDocument();
 
         closeAction = CloseAction.valueOf(prefs.getPref(FPref.UI_CLOSE_ACTION));
-
-        FView.SINGLETON_INSTANCE.setSplashProgessBarMessage(getLocalizer().getMessage("lblLoadingQuest"));
-        // Preload quest data if present
-        final File dirQuests = new File(ForgeConstants.QUEST_SAVE_DIR);
-        final String questname = FModel.getQuestPreferences().getPref(QPref.CURRENT_QUEST);
-        final File data = new File(dirQuests.getPath(), questname);
-        if (data.exists()) {
-            try {
-                FModel.getQuest().load(QuestDataIO.loadData(data));
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                System.err.printf("Error loading quest data (%s).. skipping for now..%n", questname);
-            }
-        }
 
         // Handles resizing in null layouts of layers in JLayeredPane as well as saving window layout
         final FFrame window = Singletons.getView().getFrame();

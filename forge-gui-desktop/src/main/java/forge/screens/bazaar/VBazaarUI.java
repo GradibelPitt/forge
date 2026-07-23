@@ -85,6 +85,16 @@ public enum VBazaarUI implements IVTopLevelUI {
      */
     @Override
     public void instantiate() {
+        // Quest is no longer part of the normal desktop startup path. Keep this
+        // top-level view cheap to instantiate and defer all Quest state until
+        // the Bazaar is explicitly opened.
+    }
+
+    private void initializeBazaar() {
+        if (bazaar != null) {
+            return;
+        }
+
         // Final inits
         this.pnlAllStalls = new JPanel();
         this.pnlSingleStall = new ViewStall(this);
@@ -103,6 +113,8 @@ public enum VBazaarUI implements IVTopLevelUI {
      */
     @Override
     public void populate() {
+        initializeBazaar();
+
         FPanel pnl = FView.SINGLETON_INSTANCE.getPnlInsets();
         pnl.setBorder((Border)null);
         pnl.setLayout(new MigLayout("insets 0, gap 0"));

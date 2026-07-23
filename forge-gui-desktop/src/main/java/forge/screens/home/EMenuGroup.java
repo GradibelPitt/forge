@@ -8,22 +8,30 @@ import forge.util.Localizer;
  * <br><br><i>(E at beginning of class name denotes an enum.)</i>
  */
 public enum EMenuGroup {
-    SANCTIONED ("lblSanctionedFormats"),
-    ONLINE ("lblOnlineMultiplayer"),
-    QUEST ("lblQuestMode"),
-    PUZZLE ("lblPuzzleMode"),
-    GAUNTLET ("lblGauntlets"),
-    SETTINGS ("lblGameSettings");
+    SANCTIONED ("lblSanctionedFormats", true),
+    ONLINE ("lblOnlineMultiplayer", true),
+    QUEST ("lblQuestMode", false),
+    PUZZLE ("lblPuzzleMode", false),
+    GAUNTLET ("lblGauntlets", false),
+    SETTINGS ("lblGameSettings", true);
 
     private final String strTitle;
+    private final boolean enabled;
 
     /** @param {@link java.lang.String} */
-    EMenuGroup(final String s0) { strTitle = s0; }
+    EMenuGroup(final String s0, final boolean enabled0) {
+        strTitle = s0;
+        enabled = enabled0;
+    }
 
     /** @return {@link java.lang.String} */
     public String getTitle() {
         final Localizer localizer = Localizer.getInstance();
         String t = localizer.getMessage(this.strTitle);
         return t;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 }
