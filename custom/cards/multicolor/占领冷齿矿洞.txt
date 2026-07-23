@@ -1,0 +1,9 @@
+Name:占领冷齿矿洞
+ManaCost:U G
+Types:Sorcery
+A:SP$ Charm | Choices$ DBHighest,DBLowest
+SVar:DBHighest:DB$ Seek | Type$ Card.cmcEQX | SpellDescription$ Put a card with the highest mana value in your library into your hand.
+SVar:DBLowest:DB$ Seek | Type$ Card.cmcEQY | SpellDescription$ Put a card with the lowest mana value in your library into your hand.
+SVar:X:Count$ValidLibrary Card.YouOwn$GreatestCardManaCost
+SVar:Y:Count$ValidLibrary Card.YouOwn$LeastCardManaCost
+Oracle:Choose one —\n• Put a card with the highest mana value in your library into your hand.\n• Put a card with the lowest mana value in your library into your hand.
