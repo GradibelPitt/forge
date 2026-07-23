@@ -36,7 +36,7 @@ class CreationProtocolContractTest(unittest.TestCase):
         self.assertNotIn("A:AB$ Animate", text)
         self.assertIn(
             "A:SP$ CardDiscover | Defined$ You | Source$ Library | "
-            "SourceController$ You | ValidCards$ Creature | OptionCount$ 1 | "
+            "SourceController$ You | ValidCards$ Creature | OptionCount$ 3 | "
             "Destination$ Hand | RememberChosen$ True | SubAbility$ DBConjure",
             text,
         )
