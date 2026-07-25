@@ -66,9 +66,15 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
     private ItemInfo focalItem;
     private InventoryItem lastAltCard = null;
     private boolean panelOptionsCreated = false;
+    private boolean incrementalLoading;
+    private boolean loadingNextBatch;
+    private int nextEntryIndex;
+    private int nextEntryCopyIndex;
+    private int lastScrollValue;
 
     private final List<ItemInfo> orderedItems = new ArrayList<>();
     private final List<Group> groups = new ArrayList<>();
+    private final IncrementalImageLoadState incrementalLoadState = new IncrementalImageLoadState();
     final Localizer localizer = Localizer.getInstance();
 
     private static boolean isPreferenceEnabled(final ForgePreferences.FPref preferenceName) {
@@ -324,6 +330,11 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
         });
         groups.add(new Group("")); //add default group
         getScroller().setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        getScroller().getVerticalScrollBar().addAdjustmentListener(e -> {
+            final int previousScrollValue = lastScrollValue;
+            lastScrollValue = e.getValue();
+            loadNextBatchIfNeeded(previousScrollValue);
+        });
     }
 
     @Override
@@ -524,19 +535,51 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
 
     @Override
     protected void onRefresh() {
-        Group otherItems = groupBy == null ? groups.get(0) : null;
-
         for (Group group : groups) {
             group.items.clear();
         }
         clearSelection();
 
-        for (Entry<T, Integer> itemEntry : model.getOrderedList()) {
+        final List<Entry<T, Integer>> entries = model.getOrderedList();
+        int totalItemCount = 0;
+        for (Entry<T, Integer> itemEntry : entries) {
+            totalItemCount += itemEntry.getValue();
+        }
+
+        incrementalLoading = itemManager.getGenericType().equals(PaperCard.class)
+                && groupBy == null
+                && pileBy == null
+                && totalItemCount > IncrementalImageLoadState.BATCH_SIZE;
+        incrementalLoadState.reset(totalItemCount, incrementalLoading);
+        nextEntryIndex = 0;
+        nextEntryCopyIndex = 0;
+        appendItems(incrementalLoadState.claimNextBatch());
+
+        if (groupBy != null
+                && groups.size() > groupBy.getGroups().length
+                && groups.get(groups.size() - 1).items.isEmpty()) {
+            groups.remove(groups.size() - 1); //remove Other group if empty
+            btnExpandCollapseAll.updateIsAllCollapsed();
+        }
+
+        updateLayout(true);
+    }
+
+    private void appendItems(final int itemCount) {
+        if (itemCount <= 0) {
+            return;
+        }
+
+        Group otherItems = groupBy == null ? groups.get(0) : null;
+        final List<Entry<T, Integer>> entries = model.getOrderedList();
+        int appended = 0;
+        while (appended < itemCount && nextEntryIndex < entries.size()) {
+            final Entry<T, Integer> itemEntry = entries.get(nextEntryIndex);
             T item = itemEntry.getKey();
             int qty = itemEntry.getValue();
             int groupIndex = groupBy == null ? -1 : groupBy.getItemGroupIndex(item);
 
-            for (int i = 0; i < qty; i++) {
+            while (appended < itemCount && nextEntryCopyIndex < qty) {
                 if (groupIndex >= 0) {
                     groups.get(groupIndex).add(new ItemInfo(item));
                 }
@@ -554,14 +597,59 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
                     }
                     otherItems.add(new ItemInfo(item));
                 }
+                appended++;
+                nextEntryCopyIndex++;
+            }
+
+            if (nextEntryCopyIndex >= qty) {
+                nextEntryIndex++;
+                nextEntryCopyIndex = 0;
             }
         }
+    }
 
-        if (otherItems == null && groups.size() > groupBy.getGroups().length) {
-            groups.remove(groups.size() - 1); //remove Other group if empty
-            btnExpandCollapseAll.updateIsAllCollapsed();
+    private void loadNextBatchIfNeeded(final int previousScrollValue) {
+        if (!incrementalLoading || loadingNextBatch || !incrementalLoadState.hasMore()) {
+            return;
         }
 
+        final JScrollBar scrollBar = getScroller().getVerticalScrollBar();
+        if (!IncrementalImageLoadState.shouldLoadMore(previousScrollValue,
+                scrollBar.getValue(), scrollBar.getVisibleAmount(), scrollBar.getMaximum())) {
+            return;
+        }
+
+        loadingNextBatch = true;
+        SwingUtilities.invokeLater(() -> {
+            try {
+                appendItems(incrementalLoadState.claimNextBatch());
+                updateLayout(true);
+            }
+            finally {
+                loadingNextBatch = false;
+            }
+        });
+    }
+
+    private void ensureItemLoaded(final int index) {
+        if (!incrementalLoading || index < orderedItems.size()) {
+            return;
+        }
+
+        while (incrementalLoadState.hasMore() && index >= incrementalLoadState.getLoadedCount()) {
+            appendItems(incrementalLoadState.claimNextBatch());
+        }
+        updateLayout(true);
+    }
+
+    private void ensureAllItemsLoaded() {
+        if (!incrementalLoading || !incrementalLoadState.hasMore()) {
+            return;
+        }
+
+        while (incrementalLoadState.hasMore()) {
+            appendItems(incrementalLoadState.claimNextBatch());
+        }
         updateLayout(true);
     }
 
@@ -786,6 +874,7 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
 
     @Override
     public T getItemAtIndex(int index) {
+        ensureItemLoaded(index);
         if (index >= 0 && index < getCount()) {
             return orderedItems.get(index).item;
         }
@@ -794,6 +883,29 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
 
     @Override
     public int getIndexOfItem(T item) {
+        for (ItemInfo itemInfo : orderedItems) {
+            if (itemInfo.item == item) {
+                return itemInfo.index;
+            }
+        }
+
+        if (incrementalLoading) {
+            final Group group = groups.get(0);
+            int searchStartIndex = group.items.size();
+            while (incrementalLoadState.hasMore()) {
+                appendItems(incrementalLoadState.claimNextBatch());
+                for (int i = searchStartIndex; i < group.items.size(); i++) {
+                    final ItemInfo itemInfo = group.items.get(i);
+                    if (itemInfo.item == item) {
+                        updateLayout(true);
+                        return itemInfo.index;
+                    }
+                }
+                searchStartIndex = group.items.size();
+            }
+            updateLayout(true);
+        }
+
         for (Group group : groups) {
             for (ItemInfo itemInfo : group.items) {
                 if (itemInfo.item == item) {
@@ -823,7 +935,7 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
 
     @Override
     public int getCount() {
-        return orderedItems.size();
+        return incrementalLoading ? incrementalLoadState.getTotalCount() : orderedItems.size();
     }
 
     @Override
@@ -855,6 +967,7 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
 
     @Override
     public void selectAll() {
+        ensureAllItemsLoaded();
         clearSelection();
         IntStream.range(0, getCount()).forEach(selectedIndices::add);
         updateSelection();
@@ -862,6 +975,7 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
 
     @Override
     protected void onSetSelectedIndex(int index) {
+        ensureItemLoaded(index);
         clearSelection();
         selectedIndices.add(index);
         updateSelection();
@@ -877,7 +991,7 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
     }
 
     private void clearSelection() {
-        int count = getCount();
+        int count = orderedItems.size();
         for (Integer i : selectedIndices) {
             if (i < count) {
                 orderedItems.get(i).selected = false;
@@ -888,6 +1002,7 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
 
     private void updateSelection() {
         for (Integer i : selectedIndices) {
+            ensureItemLoaded(i);
             orderedItems.get(i).selected = true;
         }
         onSelectionChange();
@@ -903,6 +1018,7 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
     protected void onScrollSelectionIntoView(JViewport viewport) {
         if (selectedIndices.isEmpty()) { return; }
 
+        ensureItemLoaded(selectedIndices.get(0));
         ItemInfo itemInfo = orderedItems.get(selectedIndices.get(0));
         itemInfo.scrollIntoView();
     }
