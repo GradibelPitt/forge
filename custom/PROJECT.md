@@ -10,6 +10,7 @@
 - [CARDS.md](CARDS.md)：现有及已批准卡牌清单。
 - [VERIFICATION.md](VERIFICATION.md)：测试、构建、部署与客户端验证状态。
 - [docs/DESIGN.md](docs/DESIGN.md)：当前有效设计决策。
+- [docs/HANDOFF.md](docs/HANDOFF.md)：卡牌制作、发布、Windows 启动链与历史产物交接简报。
 - [docs/archive/README.md](docs/archive/README.md)：历史设计、计划和旧文档索引。
 
 ## Purpose and source of truth
