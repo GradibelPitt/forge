@@ -7,7 +7,7 @@
 截至 2026-07-24：
 
 - Forge 源码分支：`GradibelPitt/forge` 的 `diy`
-- 源码提交：`c83d1a8800d6f6b6d5ea2d21ff093b0b23f44480`
+- Forge 功能基线（本交接文档提交前）：`c83d1a8800d6f6b6d5ea2d21ff093b0b23f44480`
 - Runtime 分支：`GradibelPitt/forge-diy-runtime` 的 `main`
 - Runtime 提交：`56d073acef4caf98e08924ce91187a8c50fb2135`
 - Runtime Build ID：`20260724-diy-content-sync`
@@ -15,7 +15,7 @@
 - 最近发布验证：DIY Python 全量测试 338/338；runtime `SCRIPT_TESTS=OK`；公开远端独立克隆验证通过
 - 当前 `moduleOverlays` 为空；运行包直接使用桌面聚合 JAR
 
-上述提交和数量是交接时的快照。后续发布必须以当前 Git HEAD、`release.json`、`BUILD-ID.txt` 和实际测试结果为准。
+上述功能基线、runtime 提交和数量是交接时的快照。后续发布必须以当前 Git HEAD、`release.json`、`BUILD-ID.txt` 和实际测试结果为准。
 
 ## 权威源与部署边界
 
