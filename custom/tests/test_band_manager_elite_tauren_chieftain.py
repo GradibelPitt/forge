@@ -21,7 +21,7 @@ SOURCE_ORACLE = (
     "When CARDNAME enters, discover a card in your sideboard that hasn't been chosen "
     "this way, then put it into your hand."
 )
-ZH_ORACLE = "当乐队经理牛头人酋长进战场时，发现一张在你备牌中且未以此法选择过的牌，将其置入你手中。"
+ZH_ORACLE = "当乐队经理牛头人酋长进战场时，发现一张在你备牌中且未以此法选择过的牌，然后将其置于你手中。"
 
 
 class BandManagerEliteTaurenChieftainContractTest(unittest.TestCase):

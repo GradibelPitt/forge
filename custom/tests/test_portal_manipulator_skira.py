@@ -60,7 +60,7 @@ class PortalManipulatorSkiraContractTest(unittest.TestCase):
         self.assertIn(f"Oracle:{ORACLE}", text)
         self.assertIn("73 M 传送门操控师斯奇拉 @Custom", EDITION.read_text(encoding="utf-8"))
         self.assertIn(
-            f"传送门操控师斯奇拉|传送门操控师斯奇拉|传奇生物～狼人／法术师|{ORACLE}",
+            f"传送门操控师斯奇拉|传送门操控师斯奇拉|传奇生物～灵俑／法术师|{ORACLE}",
             ZH_CN.read_text(encoding="utf-8").splitlines(),
         )
 

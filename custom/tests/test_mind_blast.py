@@ -41,7 +41,7 @@ class MindBlastContractTest(unittest.TestCase):
             self.assertAlmostEqual(1.37, image.width / image.height, delta=0.02)
 
     def test_zh_cn_type_line_exposes_the_shadow_spell_category(self):
-        expected = r"心灵震爆|心灵震爆|法术～暗影|对目标对手造成5点伤害。"
+        expected = r"心灵震爆|心灵震爆|法术～暗影|心灵震爆对目标对手造成5点伤害。"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
 
