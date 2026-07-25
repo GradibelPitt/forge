@@ -1,7 +1,9 @@
 package forge.itemmanager;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,11 +54,24 @@ public class SFilterUtil {
             if (invert) {
                 predicate = predicate.negate();
             }
-            return predicate;
+            return memoizeTextFilter(predicate, inName);
         } catch (Exception e) {
             e.printStackTrace();
             return x -> false;
         }
+    }
+
+    static Predicate<PaperCard> memoizeTextFilter(final Predicate<PaperCard> predicate,
+                                                  final boolean includesCardName) {
+        if (!includesCardName) {
+            final Map<CardRules, Boolean> resultsByRules = new IdentityHashMap<>();
+            return card -> resultsByRules.computeIfAbsent(card.getRules(), rules -> predicate.test(card));
+        }
+
+        final Map<CardRules, Map<Set<String>, Boolean>> resultsByRulesAndNames = new IdentityHashMap<>();
+        return card -> resultsByRulesAndNames
+                .computeIfAbsent(card.getRules(), rules -> new HashMap<>())
+                .computeIfAbsent(card.getAllSearchableNames(), names -> predicate.test(card));
     }
 
     private static List<String> tokenize(String text) {

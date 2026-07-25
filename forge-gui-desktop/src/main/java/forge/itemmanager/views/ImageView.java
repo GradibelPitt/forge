@@ -442,11 +442,37 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
             setScrollValue(scrollValueToRestore); //ensure scroll value restored
             onSelectionChange();
         }
+        else if (incrementalLoading) {
+            final List<Integer> loadedIndices = new ArrayList<>();
+            for (final T item : itemsToSelect) {
+                final int loadedIndex = getLoadedIndexOfItem(item);
+                if (loadedIndex >= 0) {
+                    loadedIndices.add(loadedIndex);
+                }
+            }
+            if (loadedIndices.isEmpty()) {
+                setSelectedIndex(0, false);
+                setScrollValue(0);
+            }
+            else {
+                onSetSelectedIndices(loadedIndices);
+                scrollSelectionIntoView();
+            }
+        }
         else {
             if (!setSelectedItems(itemsToSelect)) {
                 setSelectedIndex(backupIndexToSelect);
             }
         }
+    }
+
+    private int getLoadedIndexOfItem(final T item) {
+        for (final ItemInfo itemInfo : orderedItems) {
+            if (itemInfo.item == item) {
+                return itemInfo.index;
+            }
+        }
+        return -1;
     }
 
     @Override

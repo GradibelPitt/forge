@@ -285,7 +285,11 @@ public enum CDeckEditorUI implements ICDoc {
 
         childController.update();
 
-        catView.applyFilters();
+        // Constructed refreshes its catalog while selecting the active deck section.
+        // Reapplying the same filters here would scan and sort the full card pool a second time.
+        if (!(childController instanceof CEditorConstructed)) {
+            catView.applyFilters();
+        }
 
         SwingUtilities.invokeLater(catView::focus);
     }

@@ -40,6 +40,7 @@ import forge.toolbox.FComboBox;
 import forge.util.ItemPool;
 import forge.util.Localizer;
 
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -63,6 +64,12 @@ public final class CEditorConstructed extends CDeckEditor<Deck> {
 
     CardManager catalogManager;
     CardManager deckManager;
+    private ItemPool<PaperCard> activeCatalogSourcePool;
+    private ItemManagerConfig activeCatalogConfig;
+    private final ActionListener sectionChangeListener = actionEvent -> {
+        final FComboBox<?> cb = (FComboBox<?>) actionEvent.getSource();
+        setEditorMode((DeckSection) cb.getSelectedItem());
+    };
 
     //=========== Constructor
     /**
@@ -450,9 +457,9 @@ public final class CEditorConstructed extends CDeckEditor<Deck> {
      */
     @Override
     public void resetTables() {
-        ItemPool currentPool = this.getCatalogManager().getPool();
         DeckSection selectedSection = (DeckSection) this.getCbxSection().getSelectedItem();
-        if (selectedSection != DeckSection.Main || currentPool == null || !currentPool.equals(normalPool)) {
+        if (selectedSection != DeckSection.Main || sectionMode != DeckSection.Main
+                || activeCatalogSourcePool != normalPool) {
             // Constructed mode can use all cards, no limitations.
             this.getCbxSection().setSelectedItem(DeckSection.Main);
             this.setEditorMode(DeckSection.Main);
@@ -482,75 +489,68 @@ public final class CEditorConstructed extends CDeckEditor<Deck> {
         if (sectionMode == null) {
             return;
         }
-        ItemManager<PaperCard> catalogManager = this.getCatalogManager();
         ItemManager<PaperCard> deckManager = this.getDeckManager();
         switch(sectionMode) {
             case Main:
-                catalogManager.setup(ItemManagerConfig.CARD_CATALOG);
-                catalogManager.setPool(normalPool, true);
-                catalogManager.setAllowMultipleSelections(true);
+                setCatalogPool(ItemManagerConfig.CARD_CATALOG, normalPool, true);
                 deckManager.setPool(this.controller.getModel().getMain());
                 break;
             case Sideboard:
-                catalogManager.setup(ItemManagerConfig.CARD_CATALOG);
-                catalogManager.setPool(normalPool, true);
-                catalogManager.setAllowMultipleSelections(true);
+                setCatalogPool(ItemManagerConfig.CARD_CATALOG, normalPool, true);
                 deckManager.setPool(this.controller.getModel().getOrCreate(DeckSection.Sideboard));
                 break;
             case Avatar:
-                catalogManager.setup(ItemManagerConfig.AVATAR_POOL);
-                catalogManager.setPool(avatarPool, true);
-                catalogManager.setAllowMultipleSelections(false);
+                setCatalogPool(ItemManagerConfig.AVATAR_POOL, avatarPool, false);
                 deckManager.setPool(this.controller.getModel().getOrCreate(DeckSection.Avatar));
                 break;
             case Planes:
-                catalogManager.setup(ItemManagerConfig.PLANAR_POOL);
-                catalogManager.setPool(planePool, true);
-                catalogManager.setAllowMultipleSelections(true);
+                setCatalogPool(ItemManagerConfig.PLANAR_POOL, planePool, true);
                 deckManager.setPool(this.controller.getModel().getOrCreate(DeckSection.Planes));
                 break;
             case Schemes:
-                catalogManager.setup(ItemManagerConfig.SCHEME_POOL);
-                catalogManager.setPool(schemePool, true);
-                catalogManager.setAllowMultipleSelections(true);
+                setCatalogPool(ItemManagerConfig.SCHEME_POOL, schemePool, true);
                 deckManager.setPool(this.controller.getModel().getOrCreate(DeckSection.Schemes));
                 break;
             case Commander:
                 if(gameType == GameType.Constructed)
                     break;
-                this.getCatalogManager().setup(ItemManagerConfig.COMMANDER_POOL);
-                this.getCatalogManager().setPool(commanderPool, true);
-                this.getCatalogManager().setAllowMultipleSelections(false);
+                setCatalogPool(ItemManagerConfig.COMMANDER_POOL, commanderPool, false);
                 this.getDeckManager().setPool(this.controller.getModel().getOrCreate(DeckSection.Commander));
                 break;
             case Conspiracy:
-                catalogManager.setup(ItemManagerConfig.CONSPIRACY_DECKS);
-                catalogManager.setPool(conspiracyPool, true);
-                catalogManager.setAllowMultipleSelections(true);
+                setCatalogPool(ItemManagerConfig.CONSPIRACY_DECKS, conspiracyPool, true);
                 deckManager.setPool(this.controller.getModel().getOrCreate(DeckSection.Conspiracy));
                 break;
             case Dungeon:
-                catalogManager.setup(ItemManagerConfig.DUNGEON_DECKS);
-                catalogManager.setPool(dungeonPool, true);
-                catalogManager.setAllowMultipleSelections(true);
+                setCatalogPool(ItemManagerConfig.DUNGEON_DECKS, dungeonPool, true);
                 deckManager.setPool(this.controller.getModel().getOrCreate(DeckSection.Dungeon));
                 break;
             case Attractions:
-                catalogManager.setup(ItemManagerConfig.ATTRACTION_POOL);
-                catalogManager.setPool(attractionPool, true);
-                catalogManager.setAllowMultipleSelections(true);
+                setCatalogPool(ItemManagerConfig.ATTRACTION_POOL, attractionPool, true);
                 deckManager.setPool(this.controller.getModel().getOrCreate(DeckSection.Attractions));
                 break;
             case Contraptions:
-                catalogManager.setup(ItemManagerConfig.CONTRAPTION_POOL);
-                catalogManager.setPool(contraptionPool, true);
-                catalogManager.setAllowMultipleSelections(true);
+                setCatalogPool(ItemManagerConfig.CONTRAPTION_POOL, contraptionPool, true);
                 deckManager.setPool((this.controller.getModel().getOrCreate(DeckSection.Contraptions)));
                 break;
         }
 
         this.sectionMode = sectionMode;
         this.controller.updateCaptions();
+    }
+
+    private void setCatalogPool(final ItemManagerConfig config, final ItemPool<PaperCard> sourcePool,
+                                final boolean allowMultipleSelections) {
+        final ItemManager<PaperCard> manager = this.getCatalogManager();
+        if (activeCatalogConfig != config) {
+            manager.setup(config);
+        }
+        if (activeCatalogConfig != config || activeCatalogSourcePool != sourcePool) {
+            manager.setPool(sourcePool, true);
+            activeCatalogConfig = config;
+            activeCatalogSourcePool = sourcePool;
+        }
+        manager.setAllowMultipleSelections(allowMultipleSelections);
     }
 
     public static void addBasicLands(ACEditorBase<PaperCard, Deck> editor) {
@@ -574,18 +574,16 @@ public final class CEditorConstructed extends CDeckEditor<Deck> {
 
         resetUI();
 
-        this.getCbxSection().removeAllItems();
+        final FComboBox cbxSection = this.getCbxSection();
+        cbxSection.removeActionListener(sectionChangeListener);
+        cbxSection.removeAllItems();
         for (DeckSection section : allSections) {
-            this.getCbxSection().addItem(section);
+            cbxSection.addItem(section);
         }
-        this.getCbxSection().addActionListener(actionEvent -> {
-            FComboBox cb = (FComboBox)actionEvent.getSource();
-            DeckSection ds = (DeckSection)cb.getSelectedItem();
-            setEditorMode(ds);
-        });
-        this.getCbxSection().setVisible(true);
+        cbxSection.setVisible(true);
 
         this.controller.refreshModel();
+        cbxSection.addActionListener(sectionChangeListener);
     }
 
     /* (non-Javadoc)
