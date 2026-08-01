@@ -1,5 +1,5 @@
 Name:米斯塔·维斯塔
-ManaCost:4 R G
+ManaCost:4 G G
 Types:Legendary Creature Troll Monk
 PT:5/5
 K:Vigilance

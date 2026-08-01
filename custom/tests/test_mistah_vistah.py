@@ -31,7 +31,7 @@ class MistahVistahContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:米斯塔·维斯塔", text)
-        self.assertIn("ManaCost:4 R G", text)
+        self.assertIn("ManaCost:4 G G", text)
         self.assertIn("Types:Legendary Creature Troll Monk", text)
         self.assertIn("PT:5/5", text)
         self.assertIn("K:Vigilance", text)
