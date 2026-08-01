@@ -78,3 +78,4 @@ Type=Custom_Set
 79 M 面具变装大师 @Custom
 80 M 悠闲的曲奇 @Custom
 81 R 占领冷齿矿洞 @Custom
+82 M 饥饿食客哈姆 @Custom
