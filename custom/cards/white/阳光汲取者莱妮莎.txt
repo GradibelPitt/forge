@@ -1,0 +1,11 @@
+Name:阳光汲取者莱妮莎
+ManaCost:2 W W
+Types:Legendary Creature Troll Monk
+PT:2/6
+K:Flying
+T:Mode$ SpellCast | ValidCard$ Instant.cmcLE2,Sorcery.cmcLE2 | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigCopy | TriggerDescription$ Whenever you cast an instant or sorcery spell with mana value 2 or less, copy that spell. You may choose new targets for the copy.
+SVar:TrigCopy:DB$ CopySpellAbility | Defined$ TriggeredSpellAbility | MayChooseTarget$ True
+A:AB$ Effect | Cost$ U ExileFromGrave<3/Card/cards> | StaticAbilities$ STPlay | Duration$ EndOfTurn | SpellDescription$ This turn, you may cast sorcery spells as though they had flash.
+SVar:STPlay:Mode$ CastWithFlash | ValidCard$ Sorcery | ValidSA$ Spell | Caster$ You | Description$ This turn, you may cast sorcery spells as though they had flash.
+DeckHints:Type$Instant|Sorcery
+Oracle:Flying\nWhenever you cast an instant or sorcery spell with mana value 2 or less, copy that spell. You may choose new targets for the copy.\n{U}, Exile three cards from your graveyard: This turn, you may cast sorcery spells as though they had flash.
