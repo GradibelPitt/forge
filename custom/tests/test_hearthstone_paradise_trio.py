@@ -63,8 +63,19 @@ class HearthstoneParadiseTrioContractTest(unittest.TestCase):
         self.assertIn(
             "SVar:TrigDiscover:DB$ CardDiscover | Defined$ You | "
             "Source$ CardDatabase | ValidCards$ Planeswalker.nonBlue | "
-            "OptionCount$ 3 | Destination$ Hand",
+            "OptionCount$ 3 | Destination$ Hand | RememberChosen$ True | "
+            "SubAbility$ GrantHarmony",
             text,
+        )
+        self.assertIn(
+            "SVar:GrantHarmony:DB$ Pump | Defined$ Remembered | "
+            "PumpZone$ Hand | KW$ Harmony | Duration$ Perpetual | "
+            "SubAbility$ Cleanup",
+            text,
+        )
+        self.assertIn("SVar:Cleanup:DB$ Cleanup | ClearRemembered$ True", text)
+        self.assertIn(
+            "The card discovered this way perpetually gains harmony.", text
         )
         copy_line = next(
             line for line in text.splitlines() if line.startswith("A:AB$ CopySpellAbility")
@@ -121,7 +132,10 @@ class HearthstoneParadiseTrioContractTest(unittest.TestCase):
 
         localization = ZH_CN.read_text(encoding="utf-8").splitlines()
         self.assertTrue(any(line.startswith("惬意的沃金|惬意的沃金|") for line in localization))
-        self.assertTrue(any(line.startswith("面具变装大师|面具变装大师|") for line in localization))
+        maestra_line = next(
+            line for line in localization if line.startswith("面具变装大师|面具变装大师|")
+        )
+        self.assertIn("以此法发现的牌永久具有调和。", maestra_line)
         cookie_line = next(line for line in localization if line.startswith("悠闲的曲奇|悠闲的曲奇|"))
         self.assertNotIn("???", cookie_line)
         self.assertIn("{G}，牺牲一个生物", cookie_line)
