@@ -114,14 +114,20 @@ class HearthstoneParadiseTrioContractTest(unittest.TestCase):
         self.assertIn("SVar:DBCleanup:DB$ Cleanup | ClearNamedCard$ True", text)
         self.assertIn("SVar:X:TriggeredCard$CardManaCost/Plus.1", text)
         self.assertIn(
-            "A:AB$ Pump | Cost$ G Sac<1/Creature> | Defined$ Self | "
-            "NumAtt$ +Y | NumDef$ +Y",
+            "A:AB$ Pump | Cost$ G | ValidTgts$ Creature.ThisTurnEntered | "
+            "TgtPrompt$ Select target creature that entered this turn | "
+            "NumAtt$ +Y | NumDef$ +Y | KW$ Trample | ActivationLimit$ 1 | "
+            "SubAbility$ DBPumpCookie",
             text,
         )
         self.assertIn(
-            "SVar:Y:Count$ThisTurnEntered_Battlefield_Creature.!token",
+            "SVar:DBPumpCookie:DB$ Pump | Defined$ Self | NumAtt$ +Y | "
+            "NumDef$ +Y | KW$ Trample",
             text,
         )
+        self.assertIn("SVar:Y:Targeted$CardManaCost", text)
+        self.assertNotIn("Sac<1/Creature>", text)
+        self.assertNotIn("Count$ThisTurnEntered_Battlefield_Creature.!token", text)
         self.assertNotIn("???", text)
 
     def test_registration_localization_and_art(self):
@@ -138,8 +144,11 @@ class HearthstoneParadiseTrioContractTest(unittest.TestCase):
         self.assertIn("以此法发现的牌永久具有调和。", maestra_line)
         cookie_line = next(line for line in localization if line.startswith("悠闲的曲奇|悠闲的曲奇|"))
         self.assertNotIn("???", cookie_line)
-        self.assertIn("{G}，牺牲一个生物", cookie_line)
-        self.assertIn("本回合进战场的非衍生生物总数", cookie_line)
+        self.assertIn("{G}：悠闲的曲奇和目标本回合进场的生物", cookie_line)
+        self.assertIn("得+X/+X和践踏直到回合结束", cookie_line)
+        self.assertIn("X等同于目标生物之总法术力费用", cookie_line)
+        self.assertIn("此异能每回合只能起动一次", cookie_line)
+        self.assertNotIn("牺牲", cookie_line)
 
         for backup, crop in ART_CASES:
             self.assertTrue(backup.is_file())
