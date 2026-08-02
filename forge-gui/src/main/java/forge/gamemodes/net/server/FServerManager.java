@@ -49,6 +49,9 @@ import io.netty.handler.timeout.IdleStateHandler;
 import org.jupnp.UpnpService;
 import org.jupnp.UpnpServiceImpl;
 import org.jupnp.model.meta.Device;
+import org.jupnp.model.meta.Service;
+import org.jupnp.model.types.UDADeviceType;
+import org.jupnp.model.types.UDAServiceType;
 import org.jupnp.registry.Registry;
 import org.jupnp.support.igd.PortMappingListener;
 import org.jupnp.support.model.PortMapping;
@@ -729,6 +732,12 @@ public final class FServerManager implements IHasForgeLog {
         }
 
         @Override
+        protected Service<?, ?> discoverConnectionService(final Device<?, ?, ?> device) {
+            final Service<?, ?> igdV1Service = super.discoverConnectionService(device);
+            return igdV1Service != null ? igdV1Service : discoverIgdV2ConnectionService(device);
+        }
+
+        @Override
         public synchronized void deviceAdded(Registry registry, Device device) {
             super.deviceAdded(registry, device);
             if (!completed && !activePortMappings.isEmpty()) {
@@ -749,6 +758,28 @@ public final class FServerManager implements IHasForgeLog {
 
         boolean isCompleted() { return completed; }
         void setCompleted() { completed = true; }
+    }
+
+    static Service<?, ?> discoverIgdV2ConnectionService(final Device<?, ?, ?> device) {
+        if (!new UDADeviceType("InternetGatewayDevice", 2).equals(device.getType())) {
+            return null;
+        }
+
+        for (final Device<?, ?, ?> connectionDevice
+                : device.findDevices(new UDADeviceType("WANConnectionDevice", 2))) {
+            final Service<?, ?> ipService = connectionDevice.findService(
+                    new UDAServiceType("WANIPConnection", 2));
+            if (ipService != null) {
+                return ipService;
+            }
+
+            final Service<?, ?> pppService = connectionDevice.findService(
+                    new UDAServiceType("WANPPPConnection", 2));
+            if (pppService != null) {
+                return pppService;
+            }
+        }
+        return null;
     }
 
     // --- Reconnection helper methods ---
