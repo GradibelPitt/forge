@@ -1,5 +1,5 @@
 Name:面具变装大师
-ManaCost:1 U U
+ManaCost:1 U
 Types:Legendary Creature Shapeshifter
 PT:3/2
 K:Changeling

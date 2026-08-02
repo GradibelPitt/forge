@@ -56,7 +56,7 @@ class HearthstoneParadiseTrioContractTest(unittest.TestCase):
         text = MAESTRA.read_text(encoding="utf-8")
 
         self.assertIn("Name:面具变装大师", text)
-        self.assertIn("ManaCost:1 U U", text)
+        self.assertIn("ManaCost:1 U", text)
         self.assertIn("Types:Legendary Creature Shapeshifter", text)
         self.assertIn("PT:3/2", text)
         self.assertIn("K:Changeling", text)
@@ -73,6 +73,8 @@ class HearthstoneParadiseTrioContractTest(unittest.TestCase):
             "SubAbility$ Cleanup",
             text,
         )
+        self.assertNotIn("HarmonyReduction$", text)
+        self.assertNotIn("ReduceCost", text)
         self.assertIn("SVar:Cleanup:DB$ Cleanup | ClearRemembered$ True", text)
         self.assertIn(
             "The card discovered this way perpetually gains harmony.", text
