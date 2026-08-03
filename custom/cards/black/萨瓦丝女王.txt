@@ -1,0 +1,11 @@
+Name:萨瓦丝女王
+ManaCost:B B
+Types:Legendary Creature Insect
+PT:2/2
+K:Flying
+K:Madness:0
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigReturn | TriggerDescription$ When CARDNAME enters, unless you pay {1}{B}, return it to your hand and it perpetually gets +2/+2.
+SVar:TrigReturn:DB$ ChangeZone | Defined$ Self | Origin$ Battlefield | Destination$ Hand | UnlessCost$ 1 B | UnlessPayer$ You | UnlessResolveSubs$ WhenNotPaid | RememberChanged$ True | SubAbility$ DBPerpetualBuff
+SVar:DBPerpetualBuff:DB$ Pump | Defined$ Remembered | PumpZone$ Hand | NumAtt$ +2 | NumDef$ +2 | Duration$ Perpetual | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+Oracle:Flying\nMadness {0}\nWhen CARDNAME enters, unless you pay {1}{B}, return it to your hand and it perpetually gets +2/+2.
