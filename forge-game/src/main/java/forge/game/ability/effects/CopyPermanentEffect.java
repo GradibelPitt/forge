@@ -21,6 +21,7 @@ import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
 import forge.game.card.CardCollectionView;
 import forge.game.card.CardFactory;
+import forge.game.card.GameRuleCard;
 import forge.game.card.CardLists;
 import forge.game.card.CardPredicates;
 import forge.game.card.CardZoneTable;
@@ -149,6 +150,7 @@ public class CopyPermanentEffect extends TokenEffectBase {
 
             if (sa.hasParam("ValidSupportedCopy")) {
                 Iterable<PaperCard> cards = StaticData.instance().getCommonCards().getUniqueCards();
+                cards = IterableUtil.filter(cards, GameRuleCard::canMaterialize);
                 String valid = sa.getParam("ValidSupportedCopy");
                 if (valid.contains("X")) {
                     valid = TextUtil.fastReplace(valid,
@@ -190,7 +192,7 @@ public class CopyPermanentEffect extends TokenEffectBase {
                     }
                 }
                 PaperCard pc = StaticData.instance().getCommonCards().getUniqueByName(name);
-                if (pc != null) {
+                if (GameRuleCard.canMaterialize(pc)) {
                     tgtCards.add(Card.fromPaperCard(pc, controller));
                 }
             } else if (sa.hasParam("Choices")) {
@@ -236,6 +238,9 @@ public class CopyPermanentEffect extends TokenEffectBase {
             }
 
             for (final Card c : tgtCards) {
+                if (GameRuleCard.isGameRule(c)) {
+                    continue;
+                }
                 // 111.5. Similarly, if an effect would create a token that is a copy of an instant or sorcery card, no token is created.
                 // instant and sorcery can't enter the battlefield
                 // and it can't be replaced by other tokens

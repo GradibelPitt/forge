@@ -69,6 +69,15 @@
 - **Tests:** `tests/test_hearthstone_card.py` 及历史计划所列 Forge Core 测试。
 - **Edge cases:** 这是构筑规则，不等同于游戏开始时的区域或生命设置。
 
+## GameRule
+
+- **Status:** 已实现；当前由“炉石传说”使用。
+- **Player-facing behavior:** 这类牌只承载整局规则，不是可获得或使用的普通牌。引擎在任何起手牌或调度手牌产生前将它从牌库放逐；若异常路径仍把它留在牌库顶或牌库底，抓牌会先将其放逐并继续抓下一张普通牌。
+- **DSL:** `K:GameRule`。
+- **Java implementation:** `GameAction` 负责调度前放逐并禁止其离开放逐区；`Player.drawCards` 提供顶部／底部抽牌兜底；`GameRuleCard` 统一识别规则牌；`CardDiscoverEffect`、`MakeCardEffect`、`ReplaceCardsEffect`、`DraftEffect`、`PlayEffect`、`CopyPermanentEffect` 与 `CloneEffect` 从发现、化生／制造、随机替换、选牌、直接打出及复制入口排除规则牌。
+- **Tests:** `GameRuleCardTest` 覆盖调度前放逐、顶部／底部抽牌兜底与区域锁；`DeckPolicyKeywordTest` 覆盖关键词解析；`CardDiscoverEffectTest`、`MakeCardEffectTest` 与 `ReplaceCardsEffectTest` 覆盖三类生成入口；`tests/test_hearthstone_card.py` 固定“炉石传说”的脚本契约。
+- **Edge cases:** 构筑检查仍会把该牌计入主牌并应用 `DeckMinimum`／`DeckLimit`；进入对局后它只能位于放逐区，不能成为发现选项、化生结果、制造结果、批量替换结果、选牌结果、直接打出结果或复制来源。其 `NewGame` 触发必须以 `TriggerZones$ Exile` 运行。
+
 ## Fatigue
 
 - **Status:** 已实现；用于炉石传说徽记，且可由未来卡牌通过独立 API 复用。
@@ -84,13 +93,13 @@
 - **DSL design:** 独立 AbilityFactory API `DB$ CardDiscover`，配合 `Defined$`、`Source$ CardDatabase|Library|Sideboard`、`SourceController$`、`ValidCards$`、`OptionCount$` 和 `Destination$`。`RememberChosen$ True` 只在选择完成且牌实际移入目标区域后记录所选牌，不记录仅展示而未选择的选项；配合 `ValidCards$ Card+doesNotShareNameWith Remembered` 可在后续发现中排除所有与真正选过的牌同名的候选。省略 `RememberChosen$ True` 时不会改变既有记忆状态。最终参数必须在实现测试中验证，不能因本段设计而跳过解析验证。
 - **Java implementation:** `forge-game/.../ability/ApiType.java` 注册，`ability/effects/CardDiscoverEffect.java` 实现；不修改 Forge 已有 MTG `DiscoverEffect`。
 - **Tests:** `forge-game/src/test/java/forge/game/ability/effects/CardDiscoverEffectTest.java`；`tests/test_airborne_bandit.py`；`tests/test_band_manager_elite_tauren_chieftain.py`。
-- **Edge cases:** 条件必须复用 `ValidCards$`/`Card.isValid`；同名不同版本不重复；不足三个显示实际数量；数据库来源创建新牌，牌库与备牌来源移动实际对象且不洗牌。`doesNotShareNameWith Remembered` 按已选牌名排除同名候选，但不能把只出现过而未选择的发现选项之牌名加入排除集合。
+- **Edge cases:** 条件必须复用 `ValidCards$`/`Card.isValid`；同名不同版本不重复；不足三个显示实际数量；数据库来源创建新牌，牌库与备牌来源移动实际对象且不洗牌。`GameRule` 牌在数据库和区域候选层都会被排除。`doesNotShareNameWith Remembered` 按已选牌名排除同名候选，但不能把只出现过而未选择的发现选项之牌名加入排除集合。
 
 ## ReplaceCards（批量数据库牌池替换）
 
 - **Status:** 已实现为引擎级 Ability API，供“弃暗投明”等隐藏区批量替换效果使用。
 - **DSL:** `DB$ ReplaceCards`，配合 `Defined$`、`Zones$`、`ValidCards$`、`ReplacementValid$` 与必须显式写为 `True` 的 `MatchManaValue$ True`；当前 `Zones$` 只接受 `Hand`／`Library`。缺失、`False` 或其他区域会在任何区域或名称记录副作用前拒绝。只有需要记录替换名称的其他效果才使用可选的 `RememberNames$ True`。
-- **Performance:** 复用 `CardDiscoverCandidateFilter` 的轻量 `PaperCard` 过滤；静态候选条件按数据库实例、数据库大小和过滤表达式缓存为法术力值桶。首次建立只遍历一次数据库，不为未选候选创建游戏内 `Card`；同一数据库上的后续结算直接复用缓存。每个玩家区域只做一次线性计划扫描并记录匹配牌的稳定位置，随后每张牌只做对应法术力值桶的常数时间随机索引；没有逐牌区域 `indexOf`、额外位置定位扫描或重复 CardDb 扫描。有序手牌只为排除“同 ID 不同对象”做身份成员校验。这里不宣称整个执行严格为 O(k)：Forge 有序区底层列表的标准移除／插入本身仍可能是 O(n)。
+- **Performance:** 复用 `CardDiscoverCandidateFilter` 的轻量 `PaperCard` 过滤，并在建立候选桶时排除 `GameRule`；静态候选条件按数据库实例、数据库大小和过滤表达式缓存为法术力值桶。首次建立只遍历一次数据库，不为未选候选创建游戏内 `Card`；同一数据库上的后续结算直接复用缓存。每个玩家区域只做一次线性计划扫描并记录匹配牌的稳定位置，随后每张牌只做对应法术力值桶的常数时间随机索引；没有逐牌区域 `indexOf`、额外位置定位扫描或重复 CardDb 扫描。有序手牌只为排除“同 ID 不同对象”做身份成员校验。这里不宣称整个执行严格为 O(k)：Forge 有序区底层列表的标准移除／插入本身仍可能是 O(n)。
 - **Global grants:** “弃暗投明”在替换完成后使用 `GrantSpellRule` 向施法者注册玩家级永久规则；不创建指挥区徽记，也不依赖任何牌继续存在。`RememberNames$ True` 与 `Card.sharesNameWith NamedCards` 仍作为引擎能力保留给其他需要按替换名称追踪的效果。
 - **Java implementation:** `ApiType.ReplaceCards`、`ability/effects/ReplaceCardsEffect.java`、`CardDiscoverCandidateFilter.java`、`Card.java` 与 `CardProperty.java`。
 - **Tests:** `ReplaceCardsEffectTest` 验证缓存只扫描一次、按法术力值分桶和牌名去重；`CardDiscoverEffectTest` 验证颜色条件可在轻量层精确过滤；`tests/test_renounce_darkness.py` 固定卡牌脚本与玩家规则契约。

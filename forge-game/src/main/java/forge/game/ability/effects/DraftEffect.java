@@ -7,6 +7,7 @@ import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
 import forge.game.card.CardCollection;
+import forge.game.card.GameRuleCard;
 import forge.game.card.CardZoneTable;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
@@ -54,9 +55,16 @@ public class DraftEffect extends SpellAbilityEffect {
                 if (pc.isUnRebalanced()) {
                     pc = StaticData.instance().getCommonCards().getUniqueByName("A-" + name);
                 }
+                if (!GameRuleCard.canMaterialize(pc)) {
+                    continue;
+                }
 
                 Card cardOption = Card.fromPaperCard(pc, player);
                 draftOptions.add(cardOption);
+            }
+
+            if (draftOptions.isEmpty()) {
+                continue;
             }
 
             Card chosenCard = player.getController().chooseSingleCardForZoneChange(ZoneType.None, new ArrayList<ZoneType>(), sa, new CardCollection(draftOptions), null, Localizer.getInstance().getMessage("lblChooseCardDraft"), false, player);

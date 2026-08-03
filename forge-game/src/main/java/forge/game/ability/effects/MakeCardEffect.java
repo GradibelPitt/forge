@@ -176,6 +176,9 @@ public class MakeCardEffect extends SpellAbilityEffect {
                             String editionCode = sa.getHostCard() != null ? sa.getHostCard().getSetCode() : CardEdition.UNKNOWN_CODE;
                             pc = StaticData.instance().getCommonCards().getCard(name, editionCode);
                         }
+                        if (!canMaterialize(pc)) {
+                            break;
+                        }
                         Card card = Card.fromPaperCard(pc, player);
 
                         if (sa.hasParam("TokenCard")) {
@@ -275,6 +278,10 @@ public class MakeCardEffect extends SpellAbilityEffect {
         return names;
     }
 
+    static boolean canMaterialize(final PaperCard paperCard) {
+        return GameRuleCard.canMaterialize(paperCard);
+    }
+
     static List<String> getRandomNonlandStartingDeckNames(final CardPool startingDeck,
             final int maximum, final Random random) {
         final Map<String, Integer> copiesByName = new LinkedHashMap<>();
@@ -314,8 +321,13 @@ public class MakeCardEffect extends SpellAbilityEffect {
             // Cardnames that include "," must use ";" instead (i.e. Tovolar; Dire Overlord)
             s = s.replace(";", ",");
             ICardFace face = StaticData.instance().getCommonCards().getFaceByName(s);
-            if (face != null)
-                parsedFaces.add(face);
+            if (face != null) {
+                final PaperCard paperCard = StaticData.instance().getCommonCards()
+                        .getUniqueByName(face.getName());
+                if (paperCard == null || canMaterialize(paperCard)) {
+                    parsedFaces.add(face);
+                }
+            }
             else
                 throw new RuntimeException("MakeCardEffect didn't find card face by name: " + s);
         }

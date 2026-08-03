@@ -11,6 +11,7 @@ import forge.game.event.GameEventCardStatsChanged;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
+import forge.item.PaperCard;
 import forge.util.IterableUtil;
 import forge.util.Localizer;
 import forge.util.collect.FCollection;
@@ -87,6 +88,7 @@ public class CloneEffect extends SpellAbilityEffect {
             }
 
             choices = CardLists.getValidCards(choices, sa.getParam("Choices"), activator, host, sa);
+            choices.removeIf(GameRuleCard::isGameRule);
             boolean choiceOpt = sa.hasParam("ChoiceOptional");
 
             String title = sa.hasParam("ChoiceTitle") ? sa.getParam("ChoiceTitle") :
@@ -101,9 +103,12 @@ public class CloneEffect extends SpellAbilityEffect {
             cardToCopy = sa.getTargetCard();
         } else if (sa.hasParam("CopyFromChosenName")) {
             String name = host.getNamedCard();
-            cardToCopy = Card.fromPaperCard(StaticData.instance().getCommonCards().getUniqueByName(name), activator);
+            final PaperCard paperCard = StaticData.instance().getCommonCards().getUniqueByName(name);
+            if (GameRuleCard.canMaterialize(paperCard)) {
+                cardToCopy = Card.fromPaperCard(paperCard, activator);
+            }
         }
-        if (cardToCopy == null) {
+        if (cardToCopy == null || GameRuleCard.isGameRule(cardToCopy)) {
             return;
         }
 

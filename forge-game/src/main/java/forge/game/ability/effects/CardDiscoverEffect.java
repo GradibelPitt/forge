@@ -9,6 +9,7 @@ import forge.game.card.Card;
 import forge.game.card.CardCollection;
 import forge.game.card.CardLists;
 import forge.game.card.CardZoneTable;
+import forge.game.card.GameRuleCard;
 import forge.game.player.Player;
 import forge.game.player.PlayerCollection;
 import forge.game.spellability.SpellAbility;
@@ -191,7 +192,8 @@ public class CardDiscoverEffect extends SpellAbilityEffect {
                 : new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         int eligibleCount = 0;
         for (final PaperCard paperCard : paperCards) {
-            if (!filter.matches(paperCard) || paperCard.getName() == null
+            if (!GameRuleCard.canMaterialize(paperCard)
+                    || !filter.matches(paperCard) || paperCard.getName() == null
                     || (seenNames != null && !seenNames.add(paperCard.getName()))) {
                 continue;
             }
@@ -216,7 +218,8 @@ public class CardDiscoverEffect extends SpellAbilityEffect {
         }
         final Map<String, Card> byName = new LinkedHashMap<>();
         for (final Card card : candidates) {
-            if (card != null && card.getName() != null) {
+            if (card != null && !GameRuleCard.isGameRule(card)
+                    && card.getName() != null) {
                 byName.putIfAbsent(card.getName().toLowerCase(Locale.ROOT), card);
             }
         }

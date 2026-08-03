@@ -34,10 +34,11 @@
 - `forge-core/src/main/java/forge/deck/DeckFormat.java`：构筑合法性和 `IgnoreDeckLimits`。
 - `forge-game/src/main/java/forge/game/keyword/Keyword.java`：关键词注册。
 - `forge-game/src/main/java/forge/game/keyword/Boarding.java`：登船阈值、受伤角色统计与即时入场。
-- `forge-game/src/main/java/forge/game/GameAction.java`：伤害批次及区域移动与 Boarding 的集成点。
+- `forge-game/src/main/java/forge/game/GameAction.java`：伤害批次及区域移动与 Boarding 的集成点；也在任何起手／调度手牌产生前放逐 `GameRule` 牌，并在通用换区路径阻止这类牌离开放逐区。
 - `forge-game/src/main/java/forge/game/combat/CombatUtil.java`：Superreach 阻挡规则。
 - `forge-game/src/main/java/forge/game/ability/ApiType.java` 与 `ability/effects/CardDiscoverEffect.java`：炉石式发现 AbilityFactory API。
 - `forge-game/src/main/java/forge/game/ability/effects/StealSameNameEffect.java`：按战场、手牌、牌库、坟墓场的固定顺序取得目标对手的第一张同名牌，不创建玩家选择窗口；战场对象更改操控者，其他对象以原实体转移到施放者手中并更改拥有者。
+- `forge-game/src/main/java/forge/game/card/GameRuleCard.java`、`player/Player.java` 及 `ability/effects` 下的发现、制造、替换、选牌、直接打出与复制实现：统一保护只用于建立对局规则的牌；抽牌兜底会跳过并放逐，所有数据库生成和复制入口都不会物化或复制它们。
 - `forge-game/src/main/java/forge/game/ability/effects/MakeCardEffect.java`：霍格的 `StartingDeckLegendaryPermanents` 专用来源；直接遍历注册主牌 `CardPool` 的计数条目和 `PaperCard` 类型元数据，不扫描全局卡库，也不物化临时候选 `Card`。
 - 同一文件的 `RandomOpponentStartingDeckNonlands` 来源用于裂魂者阿扎莉娜：读取注册对手的主牌 `CardPool`，排除地牌，随机优先不同牌名后再从剩余副本补足指定数量。
 - `forge-game/src/main/java/forge/game/player/Player.java` 与 `ability/effects/TakeFatigueEffect.java`：每位玩家的单调疲劳计数、空牌库抽牌替代路径和可复用 `TakeFatigue` API。

@@ -6,6 +6,7 @@ import forge.game.ability.AbilityKey;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
 import forge.game.card.CardPredicates;
+import forge.game.card.GameRuleCard;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.Zone;
@@ -311,7 +312,8 @@ public class ReplaceCardsEffect extends SpellAbilityEffect {
                 final CardDiscoverCandidateFilter filter) {
             final Map<Integer, List<PaperCard>> mutable = new LinkedHashMap<>();
             for (final PaperCard paperCard : database) {
-                if (filter.matches(paperCard)) {
+                if (GameRuleCard.canMaterialize(paperCard)
+                        && filter.matches(paperCard)) {
                     mutable.computeIfAbsent(
                             paperCard.getRules().getManaCost().getCMC(),
                             ignored -> new ArrayList<>()).add(paperCard);

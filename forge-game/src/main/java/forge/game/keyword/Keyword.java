@@ -97,6 +97,7 @@ public enum Keyword {
     FUSE("Fuse", SimpleKeyword.class, true, "You may cast one or both halves of this card from your hand."),
     GIFT("Gift", SimpleKeyword.class, true, "You may promise an opponent a gift as you cast this spell. If you do, when it enters, they %s."),
     GRAFT("Graft", KeywordWithAmount.class, false, "This permanent enters with {%d:+1/+1 counter} on it. Whenever another creature enters, you may move a +1/+1 counter from this permanent onto it."),
+    GAME_RULE("GameRule", SimpleKeyword.class, true, "Before opening hands are drawn, exile this card. Card effects can't create or copy it, or move it out of exile."),
     GRAVESTORM("Gravestorm", SimpleKeyword.class, false, "When you cast this spell, copy it for each permanent that was put into a graveyard from the battlefield this turn. If the spell has any targets, you may choose new targets for any of the copies."),
     HARMONIZE("Harmonize", KeywordWithCost.class, false, "You may cast this card from your graveyard for its harmonize cost. You may tap a creature you control to reduce that cost by {X}, where X is its power. Then exile this spell."),
     HARMONY("Harmony", HarmonyKeyword.class, true, "你可以用任意颜色的法术力支付此咒语的法术力费用"),
