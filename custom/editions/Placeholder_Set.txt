@@ -82,3 +82,4 @@ Type=Custom_Set
 83 M 扣子 @Custom
 84 M 阳光汲取者莱妮莎 @Custom
 85 M 萨瓦丝女王 @Custom
+86 R 咆哮魔 @Custom

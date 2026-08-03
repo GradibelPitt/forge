@@ -1,0 +1,11 @@
+Name:咆哮魔
+ManaCost:1 B B
+Types:Creature Demon
+PT:3/6
+R:Event$ Moved | ValidCard$ Card.Self | Destination$ Battlefield | ReplaceWith$ DBChooseOpp | Layer$ Control | Description$ 不忠（此生物在一位由你选择的对手操控下进战场。）
+SVar:DBChooseOpp:DB$ ChoosePlayer | Defined$ You | Choices$ Player.Opponent | ChoiceTitle$ 选择一位接收CARDNAME的对手 | AILogic$ Curse | SubAbility$ MoveToPlay
+SVar:MoveToPlay:DB$ ChangeZone | Hidden$ True | Origin$ All | Destination$ Battlefield | Defined$ ReplacedCard | GainControl$ ChosenPlayer | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearChosenPlayer$ True
+T:Mode$ DamageDoneOnce | ValidTarget$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigDiscard | TriggerDescription$ 每当CARDNAME受到伤害时，你随机弃一张牌。
+SVar:TrigDiscard:DB$ Discard | Defined$ You | NumCards$ 1 | Mode$ Random
+Oracle:不忠（此生物在一位由你选择的对手操控下进战场。）\n每当咆哮魔受到伤害时，你随机弃一张牌。
