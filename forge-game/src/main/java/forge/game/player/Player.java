@@ -1222,10 +1222,21 @@ public class Player extends GameEntity implements Comparable<Player> {
             }
         }
 
+        final boolean drawFromBottom = hasKeyword(
+                "You draw cards from the bottom of your library instead of the top of your library.");
+        while (!library.isEmpty()) {
+            final Card next = drawFromBottom
+                    ? library.get(library.size() - 1) : library.get(0);
+            if (!GameRuleCard.isGameRule(next)) {
+                break;
+            }
+            game.getAction().moveTo(ZoneType.Exile, next, sa, params);
+        }
+
         if (!library.isEmpty()) {
             Card c;
 
-            if (hasKeyword("You draw cards from the bottom of your library instead of the top of your library.")) {
+            if (drawFromBottom) {
                 c = library.get(library.size() - 1);
             } else {
                 c = library.get(0);

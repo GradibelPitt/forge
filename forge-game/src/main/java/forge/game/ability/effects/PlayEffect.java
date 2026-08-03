@@ -23,6 +23,7 @@ import forge.game.card.Card;
 import forge.game.card.CardCollection;
 import forge.game.card.CardCollectionView;
 import forge.game.card.CardFactoryUtil;
+import forge.game.card.GameRuleCard;
 import forge.game.card.CardZoneTable;
 import forge.game.cost.Cost;
 import forge.game.cost.CostDiscard;
@@ -127,6 +128,7 @@ public class PlayEffect extends SpellAbilityEffect {
                 //Could also just leave it null but there's currently nothing else that can happen that case.
                 throw new UnsupportedOperationException("Unknown parameter for AnySupportedCard: " + valid);
             }
+            cards = cards.filter(GameRuleCard::canMaterialize);
             if (sa.hasParam("RandomCopied")) {
                 final CardCollection choice = new CardCollection();
                 final String num = sa.getParamOrDefault("RandomNum", "1");
@@ -178,6 +180,8 @@ public class PlayEffect extends SpellAbilityEffect {
                 }
             }
         }
+
+        tgtCards.removeIf(GameRuleCard::isGameRule);
 
         if (tgtCards.isEmpty()) {
             return;

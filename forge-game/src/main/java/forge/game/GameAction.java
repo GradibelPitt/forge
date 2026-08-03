@@ -157,6 +157,16 @@ public class GameAction {
         return changeZone(zoneFrom, zoneTo, c, position, cause, null);
     }
     private Card changeZone(final Zone zoneFrom, Zone zoneTo, final Card c, Integer position, SpellAbility cause, Map<AbilityKey, Object> params) {
+        final boolean isGameRule = GameRuleCard.isGameRule(c);
+        if (isGameRule && !zoneTo.is(ZoneType.Exile)) {
+            final Zone exile = c.getOwner().getZone(ZoneType.Exile);
+            if (zoneFrom == exile) {
+                return c;
+            }
+            zoneTo = exile;
+            position = null;
+        }
+
         // 111.11. A copy of a permanent spell becomes a token as it resolves.
         // The token has the characteristics of the spell that became that token.
         // The token is not “created” for the purposes of any replacement effects or triggered abilities that refer to creating a token.
@@ -188,7 +198,7 @@ public class GameAction {
         boolean wasFacedown = c.isFaceDown();
 
         // Rule 111.8: A token that has left the battlefield can't move to another zone
-        if (!c.isSpell() && c.isToken() && !fromBattlefield && zoneFrom != null && !zoneFrom.is(ZoneType.Stack)
+        if (!isGameRule && !c.isSpell() && c.isToken() && !fromBattlefield && zoneFrom != null && !zoneFrom.is(ZoneType.Stack)
                 && (cause == null || !(cause instanceof SpellPermanent || cause.isCastFaceDown()) || !cause.isCastFromPlayEffect())) {
             return c;
         }
@@ -2578,6 +2588,8 @@ public class GameAction {
     }
 
     private void runPreOpeningHandActions(final Player first) {
+        exileGameRulesBeforeMulligan(game);
+
         Player takesAction = first;
         do {
             List<Card> ploys = CardLists.filter(takesAction.getCardsIn(ZoneType.Command), input -> input.getName().equals("Emissary's Ploy"));
@@ -2611,6 +2623,18 @@ public class GameAction {
             }
             takesAction = game.getNextPlayerAfter(takesAction);
         } while (takesAction != first);
+    }
+
+    static void exileGameRulesBeforeMulligan(final Game game) {
+        for (final Player player : game.getPlayers()) {
+            final List<Card> gameRules = Lists.newArrayList(
+                    IterableUtil.filter(player.getCardsIn(ZoneType.Library),
+                            GameRuleCard::isGameRule));
+            for (final Card gameRule : gameRules) {
+                game.getAction().moveTo(ZoneType.Exile, gameRule, null,
+                        AbilityKey.newMap());
+            }
+        }
     }
 
     // Returns the new player to go first

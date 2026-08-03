@@ -51,6 +51,16 @@ public class CardDiscoverEffectTest {
         )), "TST", CardRarity.Common);
     }
 
+    private static PaperCard gameRulePaper(final String name) {
+        return new PaperCard(CardRules.fromScript(Arrays.asList(
+                "Name:" + name,
+                "ManaCost:0",
+                "Types:Artifact",
+                "K:GameRule",
+                "Oracle:Test game rule."
+        )), "TST", CardRarity.MythicRare);
+    }
+
     private static List<PaperCard> papers(final String prefix, final int count,
             final int manaValue, final String types) {
         return IntStream.range(0, count)
@@ -85,6 +95,36 @@ public class CardDiscoverEffectTest {
     public void returnsNoOptionsForEmptyPoolOrNonPositiveLimit() {
         Assert.assertTrue(CardDiscoverEffect.selectUniqueOptions(Collections.emptyList(), 3, new Random(1)).isEmpty());
         Assert.assertTrue(CardDiscoverEffect.selectUniqueOptions(Collections.singletonList(named(1, "Patches")), 0, new Random(1)).isEmpty());
+    }
+
+    @Test
+    public void gameRulesAreNeverDiscoverOptionsFromDatabaseOrZones() {
+        final PaperCard ordinaryPaper = paper("Ordinary", 1, "Artifact");
+        final PaperCard gameRulePaper = gameRulePaper("Game Rule");
+        final CardDiscoverCandidateFilter filter = CardDiscoverCandidateFilter.compile(
+                "Artifact", named(99, "Source"), null);
+
+        final List<Card> databaseOptions = CardDiscoverEffect.selectDatabaseOptions(
+                Arrays.asList(gameRulePaper, ordinaryPaper), filter, 3, 8,
+                new Random(1), paper -> {
+                    final Card card = named(paper.getName().hashCode(), paper.getName());
+                    if (paper == gameRulePaper) {
+                        card.getCurrentState().addIntrinsicKeyword("GameRule", false);
+                        card.updateKeywordsCache();
+                    }
+                    return card;
+                }, card -> true);
+
+        final Card zoneGameRule = named(1, "Zone Game Rule");
+        zoneGameRule.getCurrentState().addIntrinsicKeyword("GameRule", false);
+        zoneGameRule.updateKeywordsCache();
+        final List<Card> zoneOptions = CardDiscoverEffect.selectUniqueOptions(
+                Arrays.asList(zoneGameRule, named(2, "Zone Ordinary")), 3, new Random(1));
+
+        Assert.assertEquals(databaseOptions.stream().map(Card::getName).toList(),
+                List.of("Ordinary"));
+        Assert.assertEquals(zoneOptions.stream().map(Card::getName).toList(),
+                List.of("Zone Ordinary"));
     }
 
     @Test

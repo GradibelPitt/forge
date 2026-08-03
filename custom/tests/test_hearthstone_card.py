@@ -19,6 +19,7 @@ class HearthstoneCardContractTest(unittest.TestCase):
         self.assertIn("Name:炉石传说", card)
         self.assertIn("ManaCost:0", card)
         self.assertIn("Types:Artifact", card)
+        self.assertIn("K:GameRule", card)
         self.assertIn("K:DeckMinimum:31", card)
         self.assertIn("K:DeckLimit:1:Your deck can have no more than one card named CARDNAME.", card)
         self.assertIn("Oracle:将对战规则改变为炉石传说！\\n对战开始时：展示并放逐炉石传说。双方最大手牌数量为10。牌手从空牌库抓牌时不会输掉游戏，改为受到疲劳伤害；每位牌手的疲劳伤害从1开始并在每次空抽后递增。", card)
@@ -27,15 +28,15 @@ class HearthstoneCardContractTest(unittest.TestCase):
         card = self.read_card()
 
         self.assertIn(
-            "T:Mode$ NewGame | TriggerZones$ Hand,Library | ResolveBeforeFirstTurn$ True | Execute$ TrigMoveToLibrary",
+            "T:Mode$ NewGame | TriggerZones$ Exile | ResolveBeforeFirstTurn$ True | Execute$ TrigReveal",
             card,
         )
-        self.assertIn("SVar:TrigMoveToLibrary:DB$ ChangeZone | Defined$ Self | Origin$ Hand | Destination$ Library | SubAbility$ TrigReveal", card)
         self.assertIn("SVar:TrigReveal:DB$ Reveal | RevealDefined$ Self | SubAbility$ TrigSetLife", card)
         self.assertIn("SVar:TrigSetLife:DB$ SetLife | Defined$ Player | LifeAmount$ 30 | SubAbility$ TrigCreateEmblems", card)
-        self.assertIn("SVar:TrigCreateEmblems:DB$ RepeatEach | RepeatPlayers$ Player | RepeatSubAbility$ TrigCreateEmblem | SubAbility$ TrigExile", card)
+        self.assertIn("SVar:TrigCreateEmblems:DB$ RepeatEach | RepeatPlayers$ Player | RepeatSubAbility$ TrigCreateEmblem", card)
         self.assertIn("SVar:TrigCreateEmblem:DB$ Effect | Name$ Emblem — 炉石传说 | EffectOwner$ Player.IsRemembered | Triggers$ HearthstoneUpkeep | StaticAbilities$ HearthstoneRules | Duration$ Permanent | Unique$ True", card)
-        self.assertIn("SVar:TrigExile:DB$ ChangeZone | Defined$ Self | Origin$ Library | Destination$ Exile", card)
+        self.assertNotIn("TrigMoveToLibrary", card)
+        self.assertNotIn("TrigExile", card)
 
     def test_emblem_is_unique_for_each_owner_when_multiple_startup_cards_resolve(self):
         card = self.read_card()

@@ -58,13 +58,24 @@ public class ReplaceCardsEffectTest {
         )), "TST", CardRarity.Common);
     }
 
+    private static PaperCard gameRulePaper(final String name, final String manaCost) {
+        return new PaperCard(CardRules.fromScript(Arrays.asList(
+                "Name:" + name,
+                "ManaCost:" + manaCost,
+                "Types:Artifact",
+                "K:GameRule",
+                "Oracle:Test game rule."
+        )), "TST", CardRarity.MythicRare);
+    }
+
     @Test
     public void cachedReplacementPoolScansDatabaseOnlyOnceAndBucketsByManaValue() {
         final Collection<PaperCard> database = Arrays.asList(
                 paper("White One", "W"),
                 paper("Blue Three", "2 U"),
                 paper("Black One", "B"),
-                paper("Colorless Three", "3")
+                paper("Colorless Three", "3"),
+                gameRulePaper("Game Rule Three", "2 U")
         );
         final Card source = new Card(1, null);
         source.setName("Source");

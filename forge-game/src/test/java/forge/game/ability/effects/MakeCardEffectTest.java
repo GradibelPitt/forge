@@ -34,6 +34,22 @@ public class MakeCardEffectTest {
         Assert.assertEquals(names, Arrays.asList("Patches", "Patches"));
     }
 
+    private static PaperCard gameRulePaper(final String name) {
+        return new PaperCard(CardRules.fromScript(Arrays.asList(
+                "Name:" + name,
+                "ManaCost:0",
+                "Types:Artifact",
+                "K:GameRule",
+                "Oracle:Test game rule."
+        )), "TST", CardRarity.MythicRare);
+    }
+
+    @Test
+    public void gameRulesCannotBeMaterializedByMakeCard() {
+        Assert.assertTrue(MakeCardEffect.canMaterialize(paper("Ordinary", "Artifact")));
+        Assert.assertFalse(MakeCardEffect.canMaterialize(gameRulePaper("Game Rule")));
+    }
+
     @Test
     public void randomStartingDeckNonlandsPreferDifferentNamesBeforeDuplicates() {
         final CardPool startingDeck = new CardPool();
