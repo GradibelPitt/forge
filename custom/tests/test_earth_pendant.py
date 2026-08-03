@@ -20,7 +20,7 @@ class EarthPendantContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:大地坠饰", text)
-        self.assertIn("ManaCost:W W W", text)
+        self.assertIn("ManaCost:W W", text.splitlines())
         self.assertIn("Types:Instant", text)
         self.assertIn(
             "A:SP$ CardDiscover | Defined$ You | Source$ Library | "
