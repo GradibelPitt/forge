@@ -83,3 +83,4 @@ Type=Custom_Set
 84 M 阳光汲取者莱妮莎 @Custom
 85 M 萨瓦丝女王 @Custom
 86 R 咆哮魔 @Custom
+88 C 圣礼骑士 @Custom
