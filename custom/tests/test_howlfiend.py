@@ -19,13 +19,13 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "咆哮魔.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "不忠（此生物在一位由你选择的对手操控下进战场。）\\n"
+    "不忠（此生物在一位由你选择的牌手操控下进战场。）\\n"
     "每当咆哮魔受到伤害时，你随机弃一张牌。"
 )
 
 
 class HowlfiendContractTest(unittest.TestCase):
-    def test_characteristics_and_disloyal_control_replacement(self):
+    def test_characteristics_and_disloyal_player_control_replacement(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:咆哮魔", text)
@@ -34,12 +34,12 @@ class HowlfiendContractTest(unittest.TestCase):
         self.assertIn("PT:3/6", text)
         self.assertIn(
             "R:Event$ Moved | ValidCard$ Card.Self | Destination$ Battlefield | "
-            "ReplaceWith$ DBChooseOpp | Layer$ Control",
+            "ReplaceWith$ DBChoosePlayer | Layer$ Control",
             text,
         )
         self.assertIn(
-            "SVar:DBChooseOpp:DB$ ChoosePlayer | Defined$ You | "
-            "Choices$ Player.Opponent | ChoiceTitle$ 选择一位接收CARDNAME的对手 | "
+            "SVar:DBChoosePlayer:DB$ ChoosePlayer | Defined$ You | "
+            "Choices$ Player | ChoiceTitle$ 选择一位接收CARDNAME的牌手 | "
             "AILogic$ Curse | SubAbility$ MoveToPlay",
             text,
         )
