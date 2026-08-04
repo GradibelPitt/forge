@@ -2,10 +2,11 @@ Name:咆哮魔
 ManaCost:1 B B
 Types:Creature Demon
 PT:3/6
+S:Mode$ MustBlock | ValidCreature$ Card.Self | Description$ 如果CARDNAME能阻挡，则它必须阻挡。
 R:Event$ Moved | ValidCard$ Card.Self | Destination$ Battlefield | ReplaceWith$ DBChoosePlayer | Layer$ Control | Description$ 不忠（此生物在一位由你选择的牌手操控下进战场。）
 SVar:DBChoosePlayer:DB$ ChoosePlayer | Defined$ You | Choices$ Player | ChoiceTitle$ 选择一位接收CARDNAME的牌手 | AILogic$ Curse | SubAbility$ MoveToPlay
 SVar:MoveToPlay:DB$ ChangeZone | Hidden$ True | Origin$ All | Destination$ Battlefield | Defined$ ReplacedCard | GainControl$ ChosenPlayer | SubAbility$ DBCleanup
 SVar:DBCleanup:DB$ Cleanup | ClearChosenPlayer$ True
 T:Mode$ DamageDoneOnce | ValidTarget$ Card.Self | TriggerZones$ Battlefield | Execute$ TrigDiscard | TriggerDescription$ 每当CARDNAME受到伤害时，你随机弃一张牌。
 SVar:TrigDiscard:DB$ Discard | Defined$ You | NumCards$ 1 | Mode$ Random
-Oracle:不忠（此生物在一位由你选择的牌手操控下进战场。）\n每当咆哮魔受到伤害时，你随机弃一张牌。
+Oracle:不忠（此生物在一位由你选择的牌手操控下进战场。）\n每当咆哮魔受到伤害时，你随机弃一张牌。\n如果咆哮魔能阻挡，则它必须阻挡。

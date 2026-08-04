@@ -20,7 +20,8 @@ ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
     "不忠（此生物在一位由你选择的牌手操控下进战场。）\\n"
-    "每当咆哮魔受到伤害时，你随机弃一张牌。"
+    "每当咆哮魔受到伤害时，你随机弃一张牌。\\n"
+    "如果咆哮魔能阻挡，则它必须阻挡。"
 )
 
 
@@ -68,6 +69,15 @@ class HowlfiendContractTest(unittest.TestCase):
             text,
         )
         self.assertIn(f"Oracle:{ORACLE}", text)
+
+    def test_must_block_if_able(self):
+        text = CARD.read_text(encoding="utf-8")
+
+        self.assertIn(
+            "S:Mode$ MustBlock | ValidCreature$ Card.Self | "
+            "Description$ 如果CARDNAME能阻挡，则它必须阻挡。",
+            text,
+        )
 
     def test_registration_localization_and_original_art_crop(self):
         self.assertIn(
