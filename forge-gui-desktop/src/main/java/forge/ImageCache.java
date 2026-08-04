@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import javax.imageio.ImageIO;
@@ -270,31 +271,26 @@ public class ImageCache {
             }
         }
 
-        // Replace .full to .artcrop if art crop is preferred
-        // Only allow use art if the artist info is available
-        boolean useArtCrop = "Crop".equals(FModel.getPreferences().getPref(ForgePreferences.FPref.UI_CARD_ART_FORMAT))
+        // Prefer an existing full card image. Only fall back to an art crop when
+        // crop mode is enabled and the full image is unavailable.
+        boolean artCropPreferred = "Crop".equals(FModel.getPreferences().getPref(ForgePreferences.FPref.UI_CARD_ART_FORMAT))
             && ipc != null && !ipc.getArtist().isEmpty();
         String originalKey = imageKey;
-        if (useArtCrop) {
-            if (ipc.getRules().getSplitType() == CardSplitType.Flip) {
-                // Art crop will always use front face as image key for flip cards
-                imageKey = ipc.getCardImageKey();
-            }
-            imageKey = TextUtil.fastReplace(imageKey, ".full", ".artcrop");
-        }
+        String unrebalancedKey = artCropPreferred
+                ? getUnrebalancedImageKey(originalKey, ipc.isRebalanced()) : null;
+        Pair<String, Boolean> resolvedImage = resolvePreferredCardImageKey(originalKey, unrebalancedKey,
+                artCropPreferred,
+                artCropPreferred && ipc.getRules().getSplitType() == CardSplitType.Flip,
+                artCropPreferred ? ipc.getCardImageKey() : originalKey,
+                key -> getImage(key) != null);
+        imageKey = resolvedImage.getLeft();
+        boolean useArtCrop = resolvedImage.getRight();
 
         // Load from file and add to cache if not found in cache initially.
         BufferedImage original = getImage(imageKey);
 
         if (original == null && !useDefaultIfNotFound) {
             return Pair.of(null, false);
-        }
-
-        // if art crop is exist, check also if the full card image is also cached.
-        if (useArtCrop && original != null) {
-            BufferedImage cached = _CACHE.getIfPresent(originalKey);
-            if (cached != null)
-                return Pair.of(cached, false);
         }
 
         boolean noBorder = !useArtCrop && !isPreferenceEnabled(ForgePreferences.FPref.UI_RENDER_BLACK_BORDERS);
@@ -373,6 +369,33 @@ public class ImageCache {
         }
 
         return Pair.of(original, isPlaceholder);
+    }
+
+    static Pair<String, Boolean> resolvePreferredCardImageKey(String originalKey, String fallbackFullImageKey,
+            boolean artCropPreferred, boolean flipCard, String frontImageKey,
+            Predicate<String> imageAvailable) {
+        if (!artCropPreferred) {
+            return Pair.of(originalKey, false);
+        }
+        if (imageAvailable.test(originalKey)) {
+            return Pair.of(originalKey, false);
+        }
+        if (fallbackFullImageKey != null && imageAvailable.test(fallbackFullImageKey)) {
+            return Pair.of(fallbackFullImageKey, false);
+        }
+        String artCropKey = flipCard ? frontImageKey : originalKey;
+        return Pair.of(TextUtil.fastReplace(artCropKey, ".full", ".artcrop"), true);
+    }
+
+    static String getUnrebalancedImageKey(String imageKey, boolean rebalanced) {
+        if (!rebalanced) {
+            return null;
+        }
+        int filenameStart = imageKey.lastIndexOf('/') + 1;
+        if (!imageKey.startsWith("A-", filenameStart)) {
+            return null;
+        }
+        return imageKey.substring(0, filenameStart) + imageKey.substring(filenameStart + 2);
     }
 
     private static boolean isWhite(Color color) {
