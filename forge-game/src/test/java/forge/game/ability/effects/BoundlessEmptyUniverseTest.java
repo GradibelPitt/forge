@@ -105,6 +105,8 @@ public class BoundlessEmptyUniverseTest {
 
         Assert.assertEquals(emblem.getTriggers().size(), 1);
         final Trigger zoneEntry = emblem.getTriggers().get(0);
+        Assert.assertTrue(zoneEntry.isStatic(),
+                "zone-entry reductions should resolve automatically without using the stack");
         final Card movedCard = vanillaCard(game, opponent, opponent, "Opponent moved card");
         final Map<AbilityKey, Object> runParams = AbilityKey.mapFromCard(movedCard);
         runParams.put(AbilityKey.Origin, ZoneType.Library.name());

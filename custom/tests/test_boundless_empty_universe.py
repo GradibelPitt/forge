@@ -62,7 +62,7 @@ class BoundlessEmptyUniverseContractTest(unittest.TestCase):
             "SVar:TrackZoneEntry:Mode$ ChangesZone | Origin$ Any | "
             "Destination$ Hand,Battlefield,Graveyard,Exile | "
             "ValidCard$ Card.!token | TriggerZones$ Command | "
-            "Execute$ AddReductionCounter",
+            "Static$ True | Execute$ AddReductionCounter",
             text,
         )
         self.assertIn(
