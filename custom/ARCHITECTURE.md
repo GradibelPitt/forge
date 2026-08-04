@@ -12,7 +12,7 @@
 | 卡图 | `D:\Forge\forge-latest\custom\cards\pictures\` | `%LOCALAPPDATA%\Forge\Cache\pics\cards\` | 版本图使用如 `PH01/<名称>.full.jpg` |
 | DIY 测试 | `D:\Forge\forge-latest\custom\tests\` | 无 | Python 契约测试 |
 | Forge 源码 | `D:\Forge\forge-latest\` | Maven 构建产物 | Java 引擎的权威来源；上游基线为 `ebf9001` |
-| 中文卡牌资源 | 尚待创建的 `translations/cardnames-zh-CN.txt` | Forge `res/languages/cardnames-zh-CN.txt` | 当前仅有设计，未实现自动合并 |
+| 中文卡牌资源 | `D:\Forge\forge-latest\forge-gui\res\languages\cardnames-zh-CN.txt` | 开发客户端直接读取该文件；运行仓库使用 `D:\Forge\forge-diy-runtime\app\res\languages\cardnames-zh-CN.txt` | `publish_git_payload.ps1 -SyncCustom` 会自动同步运行版简中资源 |
 | 桌面 JAR | Java 源码与 Maven 配置 | `forge-gui-desktop\target\forge-gui-desktop-2.0.14-SNAPSHOT-jar-with-dependencies.jar` | 构建产物，不直接手改源逻辑 |
 | DIY 源码远端 | `D:\Forge\forge-latest\` | `https://github.com/GradibelPitt/forge` 的 `diy` 分支 | 引擎层更新验证后立即 push |
 | 玩家运行仓库 | 构建后的 JAR、`forge-gui/res` 与 `custom` 受管内容 | `https://github.com/GradibelPitt/forge-diy-runtime` | 一键脚本 clone/update；卡牌可批量发布，引擎更新必须同步发布 |
@@ -63,12 +63,19 @@
 
 ## Chinese localization
 
-Forge 仓库内存在两份简体中文卡牌资源：
+权威简体中文卡牌资源是 `forge-gui/res/languages/cardnames-zh-CN.txt`，格式为
+`内部名称|中文显示名|中文类别|中文规则文字`。桌面开发客户端通过
+`GuiDesktop.getAssetsDir()` 返回的 `../forge-gui/` 读取该外部资源；当前仓库不存在、也不应新增
+`forge-gui-desktop/res/languages/cardnames-zh-CN.txt` 这一镜像。
 
-- `forge-gui/res/languages/cardnames-zh-CN.txt`
-- `forge-gui-desktop/res/languages/cardnames-zh-CN.txt`
+`CardTranslation` 在客户端启动时预载翻译，不会因为卡牌脚本或卡图同步而自动重载。新增或修改卡牌后：
 
-格式为 `内部名称|中文显示名|中文类别|中文规则文字`。DIY 设计要求未来以工作区 `translations/cardnames-zh-CN.txt` 为源，通过安装脚本幂等合并并先备份目标。该工作目前尚未实现；不要把直接修改构建资源当作已建立的工作流。
+1. 在权威简中资源中新增或更新完整四字段记录；
+2. 使用 `custom/tools/install_to_forge.ps1` 同步卡牌、版本与卡图；
+3. 发布玩家运行包时使用 `forge-diy-runtime/tools/publish_git_payload.ps1 -SyncCustom`，该开关会自动同步简中资源到 `app/res/languages/cardnames-zh-CN.txt` 并校验两端 SHA-256；
+4. 重启客户端后才可把中文名称、类别和规则文字记为客户端已验证。
+
+`install_to_forge.ps1` 不负责复制语言文件，因为开发客户端本来就直接读取权威资源；它也不能代替运行仓库的发布步骤。
 
 ## Tests and validation tools
 
@@ -92,7 +99,8 @@ Forge 仓库内存在两份简体中文卡牌资源：
 ```text
 cards / editions / tokens ──install_to_forge.ps1──> %APPDATA%\Forge\custom
 cards/pictures ─────────────install_to_forge.ps1──> %LOCALAPPDATA%\Forge\Cache\pics\cards
+forge-gui/res/languages/cardnames-zh-CN.txt ──────> 开发客户端（启动时预载）
 Forge Java source ──────────Maven package─────────> forge-gui-desktop aggregate JAR
-aggregate JAR + res + DIY managed files ──commit/push──> forge-diy-runtime/app
-translations (planned) ─────idempotent merge──────> Forge zh-CN language resources
+aggregate JAR + res + DIY managed files ──publish_git_payload.ps1──> forge-diy-runtime/app
+                                └─SyncCustom 自动同步 zh-CN 卡牌资源
 ```

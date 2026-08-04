@@ -41,16 +41,13 @@
 - 破链灾星霍格通过 `StartingDeckLegendaryPermanents` 直接枚举注册牌手当前主牌 `CardPool`，开局复制其中其他传奇永久物，并提供传奇规则徽记与超级延势；复制结果不依赖结算时的手牌/牌库状态，也不会像数据库发现那样物化全卡池候选。
 - 海盗帕奇斯通过牌张脚本从手牌/牌库登场；突牙使用引擎级 `Boarding:3`。
 - 卡图同步工具已支持从 `cards/pictures/` 安装到 Forge 本地图片缓存。
+- 简中卡牌资源以 `forge-gui/res/languages/cardnames-zh-CN.txt` 为唯一源码；开发客户端在启动时预载该文件，运行仓库的 `publish_git_payload.ps1 -SyncCustom` 会同时同步到 `app/res/languages/cardnames-zh-CN.txt` 并校验哈希，避免只发布卡牌而漏发中文类别或规则文字。
 - 最新引擎迁移已恢复 `CardDiscover`，并修复 `BranchEffect` 在分支解析时传递替代效应对象；新桌面聚合 JAR 已构建，安装到实际客户端与客户端对局验证仍待单独记录。
 - 旧快照中的 `NewGame` 静态触发堆栈路由和持久法术力清理回归测试已适配到最新版；普通静态触发仍保持立即结算。
 - 玩家级 `GrantSpellRule` 已接入真实费用与法术力转换热路径；规则在本局内独立于来源牌持续存在，支持稳定键幂等或显式叠加。叠加规则会保留各次独立的名称快照，重叠牌名累计减费而新增牌名只获得包含它的层数；其独立 `Harmony` 模式按牌的拥有者向游戏内卡牌与 `CardView` 投射可见“调和”关键字，并以专用减费语义先减有色符号、再减非 X 通用费用，不改变旧 `ReduceGeneric`。“神秘访客”每次进场登记一层独立快照规则。
 - 结算异常分为显式可恢复与未知异常：只有能证明在当前效果写入前失败的 `RecoverableEffectException` 会跳过该效果、写入 stderr／对局日志并继续；其他 `RuntimeException`／`Error` 仍终止比赛。终止路径会结束所有控制器并绕过认输确认强制关闭比赛页，再明确弹出“比赛因意外错误退出”；某个非致命清理步骤再次失败也不会阻断后续关页和弹窗。本地、移动端默认实现与联机客户端共用同一失败回调。
 
 详细状态与证据见 [VERIFICATION.md](VERIFICATION.md)。
-
-## Approved but not implemented
-
-- DIY 中文本地化源和安装脚本的幂等合并流程已经设计，但当前工作区尚无 `translations/cardnames-zh-CN.txt`，安装脚本也尚未实现该流程。
 
 ## Development workflow
 
@@ -59,8 +56,8 @@
 3. 新功能或修复先写能正确失败的测试。
 4. 只实现使测试通过的最小改动。
 5. 运行相关 Java/Python 测试与 `python tools/lint_card.py <card>`。
-6. 审查差异和状态表述；源文件正确后再运行 `tools/install_to_forge.ps1`。
-7. 将“自动测试”“已部署”“客户端实测”分别记录，不互相替代。
+6. 审查差异和状态表述；源文件正确后再运行 `tools/install_to_forge.ps1`。准备运行包时使用 `forge-diy-runtime/tools/publish_git_payload.ps1 -SyncCustom`，让卡牌与简中资源作为同一 payload 发布。
+7. 将“自动测试”“已部署”“客户端重启后实测”分别记录，不互相替代。
 
 ## Git 保存与发布策略
 

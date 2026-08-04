@@ -62,7 +62,8 @@ class BloodreaverGuldanContractTest(unittest.TestCase):
             "鲜血掠夺者古尔丹|鲜血掠夺者古尔丹|传奇鹏洛客～古尔丹|"
             "+1：古尔丹对任意一个目标造成3点伤害。你获得3点生命。\\n"
             "-2：将目标恶魔牌从你的坟墓场移回战场。\\n"
-            "-8：从你的牌库中搜寻任意数量的恶魔牌，将它们放进战场，然后洗牌。"
+            "-8：从你的牌库中搜寻任意数量的恶魔牌，将它们放进战场，然后洗牌。\\n"
+            "本牌可用作你的指挥官。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

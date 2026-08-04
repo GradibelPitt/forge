@@ -90,7 +90,8 @@ class UtherOfTheEbonBladeContractTest(unittest.TestCase):
             "黑锋骑士乌瑟尔|黑锋骑士乌瑟尔|传奇鹏洛客～乌瑟尔|"
             "当你操控四个或更多天启骑士时，你赢得这盘游戏。\\n"
             "+1：派出一个名为“天启骑士”的2/2白黑双色骑士衍生生物。\\n"
-            "-7：派出四个名为“天启骑士”的2/2白黑双色骑士衍生生物。"
+            "-7：派出四个名为“天启骑士”的2/2白黑双色骑士衍生生物。\\n"
+            "本牌可用作你的指挥官。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

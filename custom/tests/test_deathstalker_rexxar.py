@@ -131,7 +131,8 @@ class DeathstalkerRexxarContractTest(unittest.TestCase):
             "等同于其法术力费用。派出一个1/1黑绿双色的灵俑／野兽衍生生物，且具有"
             "「每当此生物合变时，在其上放置一个+1/+1指示物。」\\n"
             "-2：发现两个野兽并将它们放逐。于这些牌持续放逐的时段内，你可以使用它们，"
-            "且你可以将法术力视同任意颜色的法术力来施放它们。"
+            "且你可以将法术力视同任意颜色的法术力来施放它们。\\n"
+            "本牌可用作你的指挥官。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

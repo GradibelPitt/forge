@@ -119,7 +119,8 @@ class GarroshContractTest(unittest.TestCase):
             "当天灾领主加尔鲁什进场时，派出传奇衍生神器影之哀伤，其为无色武具，且具有"
             "「佩带此武具的生物得+4/+3且具有连击与威慑异能」与佩带{4}。\\n"
             "+1：天灾领主加尔鲁什对每个生物各造成1点伤害。\\n"
-            "-1：派出一个2/2黑色，具败朽异能的灵俑衍生生物。"
+            "-1：派出一个2/2黑色，具败朽异能的灵俑衍生生物。\\n"
+            "本牌可用作你的指挥官。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

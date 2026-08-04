@@ -109,7 +109,8 @@ class MalfurionTheCorruptorContractTest(unittest.TestCase):
             "+1：在至多一个目标野兽上放置一个+1/+1指示物。\\n"
             "-2：选择一项～\\n"
             "• 派出一个0/3绿色，具有延势异能的昆虫衍生生物。\\n"
-            "• 派出一个1/1黑色，具有死触异能的蜘蛛衍生生物。"
+            "• 派出一个1/1黑色，具有死触异能的蜘蛛衍生生物。\\n"
+            "本牌可用作你的指挥官。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

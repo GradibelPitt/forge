@@ -86,7 +86,8 @@ class ShadowreaperAnduinContractTest(unittest.TestCase):
             "每当你施放咒语时，于本回合中，你可以起动安度因的一个忠诚异能一次，"
             "且能视同本回合中未起动过其忠诚异能地来起动之。\\n"
             "0：安度因对任意一个目标造成2点伤害。\\n"
-            "-1：消灭目标力量等于或大于4的生物。"
+            "-1：消灭目标力量等于或大于4的生物。\\n"
+            "本牌可用作你的指挥官。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

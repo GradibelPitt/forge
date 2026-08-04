@@ -106,7 +106,8 @@ class ShadowOfTheVoidValeeraContractTest(unittest.TestCase):
             "虚空之影瓦莉拉|虚空之影瓦莉拉|传奇鹏洛客～瓦莉拉|"
             "当瓦莉拉进场时，直到你的下一个回合，你和瓦莉拉获得反一切保护异能。\\n"
             "+1：抓一张牌，然后弃一张牌。至多一个目标生物本回合不能被阻挡。\\n"
-            "-2：本回合中，当你施放你的下一个咒语时，将它复制。你可以为该复制品选择新的目标。"
+            "-2：本回合中，当你施放你的下一个咒语时，将它复制。你可以为该复制品选择新的目标。\\n"
+            "本牌可用作你的指挥官。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

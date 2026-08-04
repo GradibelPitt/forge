@@ -147,7 +147,8 @@ class FrostLichJainaContractTest(unittest.TestCase):
             "-1：吉安娜对任意一个目标造成1点伤害。当一个本回合中曾以此法受到伤害的生物死去时，"
             "派出一个3/6蓝色元素衍生生物。\\n"
             "-6：你获得具有以下异能的徽记～「系命。每当一个由对手操控的生物成为横置时，"
-            "此徽记对该生物造成3点伤害。」"
+            "此徽记对该生物造成3点伤害。」\\n"
+            "本牌可用作你的指挥官。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
