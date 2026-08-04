@@ -208,18 +208,78 @@ public class CardFaceSymbols {
      *            a int.
      */
     public static void drawSymbol(final String imageName, final Graphics g, final int x, final int y) {
-        FSkin.drawImage(g, MANA_IMAGES.get(imageName), x, y);
+        final SkinImage image = MANA_IMAGES.get(imageName);
+        if (image != null) {
+            FSkin.drawImage(g, image, x, y);
+        } else if (isGenericManaNumber(imageName)) {
+            drawGenericManaNumber(imageName, g, x, y, manaImageSize);
+        } else {
+            Logger.warn("Mana symbol not recognized: " + imageName);
+        }
     }
     public static void drawManaSymbol(final String imageName, final Graphics g, final int x, final int y) {
         drawSymbol(imageName, g, x, y, manaImageSize);
     }
     public static void drawSymbol(final String imageName, final Graphics g, final int x, final int y, final int size) {
+        final SkinImage image = MANA_IMAGES.get(imageName);
+        if (image == null) {
+            if (isGenericManaNumber(imageName)) {
+                drawGenericManaNumber(imageName, g, x, y, size);
+            } else {
+                Logger.warn("Mana symbol not recognized: " + imageName);
+            }
+            return;
+        }
+
         // Obtain screen DPI scale
         float screenScale = GuiBase.getInterface().getScreenScale();
         int imageSize = Math.round(size * screenScale);
 
-        FSkin.drawImage(g, MANA_IMAGES.get(imageName).resize(imageSize, imageSize),
+        FSkin.drawImage(g, image.resize(imageSize, imageSize),
             x, y, x + size, y + size, 0, 0, imageSize, imageSize);
+    }
+
+    private static boolean isGenericManaNumber(final String imageName) {
+        if (imageName == null || imageName.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < imageName.length(); i++) {
+            if (!Character.isDigit(imageName.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static void drawGenericManaNumber(final String number, final Graphics g,
+            final int x, final int y, final int size) {
+        final Graphics2D graphics = (Graphics2D) g.create();
+        try {
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                    RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            graphics.setColor(new Color(202, 198, 192));
+            graphics.fillOval(x, y, size - 1, size - 1);
+            graphics.setColor(Color.BLACK);
+            graphics.setStroke(new BasicStroke(Math.max(1f, size / 18f)));
+            graphics.drawOval(x, y, size - 1, size - 1);
+
+            float fontSize = Math.max(5f, size * 0.58f);
+            Font font = graphics.getFont().deriveFont(Font.BOLD, fontSize);
+            FontMetrics metrics = graphics.getFontMetrics(font);
+            final int maximumTextWidth = Math.max(1, size - Math.max(2, size / 6));
+            while (metrics.stringWidth(number) > maximumTextWidth && fontSize > 1f) {
+                fontSize -= 0.5f;
+                font = font.deriveFont(fontSize);
+                metrics = graphics.getFontMetrics(font);
+            }
+            graphics.setFont(font);
+            final int textX = x + (size - metrics.stringWidth(number)) / 2;
+            final int textY = y + (size - metrics.getHeight()) / 2 + metrics.getAscent();
+            graphics.drawString(number, textX, textY);
+        } finally {
+            graphics.dispose();
+        }
     }
     public static void drawWatermark(final FSkinProp skinProp, final Graphics g, final int x, final int y, final int size) {
         if (skinProp == null) {
