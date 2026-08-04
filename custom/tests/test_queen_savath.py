@@ -20,20 +20,20 @@ ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 SOURCE_ORACLE = (
     "Flying\\n"
-    "Madness {0}\\n"
-    "When CARDNAME enters, unless you pay {1}{B}, at the beginning of the next "
-    "end step, return it to your hand and it perpetually gets +2/+2."
+    "If a spell or ability causes you to discard CARDNAME, you may instead cast "
+    "it without paying its mana cost.\\n"
+    "When CARDNAME enters, unless you pay {1}{B}, return it to your hand and it "
+    "perpetually gets +2/+2."
 )
 ZH_ORACLE = (
     "飞行\\n"
-    "疯魔{0}\\n"
-    "当萨瓦丝女王进战场时，除非你支付{1}{B}，否则在下一个结束步骤开始时，"
-    "将此牌移回你手上且它永久得+2/+2。"
+    "如果一个咒语或异能使你弃掉萨瓦丝女王，你可以改为不支付其法术力费用施放此牌。\\n"
+    "当萨瓦丝女王进战场时，除非你支付{1}{B}，否则将此牌移回你手上且它永久得+2/+2。"
 )
 
 
 class QueenSavathContractTest(unittest.TestCase):
-    def test_characteristics_flying_and_madness(self):
+    def test_characteristics_and_effect_only_discard_replacement(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:萨瓦丝女王", text)
@@ -41,9 +41,25 @@ class QueenSavathContractTest(unittest.TestCase):
         self.assertIn("Types:Legendary Creature Insect", text)
         self.assertIn("PT:2/2", text)
         self.assertIn("K:Flying", text)
-        self.assertIn("K:Madness:0", text)
+        self.assertNotIn("K:Madness", text)
+        self.assertIn(
+            "R:Event$ Moved | ActiveZones$ Hand | ValidCard$ Card.Self | "
+            "ValidCause$ SpellAbility | Discard$ True | EffectOnly$ True | "
+            "Optional$ True | ReplaceWith$ CastSelf",
+            text,
+        )
+        self.assertIn(
+            "SVar:CastSelf:DB$ Play | Defined$ ReplacedCard | "
+            "ValidSA$ Spell | Controller$ ReplacedCardController | "
+            "WithoutManaCost$ True",
+            text,
+        )
+        cast_line = next(
+            line for line in text.splitlines() if line.startswith("SVar:CastSelf:")
+        )
+        self.assertNotIn("Optional$", cast_line)
 
-    def test_unpaid_enters_trigger_delays_return_and_stacks_perpetual_buff(self):
+    def test_unpaid_enters_trigger_returns_immediately_and_stacks_perpetual_buff(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn(
@@ -52,22 +68,14 @@ class QueenSavathContractTest(unittest.TestCase):
             text,
         )
         self.assertIn(
-            "SVar:TrigReturn:DB$ DelayedTrigger | Mode$ Phase | "
-            "Phase$ End of Turn | ValidPlayer$ Player | "
-            "RememberObjects$ Self | Execute$ DBReturn | UnlessCost$ 1 B | "
-            "UnlessPayer$ You | UnlessResolveSubs$ WhenNotPaid | "
-            "StackDescription$ None | "
-            "TriggerDescription$ At the beginning of the next end step, "
-            "return CARDNAME to your hand and it perpetually gets +2/+2.",
+            "SVar:TrigReturn:DB$ ChangeZone | Defined$ Self | "
+            "Origin$ Battlefield | Destination$ Hand | RememberChanged$ True | "
+            "UnlessCost$ 1 B | UnlessPayer$ You | "
+            "UnlessResolveSubs$ WhenNotPaid | SubAbility$ DBPerpetualBuff",
             text,
         )
-        self.assertIn(
-            "SVar:DBReturn:DB$ ChangeZone | "
-            "Defined$ DelayTriggerRememberedLKI | Origin$ Battlefield | "
-            "Destination$ Hand | "
-            "RememberChanged$ True | SubAbility$ DBPerpetualBuff",
-            text,
-        )
+        self.assertNotIn("DB$ DelayedTrigger", text)
+        self.assertNotIn("DelayTriggerRememberedLKI", text)
         self.assertIn(
             "SVar:DBPerpetualBuff:DB$ Pump | Defined$ Remembered | "
             "PumpZone$ Hand | NumAtt$ +2 | NumDef$ +2 | "
