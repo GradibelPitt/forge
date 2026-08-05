@@ -14,6 +14,12 @@
 - 只有现有脚本系统无法准确表达且用户明确要求时，才扩展 Java。
 - 引擎新增能力必须有独立边界、测试和不会破坏同名官方机制的内部名称。
 
+## Source-filtered life loss prevention
+
+`LifeReduced` 的来源过滤只用于非伤害生命损失。来源由实际结算 `LoseLife` 或辐射的牌张显式传入；费用、疲劳、法力灼烧等无来源事件继续保持空来源，因此不会误耗“所选来源”的防护。伤害仍在 `DamageDone` 层拦截，因为牌手最终生命减少时，同一伤害批次可能已经合并多个伤害来源。
+
+“埃辛诺斯壁垒”复用“荣耀之路”的 `ChooseSource`、目标记忆与指挥区临时效果结构，并在同一效果上并列 `DamageDone` 与 `LifeReduced` 两个替代事件。二者都以放逐该效果牌作为替代结算，因此任一分支首次命中后都会同时移除另一分支，形成一个而非两个独立护盾。
+
 ## Spell categories
 
 法术派系／类别复用 Forge 原生卡牌子类别，不新增平行字段或 Java 关键字。脚本采用 `Types:Sorcery Shadow` 或 `Types:Instant Shadow` 一类写法；`Shadow` 与官方的 `Arcane`、`Lesson`、`Trap` 一样进入 `CardType` 的 subtype 集合，可由现有类型与有效性筛选路径识别。中文类别栏显示为“法术～暗影”或“瞬间～暗影”。

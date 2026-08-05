@@ -514,6 +514,11 @@ public class Player extends GameEntity implements Comparable<Player> {
     }
 
     public final int loseLife(int toLose, final boolean damage, final boolean manaBurn) {
+        return loseLife(toLose, damage, manaBurn, null);
+    }
+
+    public final int loseLife(int toLose, final boolean damage, final boolean manaBurn,
+            final Card source) {
         // Rule 118.4
         // this is for players being able to pay 0 life nothing to do
         // no trigger for lost no life
@@ -525,6 +530,7 @@ public class Player extends GameEntity implements Comparable<Player> {
         final Map<AbilityKey, Object> repParams = AbilityKey.mapFromAffected(this);
         repParams.put(AbilityKey.Amount, toLose);
         repParams.put(AbilityKey.IsDamage, damage);
+        repParams.put(AbilityKey.Source, source);
 
         switch (getGame().getReplacementHandler().run(ReplacementType.LifeReduced, repParams)) {
         case NotReplaced:

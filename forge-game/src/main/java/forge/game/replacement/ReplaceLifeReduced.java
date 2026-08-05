@@ -39,6 +39,10 @@ public class ReplaceLifeReduced extends ReplacementEffect {
             return false;
         }
 
+        if (!matchesValidParam("ValidSource", runParams.get(AbilityKey.Source))) {
+            return false;
+        }
+
         if (hasParam("IsDamage")) {
             if (getParam("IsDamage").equals("True") != ((Boolean) runParams.get(AbilityKey.IsDamage))) {
                 return false;
@@ -59,7 +63,7 @@ public class ReplaceLifeReduced extends ReplacementEffect {
 
     @Override
     public void setReplacingObjects(Map<AbilityKey, Object> runParams, SpellAbility sa) {
-        sa.setReplacingObjectsFrom(runParams, AbilityKey.Amount);
+        sa.setReplacingObjectsFrom(runParams, AbilityKey.Amount, AbilityKey.Source);
         sa.setReplacingObject(AbilityKey.Player, runParams.get(AbilityKey.Affected));
     }
 }

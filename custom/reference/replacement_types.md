@@ -30,6 +30,14 @@ Intercepts moving cards between zones (e.g. going to graveyard, entering battlef
   R:Event$ Moved | ActiveZones$ Battlefield | Destination$ Graveyard | ValidCard$ Card.Self | ReplaceWith$ SVarExileInstead | Description$ If CARDNAME would be put into a graveyard from anywhere, exile it instead.
   ```
 
+### 4. `LifeReduced`
+Intercepts life loss after the affected player and amount are known. Source-authored non-damage life loss can be filtered with `ValidSource$`; use `IsDamage$ False` when damage is handled separately by `DamageDone`.
+- **Parameters**: `ValidPlayer$`, `ValidSource$`, `IsDamage$`, `Result$`, `ReplaceWith$`
+- **Example**:
+  ```text
+  R:Event$ LifeReduced | ValidPlayer$ Player.IsRemembered | ValidSource$ Card.ChosenCardStrict | IsDamage$ False | ReplaceWith$ ExileEffect | Description$ Prevent the next life loss caused by the chosen source.
+  ```
+
 ---
 
 ## 📜 Full List of Valid `ReplacementType` Values

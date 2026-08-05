@@ -1,0 +1,10 @@
+Name:埃辛诺斯壁垒
+ManaCost:1 W W
+Types:Legendary Artifact
+K:Durability:4
+A:AB$ ChooseSource | Cost$ SubCounter<1/DURABILITY> | Choices$ Card,Emblem | AILogic$ NeedsPrevention | SubAbility$ DBEffect | SpellDescription$ Choose a source. Prevent the next damage that source would deal to target player or the next effect from that source that would cause that player to lose life this turn.
+SVar:DBEffect:DB$ Effect | ValidTgts$ Player | TgtPrompt$ Select target player to protect | ReplacementEffects$ RepDamage,RepLifeLoss | RememberObjects$ Targeted | ConditionDefined$ ChosenCard | ConditionPresent$ Card,Emblem | ConditionCompare$ GE1
+SVar:RepDamage:Event$ DamageDone | ValidTarget$ Player.IsRemembered | ValidSource$ Card.ChosenCardStrict,Emblem.ChosenCard | ReplaceWith$ ExileEffect | PreventionEffect$ True | Description$ The next time the chosen source would deal damage to the targeted player this turn, prevent that damage.
+SVar:RepLifeLoss:Event$ LifeReduced | ValidPlayer$ Player.IsRemembered | ValidSource$ Card.ChosenCardStrict,Emblem.ChosenCard | IsDamage$ False | ReplaceWith$ ExileEffect | Description$ The next time an effect from the chosen source would cause the targeted player to lose life this turn, prevent that life loss.
+SVar:ExileEffect:DB$ ChangeZone | Defined$ Self | Origin$ Command | Destination$ Exile
+Oracle:Durability 4 (This permanent enters with four durability counters on it. When the last durability counter is removed from it, sacrifice it.)\nRemove a durability counter from CARDNAME: Choose a source. Prevent the next damage that source would deal to target player or the next effect from that source that would cause that player to lose life this turn.

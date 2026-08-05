@@ -8,6 +8,13 @@
 - **Java implementation:** `Keyword.java` 注册数值关键字；`CardFactoryUtil.java` 建立进场放置耐久指示物的替代式效应与最后一个耐久指示物被移去时的牺牲触发器；`CounterEnumType.java` 注册耐久与秘银指示物。
 - **Edge cases:** 耐久本身不会按回合自动移去指示物；只有其他费用或效应移去最后一个耐久指示物时才会触发牺牲。
 
+## LifeReduced 来源筛选
+
+- **Status:** 已实现为现有替代事件的可选来源过滤能力，供“防止所选来源的失去生命效应”使用。
+- **DSL:** `Event$ LifeReduced | ValidPlayer$ <player> | ValidSource$ <card filter> | IsDamage$ False`。一次性防护可将此替代式效应与 `DamageDone` 来源防护放在同一个临时 `Effect` 上，并让两者的 `ReplaceWith$` 都放逐同一效果牌。
+- **Java implementation:** `Player.loseLife(..., Card source)` 把可选来源写入替代事件；`ReplaceLifeReduced` 执行 `ValidSource$`；`LifeLoseEffect` 与 `InternalRadiationEffect` 传入其宿主牌。
+- **Edge cases:** 支付生命、疲劳、法力灼烧与其他没有牌张来源的生命损失不会命中 `ValidSource$`。伤害批次可能同时包含多个来源，因此仍由 `DamageDone` 在伤害转化为失去生命之前按来源拦截，不能把聚合后的 `LifeReduced` 当作单一伤害来源。
+
 ## DrawnAll（批次抓牌触发）
 
 - **Status:** 已实现；供“抓一张或数张牌时”这类每个抓牌批次只触发一次的异能使用。
