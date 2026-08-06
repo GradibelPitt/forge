@@ -15,6 +15,12 @@ ART_BACKUP = (
     / "card-artwork"
     / "codex-clipboard-3abb60f5-62f1-4f63-84f9-99e10b4634ce.png"
 )
+ART_OUTPAINT = (
+    ROOT
+    / "tools"
+    / "card-artwork"
+    / "食肉魔块-imagegen-outpaint-20260806.png"
+)
 ART = ROOT / "cards" / "pictures" / "PH01" / "食肉魔块.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
@@ -76,11 +82,25 @@ class CarnivorousMagicCubeContractTest(unittest.TestCase):
             "29942BB10BD7D7F65625BFD3A5582EC37FF5424C4D95F9A9CF309FE5C5598DF2",
             hashlib.sha256(ART_BACKUP.read_bytes()).hexdigest().upper(),
         )
+        self.assertTrue(ART_OUTPAINT.is_file())
+        self.assertEqual(
+            "84305E6A90CB662569E6449901D7F51A79773EE3A08E7024884BE5F68A76B45D",
+            hashlib.sha256(ART_OUTPAINT.read_bytes()).hexdigest().upper(),
+        )
+        with Image.open(ART_OUTPAINT) as image:
+            self.assertEqual("PNG", image.format)
+            self.assertEqual("RGB", image.mode)
+            self.assertEqual((1536, 1024), image.size)
+
         self.assertTrue(ART.is_file())
+        self.assertEqual(
+            "C4F265F4F24042E532BA6550E5FD74BDCA1714B77B613ABEA17455BF2A14F6EE",
+            hashlib.sha256(ART.read_bytes()).hexdigest().upper(),
+        )
         with Image.open(ART) as image:
             self.assertEqual("JPEG", image.format)
             self.assertEqual("RGB", image.mode)
-            self.assertEqual((400, 292), image.size)
+            self.assertEqual((1024, 748), image.size)
             self.assertAlmostEqual(1.37, image.width / image.height, delta=0.01)
 
 
