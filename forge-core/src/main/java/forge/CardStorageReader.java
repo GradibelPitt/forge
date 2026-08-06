@@ -182,6 +182,9 @@ public class CardStorageReader {
     }
     
     private File findFileForCard(String transformedName) {
+        if (transformedName.isEmpty()) {
+            return null;
+        }
         String folder = cardsfolder.getAbsolutePath() + "/" + transformedName.charAt(0);
         File file = new File(folder + "/" + transformedName + CardStorageReader.CARD_FILE_DOT_EXTENSION);
         if (!file.exists()) {

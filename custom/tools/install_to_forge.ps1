@@ -23,6 +23,7 @@ $WorkspaceTokenPictures = Join-Path $WorkspaceTokens "pictures"
 $ForgeCards = Join-Path $ForgeCustomDir "cards"
 $ForgeEditions = Join-Path $ForgeCustomDir "editions"
 $ForgeTokens = Join-Path $ForgeCustomDir "tokens"
+$ForgeConstructedDecks = Join-Path $AppData "Forge\decks\constructed"
 $ForgeCardPictures = Join-Path $env:LOCALAPPDATA "Forge\Cache\pics\cards"
 $ForgeTokenPictures = Join-Path $env:LOCALAPPDATA "Forge\Cache\pics\tokens"
 # Retired source path: "colorless\炉石传说.txt". Build the Chinese name from
@@ -30,6 +31,38 @@ $ForgeTokenPictures = Join-Path $env:LOCALAPPDATA "Forge\Cache\pics\tokens"
 # using the active ANSI code page.
 $HearthstoneCardName = -join ([char[]](0x7089, 0x77F3, 0x4F20, 0x8BF4))
 $RetiredCardPaths = @("colorless\$HearthstoneCardName.txt")
+
+function Remove-RetiredHearthstoneCardFromDecks {
+    if (-not (Test-Path -LiteralPath $ForgeConstructedDecks -PathType Container)) {
+        return 0
+    }
+
+    $migrated = 0
+    Get-ChildItem -LiteralPath $ForgeConstructedDecks -Recurse -Filter "*.dck" -File | ForEach-Object {
+        $lines = [IO.File]::ReadAllLines($_.FullName, [Text.Encoding]::UTF8)
+        $updated = New-Object 'System.Collections.Generic.List[string]'
+        $removed = $false
+        foreach ($line in $lines) {
+            $trimmed = $line.Trim()
+            $request = $trimmed -replace '^\d+\s+', ''
+            if ($trimmed -match '^\d+\s+' -and $request.StartsWith("$HearthstoneCardName|PH01")) {
+                $removed = $true
+            } else {
+                $updated.Add($line)
+            }
+        }
+        if ($removed) {
+            $backup = $_.FullName + ".pre-hearthstone-mode.bak"
+            if (-not (Test-Path -LiteralPath $backup)) {
+                Copy-Item -LiteralPath $_.FullName -Destination $backup
+            }
+            [IO.File]::WriteAllLines($_.FullName, $updated, [Text.UTF8Encoding]::new($false))
+            Write-Host "Migrated Deck: $($_.Name)" -ForegroundColor DarkGray
+            $script:migratedDecks++
+        }
+    }
+    return $script:migratedDecks
+}
 
 if ($Uninstall) {
     Write-Host "Uninstalling DIY cards from Forge..." -ForegroundColor Yellow
@@ -116,6 +149,8 @@ foreach ($relPath in $RetiredCardPaths) {
         Write-Host "Removed Retired Card: $relPath" -ForegroundColor DarkGray
     }
 }
+$migratedDecks = 0
+Remove-RetiredHearthstoneCardFromDecks | Out-Null
 
 # Copy Editions
 if (Test-Path $WorkspaceEditions) {

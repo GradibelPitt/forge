@@ -60,6 +60,8 @@ class HearthstoneModeContractTest(unittest.TestCase):
             encoding="utf-8-sig"
         )
         self.assertIn('"colorless\\炉石传说.txt"', installer)
+        self.assertIn("pre-hearthstone-mode.bak", installer)
+        self.assertIn("Remove-RetiredHearthstoneCardFromDecks", installer)
 
 
 if __name__ == "__main__":
