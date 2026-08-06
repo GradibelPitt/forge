@@ -94,3 +94,4 @@ Type=Custom_Set
 95 R 魔能机甲 @Custom
 96 R 山岭巨人 @Custom
 97 M 殒命暗影 @Custom
+98 C Demonfire (Custom)

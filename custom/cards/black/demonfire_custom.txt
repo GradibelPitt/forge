@@ -1,0 +1,9 @@
+Name:Demonfire (Custom)
+ManaCost:1 B
+Types:Instant
+A:SP$ Branch | ValidTgts$ Creature | TgtPrompt$ Select target creature | BranchConditionSVar$ IsControlledDemon | BranchConditionSVarCompare$ EQ1 | TrueSubAbility$ PutCounters | FalseSubAbility$ DealDamage | StackDescription$ SpellDescription | SpellDescription$ Demonfire deals 2 damage to target creature. If it's a Demon you control, put two +1/+1 counters on it instead.
+SVar:IsControlledDemon:Targeted$Valid Creature.Demon+YouCtrl
+SVar:PutCounters:DB$ PutCounter | Defined$ Targeted | CounterTypes$ P1P1 | CounterNum$ 2
+SVar:DealDamage:DB$ DealDamage | Defined$ Targeted | NumDmg$ 2
+Oracle:Demonfire deals 2 damage to target creature. If it's a Demon you control, put two +1/+1 counters on it instead.
+Text:Demonfire is like regular fire except for IT NEVER STOPS BURNING HELLPPP
