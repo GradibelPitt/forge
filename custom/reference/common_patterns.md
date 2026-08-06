@@ -69,6 +69,17 @@ T:Mode$ Phase | Phase$ End | ValidPlayer$ You | Execute$ TrigDrain | TriggerDesc
 SVar:TrigDrain:DB$ LoseLife | Defined$ Opponent | LifeAmount$ 1
 ```
 
+### 3. Check that starting-deck nonlands all have different names
+```text
+T:Mode$ SpellCast | ValidCard$ Card.Self | TriggerZones$ Stack | Execute$ TrigConjure
+SVar:TrigConjure:DB$ MakeCard | Defined$ You | Conjure$ True | DefinedName$ ValidHand Card.YouCtrl | Zone$ Hand | ConditionCheckSVar$ StartingDeckDuplicateNonlandNames | ConditionSVarCompare$ EQ0
+SVar:StartingDeckDuplicateNonlandNames:Count$StartingDeckDuplicateNonlandNames
+```
+
+`Count$StartingDeckDuplicateNonlandNames` reads the activating player's registered
+starting main deck, ignores land cards, merges different printings by internal name,
+and returns the number of nonland names represented by two or more cards.
+
 ---
 
 ## 🪄 Instant & Sorcery Spells

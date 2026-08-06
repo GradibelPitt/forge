@@ -29,6 +29,14 @@
 - **Java implementation:** `forge-game/.../cost/CostAdjustment.java`。
 - **Tests:** `forge-game/src/test/java/forge/game/cost/CostAdjustmentColorChoiceTest.java`。
 
+## StartingDeckDuplicateNonlandNames（起始套牌非地重名计数）
+
+- **Status:** 已实现为通用数值 SVar，供施放时检查起始构筑的高地条件。
+- **DSL:** `SVar:<name>:Count$StartingDeckDuplicateNonlandNames`；配合 `ConditionCheckSVar$ <name> | ConditionSVarCompare$ EQ0` 表示起始套牌中每张非地牌的名称均不相同。
+- **Java implementation:** `AbilityUtils.xCount` 读取异能起动牌手注册的主牌 `CardPool`；按内部牌名合并不同版本，忽略所有地牌，并返回出现至少两份的非地牌名数量。
+- **Tests:** `forge-game/src/test/java/forge/game/ability/AbilityUtilsStartingDeckTest.java`；DIY 契约测试 `tests/test_elise_the_enlightened.py`。
+- **Edge cases:** 读取的是注册的起始构筑，不会因对局中抓牌、磨牌、化生、洗牌或换区而改变；同名不同版本仍视为同一牌名，基本地和非基本地均不计入。
+
 本文件记录自定义关键词及类似关键词的引擎 API。卡牌清单见 [CARDS.md](CARDS.md)，设计理由见 [docs/DESIGN.md](docs/DESIGN.md)。
 
 ## Superreach

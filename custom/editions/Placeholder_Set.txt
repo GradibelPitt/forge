@@ -99,3 +99,4 @@ Type=Custom_Set
 101 U 强能雷象 @Custom
 102 R 要塞指挥官 @Custom
 103 R 伴唱机 @Custom
+104 M 启迪者伊利斯 @Custom

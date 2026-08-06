@@ -43,6 +43,7 @@
 - `forge-game/src/main/java/forge/game/ability/effects/StealSameNameEffect.java`：按战场、手牌、牌库、坟墓场的固定顺序取得目标对手的第一张同名牌，不创建玩家选择窗口；战场对象更改操控者，其他对象以原实体转移到施放者手中并更改拥有者。
 - `forge-game/src/main/java/forge/game/card/GameRuleCard.java`、`player/Player.java` 及 `ability/effects` 下的发现、制造、替换、选牌、直接打出与复制实现：统一保护只用于建立对局规则的牌；抽牌兜底会跳过并放逐，所有数据库生成和复制入口都不会物化或复制它们。
 - `forge-game/src/main/java/forge/game/ability/effects/MakeCardEffect.java`：霍格的 `StartingDeckLegendaryPermanents` 专用来源；直接遍历注册主牌 `CardPool` 的计数条目和 `PaperCard` 类型元数据，不扫描全局卡库，也不物化临时候选 `Card`。
+- `forge-game/src/main/java/forge/game/ability/AbilityUtils.java`：`Count$StartingDeckDuplicateNonlandNames` 直接读取异能起动牌手注册的主牌 `CardPool`，忽略地牌、按内部名称合并不同版本并返回重复非地牌名数量；供启迪者伊利斯一类起始构筑条件使用。
 - 同一文件的 `RandomOpponentStartingDeckNonlands` 来源用于裂魂者阿扎莉娜：读取注册对手的主牌 `CardPool`，排除地牌，随机优先不同牌名后再从剩余副本补足指定数量。
 - `forge-game/src/main/java/forge/game/player/Player.java` 与 `ability/effects/TakeFatigueEffect.java`：每位玩家的单调疲劳计数、空牌库抽牌替代路径和可复用 `TakeFatigue` API。
 - `forge-game/src/main/java/forge/game/player/Player.java`、`replacement/ReplaceLifeReduced.java`、`ability/effects/LifeLoseEffect.java` 与 `InternalRadiationEffect.java`：为非伤害生命损失携带可选牌张来源，使 `LifeReduced` 的 `ValidSource$` 能区分被选来源；费用、疲劳、法力灼烧及伤害批次不伪造该来源，伤害继续在 `DamageDone` 层按来源处理。

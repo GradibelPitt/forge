@@ -11,6 +11,7 @@ import forge.card.MagicColor;
 import forge.card.mana.ManaAtom;
 import forge.card.mana.ManaCost;
 import forge.card.mana.ManaCostShard;
+import forge.deck.CardPool;
 import forge.game.*;
 import forge.game.ability.AbilityFactory.AbilityRecordType;
 import forge.game.card.*;
@@ -32,6 +33,7 @@ import forge.game.trigger.Trigger;
 import forge.game.trigger.TriggerType;
 import forge.game.zone.CostPaymentStack;
 import forge.game.zone.ZoneType;
+import forge.item.PaperCard;
 import forge.util.*;
 import forge.util.collect.FCollection;
 import forge.util.collect.FCollectionView;
@@ -1624,6 +1626,16 @@ public class AbilityUtils {
         Iterable<Card> someCards = null;
         final Game game = c.getGame();
 
+        if (sq[0].equals("StartingDeckDuplicateNonlandNames")) {
+            final Player deckOwner = player == null ? c.getController() : player;
+            if (deckOwner == null || deckOwner.getRegisteredPlayer() == null
+                    || deckOwner.getRegisteredPlayer().getDeck() == null) {
+                return doXMath(0, expr, c, ctb);
+            }
+            return doXMath(countStartingDeckDuplicateNonlandNames(
+                    deckOwner.getRegisteredPlayer().getDeck().getMain()), expr, c, ctb);
+        }
+
         if (ctb != null) {
             // Count$Compare <int comparator value>.<True>.<False>
             if (sq[0].startsWith("Compare")) {
@@ -2895,6 +2907,17 @@ public class AbilityUtils {
         }
 
         return doXMath(num, expr, c, ctb);
+    }
+
+    static int countStartingDeckDuplicateNonlandNames(final CardPool startingDeck) {
+        final Map<String, Integer> copiesByName = new HashMap<>();
+        for (final Entry<PaperCard, Integer> entry : startingDeck) {
+            final PaperCard paperCard = entry.getKey();
+            if (!paperCard.getRules().getType().isLand()) {
+                copiesByName.merge(paperCard.getName(), entry.getValue(), Integer::sum);
+            }
+        }
+        return (int) copiesByName.values().stream().filter(copies -> copies > 1).count();
     }
 
     public static final void applyManaColorConversion(ManaConversionMatrix matrix, String conversion) {
