@@ -91,3 +91,4 @@ Type=Custom_Set
 92 R 食肉格块 @Custom
 93 R 食肉魔块 @Custom
 94 R 亵渎 @Custom
+95 R 魔能机甲 @Custom
