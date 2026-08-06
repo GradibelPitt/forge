@@ -1,0 +1,10 @@
+Name:食肉魔块
+ManaCost:3 B B
+Types:Creature Ooze
+PT:4/6
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDestroy | TriggerDescription$ 当食肉魔块进战场，消灭目标由你控制的生物。
+SVar:TrigDestroy:DB$ Destroy | ValidTgts$ Creature.YouCtrl | TgtPrompt$ Select target creature you control | RememberDestroyed$ True
+T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Card.Self | Execute$ TrigConjure | TriggerDescription$ 当食肉魔块死去时，化生两个以此法被消灭的生物并放进战场。
+SVar:TrigConjure:DB$ MakeCard | Conjure$ True | DefinedName$ Remembered | Amount$ 2 | Zone$ Battlefield
+DeckHas:Ability$Destroy
+Oracle:当食肉魔块进战场，消灭目标由你控制的生物。当食肉魔块死去时，化生两个以此法被消灭的生物并放进战场。
