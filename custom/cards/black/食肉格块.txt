@@ -1,0 +1,12 @@
+Name:食肉格块
+ManaCost:3 B B
+Types:Creature Ooze
+PT:4/6
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigChooseCreature | TriggerDescription$ 当食肉格块进战场时，消灭一个由你控制的生物。
+SVar:TrigChooseCreature:DB$ ChooseCard | Defined$ You | Choices$ Creature.YouCtrl | Mandatory$ True | ImprintChosen$ True | SubAbility$ DBDestroy
+SVar:DBDestroy:DB$ Destroy | Defined$ Imprinted | RememberDestroyed$ True | SubAbility$ DBCleanupImprinted
+SVar:DBCleanupImprinted:DB$ Cleanup | ClearImprinted$ True
+T:Mode$ Phase | Phase$ End of Turn | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigConjure | TriggerDescription$ 在你的结束阶段，化生一个以此法消灭的生物并在你的操控下放入战场。
+SVar:TrigConjure:DB$ MakeCard | Conjure$ True | DefinedName$ Remembered | Zone$ Battlefield
+DeckHas:Ability$Destroy
+Oracle:当食肉格块进战场时，消灭一个由你控制的生物。食肉格块具有“在你的结束阶段，化生一个以此法消灭的生物并在你的操控下放入战场”。
