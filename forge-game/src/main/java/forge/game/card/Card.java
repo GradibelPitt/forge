@@ -7597,6 +7597,16 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         }
         return isCommander;
     }
+    public boolean isCompanion() {
+        for (final Card effect : getOwner().getCardsIn(ZoneType.Command)) {
+            if (effect.isImmutable()
+                    && effect.getName().endsWith(" Companion Effect")
+                    && this.equals(effect.getEffectSource())) {
+                return true;
+            }
+        }
+        return false;
+    }
     public boolean isRealCommander() {
         return isCommander;
     }
