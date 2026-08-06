@@ -96,3 +96,4 @@ Type=Custom_Set
 98 C Demonfire (Custom)
 99 M 主厨奈瑟雷克 @Custom
 100 C 批量生产 @Custom
+101 U 强能雷象 @Custom
