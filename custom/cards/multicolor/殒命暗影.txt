@@ -1,0 +1,10 @@
+Name:殒命暗影
+ManaCost:0
+Colors:blue,black
+Types:Instant
+A:SP$ Cleanup | SpellDescription$ Cast the last instant or sorcery spell you cast instead. You still pay its mana cost.
+T:Mode$ SpellCast | ValidCard$ Instant,Sorcery | ValidActivatingPlayer$ You | TriggerZones$ Hand | Execute$ BecomeLastSpell | Static$ True | TriggerDescription$ While CARDNAME is in your hand, each time you cast an instant or sorcery spell, CARDNAME becomes a copy of that spell and retains this ability.
+S:Mode$ CantBeCast | ValidCard$ Card.Self | EffectZone$ All | CheckSVar$ Uncopied | SVarCompare$ EQ1 | Description$ You can't cast CARDNAME before you have cast an instant or sorcery spell while it is in your hand.
+SVar:BecomeLastSpell:DB$ Clone | Defined$ TriggeredCardLKICopy | CloneZone$ Hand | GainThisAbility$ True
+SVar:Uncopied:1
+Oracle:CARDNAME is blue and black. As you cast CARDNAME, instead cast the last instant or sorcery spell you cast. (You still pay its mana cost.)
