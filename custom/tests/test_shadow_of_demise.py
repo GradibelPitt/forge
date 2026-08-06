@@ -15,6 +15,12 @@ ART_BACKUP = (
     / "card-artwork"
     / "codex-clipboard-2de77c75-572e-45e0-8e61-a1f7bf2aca8e.png"
 )
+ART_OUTPAINT = (
+    ROOT
+    / "tools"
+    / "card-artwork"
+    / "殒命暗影-imagegen-outpaint-20260806.png"
+)
 ART = ROOT / "cards" / "pictures" / "PH01" / "殒命暗影.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
@@ -71,11 +77,25 @@ class ShadowOfDemiseContractTest(unittest.TestCase):
             "F081AAA438CB4D0C0052E770DBCF5E354245D0FDDC9AAF18CCC99CD953DFB413",
             hashlib.sha256(ART_BACKUP.read_bytes()).hexdigest().upper(),
         )
+        self.assertTrue(ART_OUTPAINT.is_file())
+        self.assertEqual(
+            "51E0352300934B8558832D31FC4ADEBDB10AD458EEDD02417D784B519A3C393B",
+            hashlib.sha256(ART_OUTPAINT.read_bytes()).hexdigest().upper(),
+        )
+        with Image.open(ART_OUTPAINT) as image:
+            self.assertEqual("PNG", image.format)
+            self.assertEqual("RGB", image.mode)
+            self.assertEqual((1586, 992), image.size)
+
         self.assertTrue(ART.is_file())
+        self.assertEqual(
+            "19576192BACE06F4EE14A336BAC8701AEB929D3F567A2DCF00D667B53CA501EA",
+            hashlib.sha256(ART.read_bytes()).hexdigest().upper(),
+        )
         with Image.open(ART) as image:
             self.assertEqual("JPEG", image.format)
             self.assertEqual("RGB", image.mode)
-            self.assertEqual((1920, 1401), image.size)
+            self.assertEqual((1024, 748), image.size)
             self.assertAlmostEqual(1.37, image.width / image.height, delta=0.01)
 
 
