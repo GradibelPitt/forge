@@ -1,0 +1,14 @@
+Name:青玉魔像
+ManaCost:G
+Types:Artifact Creature Golem
+PT:1/1
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | TriggerZones$ Battlefield | CheckSVar$ JadeEmblemCount | SVarCompare$ EQ0 | Execute$ CreateJadeCounterEmblem | TriggerDescription$ When CARDNAME enters the battlefield, put a +1/+1 counter on it for each Jade Golem that entered the battlefield before it this game.
+SVar:CreateJadeCounterEmblem:DB$ Effect | Name$ Emblem — 青玉魔像计数 | Triggers$ InitializeJadeCount,TrackJadeGolems | Duration$ Permanent | Unique$ True | ConditionCheckSVar$ JadeEmblemCount | ConditionSVarCompare$ EQ0
+SVar:InitializeJadeCount:Mode$ Always | TriggerZones$ Command | CheckSVar$ JadeCount | SVarCompare$ EQ0 | Static$ True | Execute$ AddInitialJadeCount | TriggerDescription$ When CARDNAME has no storage counters on it, put a storage counter on it.
+SVar:AddInitialJadeCount:DB$ PutCounter | Defined$ Self | CounterType$ STORAGE | CounterNum$ 1
+SVar:TrackJadeGolems:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.named青玉魔像 | TriggerZones$ Command | Execute$ GrowJadeGolem | TriggerDescription$ Whenever a Jade Golem enters the battlefield, put a +1/+1 counter on it for each storage counter on CARDNAME, then put a storage counter on CARDNAME.
+SVar:GrowJadeGolem:DB$ PutCounter | Defined$ TriggeredCard | CounterType$ P1P1 | CounterNum$ JadeCount | SubAbility$ AddJadeCount
+SVar:AddJadeCount:DB$ PutCounter | Defined$ Self | CounterType$ STORAGE | CounterNum$ 1
+SVar:JadeCount:Count$CardCounters.STORAGE
+SVar:JadeEmblemCount:Count$ValidCommand Effect.namedEmblem — 青玉魔像计数
+Oracle:When CARDNAME enters the battlefield, put a +1/+1 counter on it for each Jade Golem that entered the battlefield before it this game.

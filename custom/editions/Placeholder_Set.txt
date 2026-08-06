@@ -100,4 +100,6 @@ Type=Custom_Set
 102 R 要塞指挥官 @Custom
 103 R 伴唱机 @Custom
 104 M 启迪者伊利斯 @Custom
+105 C 青玉魔像 @Custom
 106 R 变节 @Custom
+107 R 末日预言者 @Custom
