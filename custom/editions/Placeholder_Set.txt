@@ -95,3 +95,4 @@ Type=Custom_Set
 97 M 殒命暗影 @Custom
 98 C Demonfire (Custom)
 99 M 主厨奈瑟雷克 @Custom
+100 C 批量生产 @Custom
