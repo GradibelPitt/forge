@@ -15,6 +15,12 @@ ART_BACKUP = (
     / "card-artwork"
     / "codex-clipboard-266b4ed0-3066-44f5-82f5-28ac477dca89.png"
 )
+OUTPAINT = (
+    ROOT
+    / "tools"
+    / "card-artwork"
+    / "魔能机甲-imagegen-outpaint-20260806.png"
+)
 ART = ROOT / "cards" / "pictures" / "PH01" / "魔能机甲.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
@@ -62,7 +68,20 @@ class FelReaverContractTest(unittest.TestCase):
             "0C81EA6B91C4772EDF1DD0A24A4A7658489A2799B1641FFA9FABBE3DEE146F7E",
             hashlib.sha256(ART_BACKUP.read_bytes()).hexdigest().upper(),
         )
+        self.assertTrue(OUTPAINT.is_file())
+        self.assertEqual(
+            "C72429152045295B51CF00D537047B680EFEE5ABE1F21365C2B80BF586A2FAB2",
+            hashlib.sha256(OUTPAINT.read_bytes()).hexdigest().upper(),
+        )
+        with Image.open(OUTPAINT) as image:
+            self.assertEqual("PNG", image.format)
+            self.assertEqual("RGB", image.mode)
+            self.assertEqual((1469, 1071), image.size)
         self.assertTrue(ART.is_file())
+        self.assertEqual(
+            "B52FF338B5543B5A6BBDCC4BCD64C9021ED01084E5F5C4F342001AE66BF05E81",
+            hashlib.sha256(ART.read_bytes()).hexdigest().upper(),
+        )
         with Image.open(ART) as image:
             self.assertEqual("JPEG", image.format)
             self.assertEqual("RGB", image.mode)
