@@ -1,0 +1,8 @@
+Name:狗头人图书管理员
+ManaCost:B
+Types:Creature Kobold
+PT:2/1
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDraw | TriggerDescription$ 当狗头人图书管理员进战场时，你可以支付两点生命并抓一张牌
+SVar:TrigDraw:AB$ Draw | Cost$ PayLife<2> | Defined$ You | NumCards$ 1
+Oracle:当狗头人图书管理员进战场时，你可以支付两点生命并抓一张牌
+
