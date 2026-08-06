@@ -98,3 +98,4 @@ Type=Custom_Set
 100 C 批量生产 @Custom
 101 U 强能雷象 @Custom
 102 R 要塞指挥官 @Custom
+103 R 伴唱机 @Custom
