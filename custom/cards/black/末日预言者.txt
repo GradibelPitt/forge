@@ -1,0 +1,7 @@
+Name:末日预言者
+ManaCost:B B
+Types:Creature Warlock
+PT:0/5
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDestroyAll | TriggerDescription$ At the beginning of your upkeep, destroy all creatures. They can't be regenerated.
+SVar:TrigDestroyAll:DB$ DestroyAll | ValidCards$ Creature | NoRegen$ True
+Oracle:在你的维持开始时，消灭所有生物。它们不能重生。
