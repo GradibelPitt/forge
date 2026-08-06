@@ -255,6 +255,7 @@ public abstract class GameLobby implements IHasGameType {
             data.appliedVariants.remove(GameType.Brawl);
             data.appliedVariants.remove(GameType.MomirBasic);
             data.appliedVariants.remove(GameType.MoJhoSto);
+            data.appliedVariants.remove(GameType.Hearthstone);
             break;
         case Oathbreaker:
             data.appliedVariants.remove(GameType.Commander);
@@ -262,6 +263,7 @@ public abstract class GameLobby implements IHasGameType {
             data.appliedVariants.remove(GameType.Brawl);
             data.appliedVariants.remove(GameType.MomirBasic);
             data.appliedVariants.remove(GameType.MoJhoSto);
+            data.appliedVariants.remove(GameType.Hearthstone);
             break;
         case TinyLeaders:
             data.appliedVariants.remove(GameType.Commander);
@@ -269,6 +271,7 @@ public abstract class GameLobby implements IHasGameType {
             data.appliedVariants.remove(GameType.Brawl);
             data.appliedVariants.remove(GameType.MomirBasic);
             data.appliedVariants.remove(GameType.MoJhoSto);
+            data.appliedVariants.remove(GameType.Hearthstone);
             break;
         case Brawl:
             data.appliedVariants.remove(GameType.Commander);
@@ -276,6 +279,7 @@ public abstract class GameLobby implements IHasGameType {
             data.appliedVariants.remove(GameType.TinyLeaders);
             data.appliedVariants.remove(GameType.MomirBasic);
             data.appliedVariants.remove(GameType.MoJhoSto);
+            data.appliedVariants.remove(GameType.Hearthstone);
             break;
         case Vanguard:
             data.appliedVariants.remove(GameType.MomirBasic);
@@ -288,6 +292,7 @@ public abstract class GameLobby implements IHasGameType {
             data.appliedVariants.remove(GameType.Brawl);
             data.appliedVariants.remove(GameType.Vanguard);
             data.appliedVariants.remove(GameType.MoJhoSto);
+            data.appliedVariants.remove(GameType.Hearthstone);
             break;
         case MoJhoSto:
             data.appliedVariants.remove(GameType.Commander);
@@ -296,6 +301,15 @@ public abstract class GameLobby implements IHasGameType {
             data.appliedVariants.remove(GameType.Brawl);
             data.appliedVariants.remove(GameType.Vanguard);
             data.appliedVariants.remove(GameType.MomirBasic);
+            data.appliedVariants.remove(GameType.Hearthstone);
+            break;
+        case Hearthstone:
+            data.appliedVariants.remove(GameType.Commander);
+            data.appliedVariants.remove(GameType.Oathbreaker);
+            data.appliedVariants.remove(GameType.TinyLeaders);
+            data.appliedVariants.remove(GameType.Brawl);
+            data.appliedVariants.remove(GameType.MomirBasic);
+            data.appliedVariants.remove(GameType.MoJhoSto);
             break;
         default:
             break;
@@ -318,6 +332,8 @@ public abstract class GameLobby implements IHasGameType {
                 currentGameType = GameType.TinyLeaders;
             } else if (hasVariant(GameType.Brawl)) {
                 currentGameType = GameType.Brawl;
+            } else if (hasVariant(GameType.Hearthstone)) {
+                currentGameType = GameType.Hearthstone;
             } else {
                 currentGameType = GameType.Constructed;
             }
@@ -428,7 +444,11 @@ public abstract class GameLobby implements IHasGameType {
         //Auto-generated decks don't need to be checked here
         //Commander deck replaces regular deck and is checked later
         if (checkLegality && autoGenerateVariant == null && !isCommanderMatch) {
-            final DeckFormat deckFormat = data.isLimitedMode() ? DeckFormat.Limited : GameType.Constructed.getDeckFormat();
+            final DeckFormat deckFormat = data.isLimitedMode()
+                    ? DeckFormat.Limited
+                    : variantTypes.contains(GameType.Hearthstone)
+                            ? DeckFormat.Hearthstone
+                            : DeckFormat.Constructed;
             for (final LobbySlot slot : activeSlots) {
                 final String name = slot.getName();
                 final String errMsg = deckFormat.getDeckConformanceProblem(slot.getDeck());

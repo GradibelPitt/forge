@@ -352,12 +352,16 @@ public class Game {
             allPlayers.add(pl);
             ingamePlayers.add(pl);
 
-            if (startingLife != -1) {
+            if (HearthstoneMode.isActive(this)) {
+                pl.setStartingLife(HearthstoneMode.STARTING_LIFE);
+            } else if (startingLife != -1) {
                 pl.setStartingLife(startingLife);
             } else {
                 pl.setStartingLife(psc.getStartingLife());
             }
-            pl.setMaxHandSize(psc.getStartingHand());
+            pl.setMaxHandSize(HearthstoneMode.isActive(this)
+                    ? HearthstoneMode.MAXIMUM_HAND_SIZE
+                    : psc.getStartingHand());
             pl.setStartingHandSize(psc.getStartingHand());
 
             if (psc.getManaShards() > 0) {

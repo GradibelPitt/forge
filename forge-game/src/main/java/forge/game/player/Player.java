@@ -1303,7 +1303,7 @@ public class Player extends GameEntity implements Comparable<Player> {
             }
         }
         else {
-            if (hasKeyword(FATIGUE_ON_EMPTY_DRAW_KEYWORD)) {
+            if (hasKeyword(FATIGUE_ON_EMPTY_DRAW_KEYWORD) || HearthstoneMode.isActive(game)) {
                 takeFatigue();
             } else { // Lose by milling is always on. Give AI many cards it cannot play if you want it not to undertake actions
                 triedToDrawFromEmptyLibrary = true;

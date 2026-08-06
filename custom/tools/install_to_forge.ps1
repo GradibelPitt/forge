@@ -25,6 +25,11 @@ $ForgeEditions = Join-Path $ForgeCustomDir "editions"
 $ForgeTokens = Join-Path $ForgeCustomDir "tokens"
 $ForgeCardPictures = Join-Path $env:LOCALAPPDATA "Forge\Cache\pics\cards"
 $ForgeTokenPictures = Join-Path $env:LOCALAPPDATA "Forge\Cache\pics\tokens"
+# Retired source path: "colorless\炉石传说.txt". Build the Chinese name from
+# code points because Windows PowerShell 5.1 reads UTF-8 files without a BOM
+# using the active ANSI code page.
+$HearthstoneCardName = -join ([char[]](0x7089, 0x77F3, 0x4F20, 0x8BF4))
+$RetiredCardPaths = @("colorless\$HearthstoneCardName.txt")
 
 if ($Uninstall) {
     Write-Host "Uninstalling DIY cards from Forge..." -ForegroundColor Yellow
@@ -99,6 +104,16 @@ foreach ($dir in $dirs) {
     if (-not (Test-Path $dir)) {
         New-Item -ItemType Directory -Path $dir | Out-Null
         Write-Host "Created Directory: $dir" -ForegroundColor DarkGray
+    }
+}
+
+# Remove scripts retired in favor of engine-owned game modes. This avoids
+# leaving stale cards behind when synchronizing an existing Forge profile.
+foreach ($relPath in $RetiredCardPaths) {
+    $retiredTarget = Join-Path $ForgeCards $relPath
+    if (Test-Path -LiteralPath $retiredTarget) {
+        Remove-Item -LiteralPath $retiredTarget -Force
+        Write-Host "Removed Retired Card: $relPath" -ForegroundColor DarkGray
     }
 }
 

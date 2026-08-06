@@ -39,7 +39,6 @@ import forge.game.replacement.ReplacementResult;
 import forge.game.replacement.ReplacementType;
 
 import forge.game.spellability.SpellAbility;
-import forge.game.staticability.StaticAbilityNoCleanupDamage;
 import forge.game.trigger.Trigger;
 import forge.game.trigger.TriggerType;
 import forge.game.zone.Zone;
@@ -258,6 +257,7 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
                     nUpkeepsThisGame++;
                     game.getUpkeep().executeUntil(playerTurn);
                     game.getUpkeep().executeAt();
+                    HearthstoneMode.grantUpkeepResource(playerTurn);
 
                     if (playerTurn.getCardsIn(ZoneType.Battlefield).anyMatch(Card::isContraption)) {
                         playerTurn.advanceCrankCounter();
@@ -398,12 +398,7 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
 
                     // Rule 514.2
                     // Reset Damage received map
-                    for (final Card c : game.getCardsIncludePhasingIn(ZoneType.Battlefield)) {
-                        if (!StaticAbilityNoCleanupDamage.damageNotRemoved(c)) {
-                            c.setDamage(0);
-                        }
-                        c.setHasBeenDealtDeathtouchDamage(false);
-                    }
+                    HearthstoneMode.cleanupMarkedDamage(game);
 
                     game.getEndOfTurn().executeUntil();
                     game.getEndOfTurn().executeUntilEndOfPhase(playerTurn);
@@ -650,6 +645,8 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
             CombatUtil.checkDeclaredAttacker(game, c, combat, true);
         }
 
+        HearthstoneMode.chooseForcedBlockers(combat);
+
         game.getTriggerHandler().resetActiveTriggers();
         game.updateCombatForView();
         game.fireEvent(new GameEventCombatChanged());
@@ -675,6 +672,8 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
                 }
             }
             else { continue; }
+
+            HearthstoneMode.applyForcedBlockers(combat, p);
 
             if (game.isGameOver()) { // they just like to close window at any moment
                 return;

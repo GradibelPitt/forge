@@ -43,6 +43,7 @@ import java.util.function.Predicate;
 public enum DeckFormat {
     //               Main board: allowed size         SB: restriction  Max distinct non-basic cards
     Constructed    ( Range.of(60, Integer.MAX_VALUE), Range.of(0, 15), 4),
+    Hearthstone    ( Range.of(30, Integer.MAX_VALUE), Range.of(0, 15), 4),
     QuestDeck      ( Range.of(40, Integer.MAX_VALUE), Range.of(0, 15), 4),
     Limited        ( Range.of(40, Integer.MAX_VALUE), null, Integer.MAX_VALUE) {
         @Override

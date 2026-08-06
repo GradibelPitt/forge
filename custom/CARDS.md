@@ -16,6 +16,12 @@
 | Test Superreach 1 | `{0}` 10/10 生物 | `cards/colorless/test_superreach_1.txt` | 8 | Superreach 阻挡者 |
 | Test Superreach 2 | `{0}` 20/20 生物 | `cards/colorless/test_superreach_2.txt` | 9 | 多种攻击者阻挡限制组合 |
 
+## Game modes
+
+| Mode | Entry | Engine source | Behavior summary |
+|---|---|---|---|
+| 炉石传说 | 构筑大厅“时空竞逐”之后 | `forge-game/.../HearthstoneMode.java` | 独立游戏模式：30 点生命、主牌至少 30 张、起手 7 张、手牌上限 10、递增疲劳；每个维持阶段选择一种基本地加入手牌；生物伤害不会在 cleanup 重置；攻击者可为每个攻击生物选择一个合法目标生物强制阻挡。无神器、徽记或指挥区规则对象。 |
+
 ## Gameplay cards
 
 | Card | Cost / type / stats | Script | Set / # | Behavior summary |
@@ -24,7 +30,6 @@
 | 破链灾星霍格 | `{4}{R}{R}{R}{R}`，10/10 传奇豺狼人 | `cards/red/chainbreaker_hogger.txt` | 8、8a | Superreach；开局复制其他传奇永久物并授予传奇规则徽记；画面 1 为标准牌框，画面 2 为原始竖版扩画 |
 | 海盗帕奇斯 | `{R}`，1/1 传奇海盗／恶魔 | `cards/red/海盗帕奇斯.txt` | 10 | 敏捷；己方海盗进场时从手牌/牌库登场 |
 | 突牙 | `{2}{R}{R}`，3/3 传奇野兽 | `cards/red/突牙.txt` | 11 | 敏捷；`Boarding:3` |
-| 炉石传说 | `{0}` 神器 | `cards/colorless/炉石传说.txt` | 14 | `DeckMinimum:31`、`GameRule`；调度前放逐且不可抽取／发现／化生／替换生成，再从放逐区设置生命并建立成长法力徽记 |
 | 裂魂者阿扎莉娜 | `{4}{U}{U}{U}` 传奇生物～人类／牧师／邪术师 | `cards/blue/裂魂者阿扎莉娜.txt` | 68 | `DeckMinimum:20`；开局自动复制对手起始牌组的20张非地牌，优先不同名；进场补牌至7 |
 | 裂心者伊露希亚 | `{1}{U}{B}`，1/3 传奇生物～人类／牧师 | `cards/multicolor/裂心者伊露希亚.txt` | 70 | 进场时逐张化生对手当前手牌的复制品到己方手中；建立己方下一个结束步骤的延迟触发，跨区域放逐仍存在的这批化生牌。 |
 | 大地坠饰 | `{W}{W}` 瞬间 | `cards/white/大地坠饰.txt` | 71 | 从自己的牌库发现一张生物牌并移入手牌，然后获得等同于所选牌总法术力费用的生命。 |

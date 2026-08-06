@@ -41,6 +41,7 @@ public enum GameType {
     Planechase          (DeckFormat.Planechase, false, false, true, "lblPlanechase", "lblPlanechaseDesc"),
     Archenemy           (DeckFormat.Archenemy, false, false, true, "lblArchenemy", "lblArchenemyDesc"),
     ArchenemyRumble     (DeckFormat.Archenemy, false, false, true, "lblArchenemyRumble", "lblArchenemyRumbleDesc"),
+    Hearthstone         (DeckFormat.Hearthstone, false, false, true, "lblHearthstone", "lblHearthstoneDesc"),
     MomirBasic          (DeckFormat.Constructed, false, false, false, "lblMomirBasic", "lblMomirBasicDesc", player -> {
         Deck deck = new Deck();
         CardPool mainDeck = deck.getMain();

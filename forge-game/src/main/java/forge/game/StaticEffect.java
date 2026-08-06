@@ -190,7 +190,9 @@ public class StaticEffect {
         for (final Player p : affectedPlayers) {
             if (layers.contains(StaticAbilityLayer.RULES)) {
                 p.setUnlimitedHandSize(false);
-                p.setMaxHandSize(p.getStartingHandSize());
+                p.setMaxHandSize(HearthstoneMode.isActive(p.getGame())
+                        ? HearthstoneMode.MAXIMUM_HAND_SIZE
+                        : p.getStartingHandSize());
 
                 p.removeMaxLandPlays(getTimestamp());
                 p.removeMaxLandPlaysInfinite(getTimestamp());

@@ -73,23 +73,23 @@
 - **Player-facing behavior:** 改变包含该牌的牌组最低主牌数量。
 - **DSL:** `K:DeckMinimum:N`。
 - **Java implementation:** Forge Core 构筑合法性与关键词注册路径。
-- **Tests:** `tests/test_hearthstone_card.py` 及历史计划所列 Forge Core 测试。
+- **Tests:** Forge Core 构筑测试及使用该关键词的目标卡牌契约；炉石模式已改用独立 `DeckFormat.Hearthstone`，不再依赖此关键词。
 - **Edge cases:** 这是构筑规则，不等同于游戏开始时的区域或生命设置。
 
 ## GameRule
 
-- **Status:** 已实现；当前由“炉石传说”使用。
+- **Status:** 已实现；作为通用规则牌能力保留，当前炉石模式不再使用。
 - **Player-facing behavior:** 这类牌只承载整局规则，不是可获得或使用的普通牌。引擎在任何起手牌或调度手牌产生前将它从牌库放逐；若异常路径仍把它留在牌库顶或牌库底，抓牌会先将其放逐并继续抓下一张普通牌。
 - **DSL:** `K:GameRule`。
 - **Java implementation:** `GameAction` 负责调度前放逐并禁止其离开放逐区；`Player.drawCards` 提供顶部／底部抽牌兜底；`GameRuleCard` 统一识别规则牌；`CardDiscoverEffect`、`MakeCardEffect`、`ReplaceCardsEffect`、`DraftEffect`、`PlayEffect`、`CopyPermanentEffect` 与 `CloneEffect` 从发现、化生／制造、随机替换、选牌、直接打出及复制入口排除规则牌。
-- **Tests:** `GameRuleCardTest` 覆盖调度前放逐、顶部／底部抽牌兜底与区域锁；`DeckPolicyKeywordTest` 覆盖关键词解析；`CardDiscoverEffectTest`、`MakeCardEffectTest` 与 `ReplaceCardsEffectTest` 覆盖三类生成入口；`tests/test_hearthstone_card.py` 固定“炉石传说”的脚本契约。
+- **Tests:** `GameRuleCardTest` 覆盖调度前放逐、顶部／底部抽牌兜底与区域锁；`DeckPolicyKeywordTest` 覆盖关键词解析；`CardDiscoverEffectTest`、`MakeCardEffectTest` 与 `ReplaceCardsEffectTest` 覆盖三类生成入口。
 - **Edge cases:** 构筑检查仍会把该牌计入主牌并应用 `DeckMinimum`／`DeckLimit`；进入对局后它只能位于放逐区，不能成为发现选项、化生结果、制造结果、批量替换结果、选牌结果、直接打出结果或复制来源。其 `NewGame` 触发必须以 `TriggerZones$ Exile` 运行。
 
 ## Fatigue
 
-- **Status:** 已实现；用于炉石传说徽记，且可由未来卡牌通过独立 API 复用。
+- **Status:** 已实现；炉石模式直接启用，且可由未来卡牌通过独立 API 复用。
 - **Player-facing behavior:** 每位牌手各自维护对局内的疲劳次数。每次 `takeFatigue` 都先将该牌手的次数加一，再失去等同于新次数的生命；该次数永不减少。空牌库抽牌启用疲劳后，每一次逐张抽牌尝试都是一次独立疲劳事件。
-- **DSL:** `DB$ TakeFatigue | Defined$ <player>` 对每个受影响牌手触发一次疲劳。`FatigueOnEmptyDraw` 是炉石传说徽记使用的内部玩家关键词，不应作为普通卡牌规则文字。
+- **DSL:** `DB$ TakeFatigue | Defined$ <player>` 对每个受影响牌手触发一次疲劳。`FatigueOnEmptyDraw` 仍可供其他内部规则使用；炉石模式无需向玩家添加该关键词。
 - **Java implementation:** `forge-game/.../player/Player.java` 的 `takeFatigue()` 与空牌库抽牌路径；`ApiType.TakeFatigue` 和 `ability/effects/TakeFatigueEffect.java` 提供可复用入口。
 - **Edge cases:** 双方疲劳各自从 1 计算；一次抓三张会依序产生 1、2、3 点疲劳，下一次空抽为 4 点，而不是按异能或回合合并。疲劳造成生命损失，不是带来源的战斗或法术伤害。
 
