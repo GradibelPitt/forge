@@ -100,3 +100,4 @@ Type=Custom_Set
 102 R 要塞指挥官 @Custom
 103 R 伴唱机 @Custom
 104 M 启迪者伊利斯 @Custom
+106 R 变节 @Custom
