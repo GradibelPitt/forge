@@ -108,12 +108,60 @@ public class HearthstoneModeTest {
     }
 
     @Test
-    public void forcedBlockDoesNotBypassMinimumBlockerRequirements() {
+    public void flyingAttackerCanForceGroundCreatureToBlock() {
+        final Fixture fixture = new Fixture(true);
+        final Player defender = fixture.addPlayer("Defender", 2, 2);
+        final Card attacker = fixture.creature("Flying attacker", 3, 3);
+        attacker.addIntrinsicKeyword("Flying");
+        final Card blocker = fixture.creature(defender, "Ground blocker", 2, 2);
+        final Combat combat = new Combat(fixture.player);
+        combat.addAttacker(attacker, defender);
+        combat.setHearthstoneForcedBlocker(attacker, blocker);
+
+        HearthstoneMode.applyForcedBlockers(combat, defender);
+
+        Assert.assertTrue(combat.isBlocking(blocker, attacker));
+    }
+
+    @Test
+    public void groundAttackerCannotForceFlyingCreatureToBlock() {
+        final Fixture fixture = new Fixture(true);
+        final Player defender = fixture.addPlayer("Defender", 2, 2);
+        final Card attacker = fixture.creature("Ground attacker", 3, 3);
+        final Card blocker = fixture.creature(defender, "Flying blocker", 2, 2);
+        blocker.addIntrinsicKeyword("Flying");
+        final Combat combat = new Combat(fixture.player);
+        combat.addAttacker(attacker, defender);
+        combat.setHearthstoneForcedBlocker(attacker, blocker);
+
+        HearthstoneMode.applyForcedBlockers(combat, defender);
+
+        Assert.assertFalse(combat.isBlocking(blocker, attacker));
+    }
+
+    @Test
+    public void menacingAttackerCanForceOrdinaryCreatureToBlock() {
         final Fixture fixture = new Fixture(true);
         final Player defender = fixture.addPlayer("Defender", 2, 2);
         final Card attacker = fixture.creature("Menacing attacker", 3, 3);
         attacker.addIntrinsicKeyword("Menace");
-        final Card blocker = fixture.creature(defender, "Lone blocker", 2, 2);
+        final Card blocker = fixture.creature(defender, "Ordinary blocker", 2, 2);
+        final Combat combat = new Combat(fixture.player);
+        combat.addAttacker(attacker, defender);
+        combat.setHearthstoneForcedBlocker(attacker, blocker);
+
+        HearthstoneMode.applyForcedBlockers(combat, defender);
+
+        Assert.assertTrue(combat.isBlocking(blocker, attacker));
+    }
+
+    @Test
+    public void ordinaryAttackerCannotForceMenacingCreatureToBlock() {
+        final Fixture fixture = new Fixture(true);
+        final Player defender = fixture.addPlayer("Defender", 2, 2);
+        final Card attacker = fixture.creature("Ordinary attacker", 3, 3);
+        final Card blocker = fixture.creature(defender, "Menacing blocker", 2, 2);
+        blocker.addIntrinsicKeyword("Menace");
         final Combat combat = new Combat(fixture.player);
         combat.addAttacker(attacker, defender);
         combat.setHearthstoneForcedBlocker(attacker, blocker);

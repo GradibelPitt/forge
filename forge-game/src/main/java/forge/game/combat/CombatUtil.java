@@ -42,6 +42,7 @@ import forge.util.collect.FCollection;
 import forge.util.collect.FCollectionView;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -644,6 +645,11 @@ public class CombatUtil {
      * @return a boolean.
      */
     public static String validateBlocks(final Combat combat, final Player defending) {
+        return validateBlocks(combat, defending, Collections.emptySet());
+    }
+
+    public static String validateBlocks(final Combat combat, final Player defending,
+            final Collection<Card> attackersIgnoringMenace) {
         final List<Card> defendersArmy = defending.getCreaturesInPlay();
         final List<Card> attackers = combat.getAttackers();
         final List<Card> blockers = CardLists.filterControlledBy(combat.getAllBlockers(), defending);
@@ -732,8 +738,12 @@ public class CombatUtil {
         for (final Card attacker : attackers) {
             int cntBlockers = combat.getBlockers(attacker).size();
             // don't accept blocker amount for attackers with keyword defining valid blockers amount
-            if (cntBlockers > 0 && !canAttackerBeBlockedWithAmount(attacker, cntBlockers, combat))
+            final boolean amountIsValid = attackersIgnoringMenace.contains(attacker)
+                    ? canAttackerBeBlockedWithAmountIgnoringMenace(attacker, cntBlockers, combat)
+                    : canAttackerBeBlockedWithAmount(attacker, cntBlockers, combat);
+            if (cntBlockers > 0 && !amountIsValid) {
                 return TextUtil.concatWithSpace(attacker.toString(), "cannot be blocked with", String.valueOf(cntBlockers), "creatures you've assigned");
+            }
         }
 
         return null;
@@ -966,6 +976,45 @@ public class CombatUtil {
         return canBlock(attacker, blocker);
     }
 
+    /**
+     * Hearthstone forced blocks reverse the Flying and Menace hierarchy: an
+     * attacker with either keyword can select a creature without it, while an
+     * attacker without it cannot select a creature that has it.
+     */
+    public static boolean canHearthstoneForceBlock(final Card attacker, final Card blocker,
+            final Combat combat) {
+        if (attacker == null || blocker == null || !canBlock(blocker, combat)) {
+            return false;
+        }
+        if (combat != null) {
+            if (combat.isBlocking(blocker, attacker)) {
+                return false;
+            }
+            final Player attackedPlayer = combat.getDefendingPlayerRelatedTo(attacker);
+            if (attackedPlayer != null && attackedPlayer != blocker.getController()) {
+                return false;
+            }
+        }
+
+        if (blocker.hasKeyword(Keyword.FLYING) && !attacker.hasKeyword(Keyword.FLYING)) {
+            return false;
+        }
+        if (blocker.hasKeyword(Keyword.MENACE) && !attacker.hasKeyword(Keyword.MENACE)) {
+            return false;
+        }
+
+        if (attacker.hasKeyword(Keyword.SHADOW) && !blocker.hasKeyword(Keyword.SHADOW)
+                && !blocker.hasKeyword("CARDNAME can block creatures with shadow as though they didn't have shadow.")) {
+            return false;
+        }
+        if (!attacker.hasKeyword(Keyword.SHADOW) && blocker.hasKeyword(Keyword.SHADOW)) {
+            return false;
+        }
+
+        return !StaticAbilityCantAttackBlock.cantBlockByExceptKeyword(
+                attacker, blocker, Keyword.FLYING);
+    }
+
     // can the blocker block the attacker?
     /**
      * <p>
@@ -1061,6 +1110,19 @@ public class CombatUtil {
         }
 
         return true;
+    }
+
+    public static boolean canAttackerBeBlockedWithAmountIgnoringMenace(
+            final Card attacker, final int amount, final Combat combat) {
+        if (amount == 0) {
+            return false;
+        }
+        final Player defender = combat != null
+                ? combat.getDefenderPlayerByAttacker(attacker)
+                : null;
+        final Pair<Integer, Integer> minMaxBlock =
+                StaticAbilityCantAttackBlock.getMinMaxBlockerIgnoringMenace(attacker, defender);
+        return minMaxBlock.getLeft() <= amount && minMaxBlock.getRight() >= amount;
     }
 
     public static int getMinNumBlockersForAttacker(Card attacker, Player defender) {

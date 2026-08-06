@@ -208,6 +208,11 @@ public class StaticAbilityCantAttackBlock {
     }
 
     public static boolean cantBlockBy(final Card attacker, final Card blocker) {
+        return cantBlockByExceptKeyword(attacker, blocker, null);
+    }
+
+    public static boolean cantBlockByExceptKeyword(final Card attacker, final Card blocker,
+            final Keyword ignoredKeyword) {
         // add attacker and blocker first in case of LKI
         CardCollection list = new CardCollection(attacker);
         if (blocker != null) {
@@ -218,6 +223,9 @@ public class StaticAbilityCantAttackBlock {
         for (final Card ca : list) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.CantBlockBy)) {
+                    continue;
+                }
+                if (ignoredKeyword != null && stAb.isKeyword(ignoredKeyword)) {
                     continue;
                 }
                 if (applyCantBlockByAbility(stAb, attacker, blocker)) {
@@ -406,9 +414,19 @@ public class StaticAbilityCantAttackBlock {
     }
 
     public static Pair<Integer, Integer> getMinMaxBlocker(final Card attacker, final Player defender) {
+        return getMinMaxBlocker(attacker, defender, false);
+    }
+
+    public static Pair<Integer, Integer> getMinMaxBlockerIgnoringMenace(
+            final Card attacker, final Player defender) {
+        return getMinMaxBlocker(attacker, defender, true);
+    }
+
+    private static Pair<Integer, Integer> getMinMaxBlocker(final Card attacker,
+            final Player defender, final boolean ignoreMenace) {
         MutablePair<Integer, Integer> result = MutablePair.of(1, Integer.MAX_VALUE);
 
-        if (attacker.hasKeyword(Keyword.MENACE)) {
+        if (!ignoreMenace && attacker.hasKeyword(Keyword.MENACE)) {
             result.setLeft(2);
         }
 

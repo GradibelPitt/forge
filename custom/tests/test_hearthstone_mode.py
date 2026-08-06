@@ -55,6 +55,41 @@ class HearthstoneModeContractTest(unittest.TestCase):
         self.assertIn("lblHearthstone=炉石传说", chinese)
         self.assertIn("lblHearthstoneDesc=", chinese)
 
+    def test_forced_blocks_reverse_flying_and_menace_hierarchy(self):
+        combat_util = (
+            REPO_ROOT
+            / "forge-game"
+            / "src"
+            / "main"
+            / "java"
+            / "forge"
+            / "game"
+            / "combat"
+            / "CombatUtil.java"
+        ).read_text(encoding="utf-8")
+        mode = (
+            REPO_ROOT
+            / "forge-game"
+            / "src"
+            / "main"
+            / "java"
+            / "forge"
+            / "game"
+            / "HearthstoneMode.java"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("canHearthstoneForceBlock", combat_util)
+        self.assertIn(
+            "blocker.hasKeyword(Keyword.FLYING) && !attacker.hasKeyword(Keyword.FLYING)",
+            combat_util,
+        )
+        self.assertIn(
+            "blocker.hasKeyword(Keyword.MENACE) && !attacker.hasKeyword(Keyword.MENACE)",
+            combat_util,
+        )
+        self.assertIn("getMinMaxBlockerIgnoringMenace", combat_util)
+        self.assertIn("CombatUtil.canHearthstoneForceBlock", mode)
+
     def test_profile_installer_removes_the_retired_rule_card(self):
         installer = (PROJECT_ROOT / "tools" / "install_to_forge.ps1").read_text(
             encoding="utf-8-sig"

@@ -36,7 +36,7 @@
 - `forge-game/src/main/java/forge/game/keyword/Boarding.java`：登船阈值、受伤角色统计与即时入场。
 - `forge-game/src/main/java/forge/game/GameAction.java`：伤害批次及区域移动与 Boarding 的集成点；也在任何起手／调度手牌产生前放逐 `GameRule` 牌，并在通用换区路径阻止这类牌离开放逐区。
 - `forge-game/src/main/java/forge/game/combat/CombatUtil.java`：Superreach 阻挡规则。
-- `forge-game/src/main/java/forge/game/HearthstoneMode.java`：独立炉石模式的维持选地、持久伤害与强制阻挡规则；`Game`／`Player` 负责开局生命、手牌上限和疲劳，`PhaseHandler` 接入维持、cleanup 与战斗时点，`Combat` 保存当次战斗的强制阻挡选择。
+- `forge-game/src/main/java/forge/game/HearthstoneMode.java`：独立炉石模式的维持选地、持久伤害与强制阻挡规则；强制阻挡通过 `CombatUtil.canHearthstoneForceBlock` 对飞行与威慑采用攻击者到目标的反向层级。`Game`／`Player` 负责开局生命、手牌上限和疲劳，`PhaseHandler` 接入维持、cleanup 与战斗时点，`Combat` 保存当次战斗的强制阻挡选择。
 - `forge-game/src/main/java/forge/game/GameType.java` 与 `forge-core/src/main/java/forge/deck/DeckFormat.java`：炉石模式注册及至少 30 张主牌的构筑格式；桌面大厅入口由 `forge-gui-desktop/.../VLobby.java` 提供。
 - `forge-game/src/main/java/forge/game/ability/ApiType.java` 与 `ability/effects/CardDiscoverEffect.java`：炉石式发现 AbilityFactory API。
 - `forge-game/src/main/java/forge/game/ability/effects/StealSameNameEffect.java`：按战场、手牌、牌库、坟墓场的固定顺序取得目标对手的第一张同名牌，不创建玩家选择窗口；战场对象更改操控者，其他对象以原实体转移到施放者手中并更改拥有者。

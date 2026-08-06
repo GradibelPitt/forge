@@ -69,8 +69,8 @@ public final class HearthstoneMode {
 
     /**
      * After attackers are final, lets the attacking player reserve at most one
-     * legal defending creature for each attacker. Each blocker can be reserved
-     * only once.
+     * eligible defending creature for each attacker. Flying and Menace use the
+     * mode's reverse hierarchy, and each blocker can be reserved only once.
      */
     public static void chooseForcedBlockers(final Combat combat) {
         final Player attackingPlayer = combat.getAttackingPlayer();
@@ -87,7 +87,8 @@ public final class HearthstoneMode {
 
             final CardCollection candidates = new CardCollection();
             for (final Card blocker : defender.getCreaturesInPlay()) {
-                if (!reserved.contains(blocker) && CombatUtil.canBlock(attacker, blocker, combat)) {
+                if (!reserved.contains(blocker)
+                        && CombatUtil.canHearthstoneForceBlock(attacker, blocker, combat)) {
                     candidates.add(blocker);
                 }
             }
@@ -116,13 +117,13 @@ public final class HearthstoneMode {
             if (!combat.getAttackers().contains(attacker)
                     || !blocker.isInPlay()
                     || blocker.getController() != defender
-                    || !CombatUtil.canBlock(attacker, blocker)) {
+                    || !CombatUtil.canHearthstoneForceBlock(attacker, blocker, null)) {
                 continue;
             }
 
             final int resultingBlockerCount = combat.getBlockers(attacker).size()
                     + (combat.isBlocking(blocker, attacker) ? 0 : 1);
-            if (!CombatUtil.canAttackerBeBlockedWithAmount(
+            if (!CombatUtil.canAttackerBeBlockedWithAmountIgnoringMenace(
                     attacker, resultingBlockerCount, combat)) {
                 continue;
             }
@@ -130,9 +131,10 @@ public final class HearthstoneMode {
             final List<Card> previousAttackers = new ArrayList<>(
                     combat.getAttackersBlockedBy(blocker));
             combat.undoBlockingAssignment(blocker);
-            if (CombatUtil.canBlock(attacker, blocker, combat)) {
+            if (CombatUtil.canHearthstoneForceBlock(attacker, blocker, combat)) {
                 combat.addBlocker(attacker, blocker);
-                if (CombatUtil.validateBlocks(combat, defender) != null) {
+                if (CombatUtil.validateBlocks(combat, defender,
+                        combat.getHearthstoneForcedBlockers().keySet()) != null) {
                     combat.undoBlockingAssignment(blocker);
                     for (final Card previousAttacker : previousAttackers) {
                         if (combat.getAttackers().contains(previousAttacker)
