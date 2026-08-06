@@ -645,10 +645,16 @@ public class CombatUtil {
      * @return a boolean.
      */
     public static String validateBlocks(final Combat combat, final Player defending) {
-        return validateBlocks(combat, defending, Collections.emptySet());
+        return validateBlocksInternal(combat, defending, Collections.emptySet());
     }
 
-    public static String validateBlocks(final Combat combat, final Player defending,
+    public static String validateHearthstoneForcedBlocks(final Combat combat,
+            final Player defending,
+            final Collection<Card> attackersIgnoringMenace) {
+        return validateBlocksInternal(combat, defending, attackersIgnoringMenace);
+    }
+
+    private static String validateBlocksInternal(final Combat combat, final Player defending,
             final Collection<Card> attackersIgnoringMenace) {
         final List<Card> defendersArmy = defending.getCreaturesInPlay();
         final List<Card> attackers = combat.getAttackers();
@@ -739,7 +745,7 @@ public class CombatUtil {
             int cntBlockers = combat.getBlockers(attacker).size();
             // don't accept blocker amount for attackers with keyword defining valid blockers amount
             final boolean amountIsValid = attackersIgnoringMenace.contains(attacker)
-                    ? canAttackerBeBlockedWithAmountIgnoringMenace(attacker, cntBlockers, combat)
+                    ? canHearthstoneAttackerBeForceBlockedWithAmount(attacker, cntBlockers, combat)
                     : canAttackerBeBlockedWithAmount(attacker, cntBlockers, combat);
             if (cntBlockers > 0 && !amountIsValid) {
                 return TextUtil.concatWithSpace(attacker.toString(), "cannot be blocked with", String.valueOf(cntBlockers), "creatures you've assigned");
@@ -1011,8 +1017,8 @@ public class CombatUtil {
             return false;
         }
 
-        return !StaticAbilityCantAttackBlock.cantBlockByExceptKeyword(
-                attacker, blocker, Keyword.FLYING);
+        return !StaticAbilityCantAttackBlock.cantBlockByForHearthstoneForceBlock(
+                attacker, blocker);
     }
 
     // can the blocker block the attacker?
@@ -1112,7 +1118,7 @@ public class CombatUtil {
         return true;
     }
 
-    public static boolean canAttackerBeBlockedWithAmountIgnoringMenace(
+    public static boolean canHearthstoneAttackerBeForceBlockedWithAmount(
             final Card attacker, final int amount, final Combat combat) {
         if (amount == 0) {
             return false;
@@ -1121,7 +1127,8 @@ public class CombatUtil {
                 ? combat.getDefenderPlayerByAttacker(attacker)
                 : null;
         final Pair<Integer, Integer> minMaxBlock =
-                StaticAbilityCantAttackBlock.getMinMaxBlockerIgnoringMenace(attacker, defender);
+                StaticAbilityCantAttackBlock.getMinMaxBlockerForHearthstoneForceBlock(
+                        attacker, defender);
         return minMaxBlock.getLeft() <= amount && minMaxBlock.getRight() >= amount;
     }
 

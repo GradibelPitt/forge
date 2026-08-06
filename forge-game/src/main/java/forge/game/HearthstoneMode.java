@@ -123,7 +123,7 @@ public final class HearthstoneMode {
 
             final int resultingBlockerCount = combat.getBlockers(attacker).size()
                     + (combat.isBlocking(blocker, attacker) ? 0 : 1);
-            if (!CombatUtil.canAttackerBeBlockedWithAmountIgnoringMenace(
+            if (!CombatUtil.canHearthstoneAttackerBeForceBlockedWithAmount(
                     attacker, resultingBlockerCount, combat)) {
                 continue;
             }
@@ -133,7 +133,7 @@ public final class HearthstoneMode {
             combat.undoBlockingAssignment(blocker);
             if (CombatUtil.canHearthstoneForceBlock(attacker, blocker, combat)) {
                 combat.addBlocker(attacker, blocker);
-                if (CombatUtil.validateBlocks(combat, defender,
+                if (CombatUtil.validateHearthstoneForcedBlocks(combat, defender,
                         combat.getHearthstoneForcedBlockers().keySet()) != null) {
                     combat.undoBlockingAssignment(blocker);
                     for (final Card previousAttacker : previousAttackers) {

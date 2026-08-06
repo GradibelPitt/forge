@@ -208,11 +208,16 @@ public class StaticAbilityCantAttackBlock {
     }
 
     public static boolean cantBlockBy(final Card attacker, final Card blocker) {
-        return cantBlockByExceptKeyword(attacker, blocker, null);
+        return cantBlockBy(attacker, blocker, false);
     }
 
-    public static boolean cantBlockByExceptKeyword(final Card attacker, final Card blocker,
-            final Keyword ignoredKeyword) {
+    public static boolean cantBlockByForHearthstoneForceBlock(
+            final Card attacker, final Card blocker) {
+        return cantBlockBy(attacker, blocker, true);
+    }
+
+    private static boolean cantBlockBy(final Card attacker, final Card blocker,
+            final boolean hearthstoneForceBlock) {
         // add attacker and blocker first in case of LKI
         CardCollection list = new CardCollection(attacker);
         if (blocker != null) {
@@ -225,7 +230,7 @@ public class StaticAbilityCantAttackBlock {
                 if (!stAb.checkConditions(StaticAbilityMode.CantBlockBy)) {
                     continue;
                 }
-                if (ignoredKeyword != null && stAb.isKeyword(ignoredKeyword)) {
+                if (hearthstoneForceBlock && stAb.isKeyword(Keyword.FLYING)) {
                     continue;
                 }
                 if (applyCantBlockByAbility(stAb, attacker, blocker)) {
@@ -417,7 +422,7 @@ public class StaticAbilityCantAttackBlock {
         return getMinMaxBlocker(attacker, defender, false);
     }
 
-    public static Pair<Integer, Integer> getMinMaxBlockerIgnoringMenace(
+    public static Pair<Integer, Integer> getMinMaxBlockerForHearthstoneForceBlock(
             final Card attacker, final Player defender) {
         return getMinMaxBlocker(attacker, defender, true);
     }

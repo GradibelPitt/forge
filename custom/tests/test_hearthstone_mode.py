@@ -87,8 +87,10 @@ class HearthstoneModeContractTest(unittest.TestCase):
             "blocker.hasKeyword(Keyword.MENACE) && !attacker.hasKeyword(Keyword.MENACE)",
             combat_util,
         )
-        self.assertIn("getMinMaxBlockerIgnoringMenace", combat_util)
+        self.assertIn("canHearthstoneAttackerBeForceBlockedWithAmount", combat_util)
+        self.assertIn("validateHearthstoneForcedBlocks", combat_util)
         self.assertIn("CombatUtil.canHearthstoneForceBlock", mode)
+        self.assertIn("if (!isActive(defender.getGame()))", mode)
 
     def test_profile_installer_removes_the_retired_rule_card(self):
         installer = (PROJECT_ROOT / "tools" / "install_to_forge.ps1").read_text(

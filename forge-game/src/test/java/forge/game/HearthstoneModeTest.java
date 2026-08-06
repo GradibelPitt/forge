@@ -7,6 +7,7 @@ import forge.deck.Deck;
 import forge.game.card.Card;
 import forge.game.card.CardFactory;
 import forge.game.combat.Combat;
+import forge.game.combat.CombatUtil;
 import forge.game.player.IGameEntitiesFactory;
 import forge.game.player.Player;
 import forge.game.player.PlayerController;
@@ -169,6 +170,43 @@ public class HearthstoneModeTest {
         HearthstoneMode.applyForcedBlockers(combat, defender);
 
         Assert.assertFalse(combat.isBlocking(blocker, attacker));
+    }
+
+    @Test
+    public void forcedBlocksAreInactiveOutsideHearthstoneMode() {
+        final Fixture fixture = new Fixture(false);
+        final Player defender = fixture.addPlayer("Defender", 2, 2);
+        final Card attacker = fixture.creature("Attacker", 3, 3);
+        final Card blocker = fixture.creature(defender, "Blocker", 2, 2);
+        final Combat combat = new Combat(fixture.player);
+        combat.addAttacker(attacker, defender);
+        combat.setHearthstoneForcedBlocker(attacker, blocker);
+
+        HearthstoneMode.applyForcedBlockers(combat, defender);
+
+        Assert.assertFalse(combat.isBlocking(blocker, attacker));
+    }
+
+    @Test
+    public void ordinaryCombatKeepsNormalFlyingAndMenaceRules() {
+        final Fixture fixture = new Fixture(false);
+        final Player defender = fixture.addPlayer("Defender", 2, 2);
+        final Card flyingAttacker = fixture.creature("Flying attacker", 3, 3);
+        flyingAttacker.addIntrinsicKeyword("Flying");
+        final Card groundBlocker = fixture.creature(defender, "Ground blocker", 2, 2);
+        Assert.assertFalse(CombatUtil.canBlock(flyingAttacker, groundBlocker));
+
+        final Card groundAttacker = fixture.creature("Ground attacker", 3, 3);
+        final Card flyingBlocker = fixture.creature(defender, "Flying blocker", 2, 2);
+        flyingBlocker.addIntrinsicKeyword("Flying");
+        Assert.assertTrue(CombatUtil.canBlock(groundAttacker, flyingBlocker));
+
+        final Card menacingAttacker = fixture.creature("Menacing attacker", 3, 3);
+        menacingAttacker.addIntrinsicKeyword("Menace");
+        final Combat combat = new Combat(fixture.player);
+        combat.addAttacker(menacingAttacker, defender);
+        Assert.assertFalse(CombatUtil.canAttackerBeBlockedWithAmount(
+                menacingAttacker, 1, combat));
     }
 
     private static final class Fixture {
