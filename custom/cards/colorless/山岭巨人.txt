@@ -1,0 +1,7 @@
+Name:山岭巨人
+ManaCost:12
+Types:Creature Giant
+PT:8/8
+S:Mode$ ReduceCost | ValidCard$ Card.Self | Type$ Spell | Amount$ X | EffectZone$ All | Description$ This spell costs {1} less to cast for each other card in your hand.
+SVar:X:Count$ValidHand Card.Other+YouOwn
+Oracle:This spell costs {1} less to cast for each other card in your hand.
