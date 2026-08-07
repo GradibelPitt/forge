@@ -1,0 +1,6 @@
+Name:冰霜新星
+ManaCost:1 U U
+Types:Instant
+A:SP$ TapAll | ValidCards$ Creature.OppCtrl | SubAbility$ DBNoUntap | SpellDescription$ 每个不由你操控的生物成为横置，它们在下一个重置阶段不能被重置
+SVar:DBNoUntap:DB$ PumpAll | ValidCards$ Creature.OppCtrl | KW$ HIDDEN This card doesn't untap during your next untap step. | IsCurse$ True | Duration$ Permanent
+Oracle:每个不由你操控的生物成为横置，它们在下一个重置阶段不能被重置
