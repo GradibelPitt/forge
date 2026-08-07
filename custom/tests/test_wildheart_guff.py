@@ -7,7 +7,8 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 FORGE_ROOT = ROOT.parent
-CARD = ROOT / "cards" / "green" / "野性之心古夫.txt"
+CARD = ROOT / "cards" / "multicolor" / "野性之心古夫.txt"
+OLD_CARD = ROOT / "cards" / "green" / "野性之心古夫.txt"
 EDITION = ROOT / "editions" / "Placeholder_Set.txt"
 ART_BACKUP = (
     ROOT
@@ -19,7 +20,7 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "野性之心古夫.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ETB = (
-    "当古夫进战场时，你获得5点生命，抓一张牌，从你的牌库中搜寻一张基本地牌并置入战场，"
+    "当古夫进战场时，占卜3，抓一张牌，从你的牌库中搜寻一张基本地牌并置入战场，"
     "然后将你的牌库洗牌。"
 )
 ULTIMATE = (
@@ -38,7 +39,7 @@ class WildheartGuffContractTest(unittest.TestCase):
         lines = CARD.read_text(encoding="utf-8").splitlines()
 
         self.assertIn("Name:野性之心古夫", lines)
-        self.assertIn("ManaCost:3 G G", lines)
+        self.assertIn("ManaCost:3 G U", lines)
         self.assertIn("Types:Legendary Planeswalker Guff", lines)
         self.assertIn("Loyalty:3", lines)
         self.assertIn("K:CARDNAME can be your commander.", lines)
@@ -47,14 +48,14 @@ class WildheartGuffContractTest(unittest.TestCase):
         self.assertIn("Origin$ Any", trigger)
         self.assertIn("Destination$ Battlefield", trigger)
         self.assertIn("ValidCard$ Card.Self", trigger)
-        self.assertIn("Execute$ TrigGainLife", trigger)
+        self.assertIn("Execute$ TrigScry", trigger)
         self.assertIn(f"TriggerDescription$ {ETB}", trigger)
 
-        gain_life = next(line for line in lines if line.startswith("SVar:TrigGainLife:"))
-        self.assertIn("DB$ GainLife", gain_life)
-        self.assertIn("Defined$ You", gain_life)
-        self.assertIn("LifeAmount$ 5", gain_life)
-        self.assertIn("SubAbility$ DBDraw", gain_life)
+        scry = next(line for line in lines if line.startswith("SVar:TrigScry:"))
+        self.assertIn("DB$ Scry", scry)
+        self.assertIn("ScryNum$ 3", scry)
+        self.assertIn("SubAbility$ DBDraw", scry)
+        self.assertFalse(any("DB$ GainLife" in line for line in lines))
 
         draw = next(line for line in lines if line.startswith("SVar:DBDraw:"))
         self.assertIn("DB$ Draw", draw)
@@ -144,10 +145,11 @@ class WildheartGuffContractTest(unittest.TestCase):
             ZH_CN.read_text(encoding="utf-8").splitlines(),
         )
         self.assertIn(
-            "| 野性之心古夫 | `{3}{G}{G}`，初始忠诚 3 的传奇鹏洛客～古夫 | "
-            "`cards/green/野性之心古夫.txt` | 110 |",
+            "| 野性之心古夫 | `{3}{G}{U}`，初始忠诚 3 的传奇鹏洛客～古夫 | "
+            "`cards/multicolor/野性之心古夫.txt` | 110 |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
+        self.assertFalse(OLD_CARD.exists())
 
         self.assertTrue(ART_BACKUP.is_file())
         self.assertEqual(

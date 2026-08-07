@@ -1,10 +1,10 @@
 Name:野性之心古夫
-ManaCost:3 G G
+ManaCost:3 G U
 Types:Legendary Planeswalker Guff
 Loyalty:3
 K:CARDNAME can be your commander.
-T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigGainLife | TriggerDescription$ 当古夫进战场时，你获得5点生命，抓一张牌，从你的牌库中搜寻一张基本地牌并置入战场，然后将你的牌库洗牌。
-SVar:TrigGainLife:DB$ GainLife | Defined$ You | LifeAmount$ 5 | SubAbility$ DBDraw
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigScry | TriggerDescription$ 当古夫进战场时，占卜3，抓一张牌，从你的牌库中搜寻一张基本地牌并置入战场，然后将你的牌库洗牌。
+SVar:TrigScry:DB$ Scry | ScryNum$ 3 | SubAbility$ DBDraw
 SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 1 | SubAbility$ DBLand
 SVar:DBLand:DB$ ChangeZone | Origin$ Library | Destination$ Battlefield | ChangeType$ Land.Basic | ChangeTypeDesc$ basic land | ChangeNum$ 1 | Shuffle$ True
 A:AB$ Draw | Cost$ AddCounter<1/LOYALTY> | Planeswalker$ True | Defined$ You | NumCards$ 1 | SpellDescription$ 抓一张牌
@@ -13,4 +13,4 @@ A:AB$ Effect | Cost$ SubCounter<5/LOYALTY> | Planeswalker$ True | Ultimate$ True
 SVar:UnlimitedLands:Mode$ Continuous | Affected$ You | EffectZone$ Command | AdjustLandPlays$ Unlimited | Description$ You may play any number of lands.
 SVar:EmblemUpkeep:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Command | OptionalDecider$ You | Execute$ EmblemSearch | TriggerDescription$ At the beginning of your upkeep, you may search your library for a basic land card, then shuffle.
 SVar:EmblemSearch:DB$ ChangeZone | Origin$ Library | Destination$ Library | ChangeType$ Land.Basic | ChangeTypeDesc$ basic land | ChangeNum$ 1 | Shuffle$ True
-Oracle:当古夫进战场时，你获得5点生命，抓一张牌，从你的牌库中搜寻一张基本地牌并置入战场，然后将你的牌库洗牌。\n+1：抓一张牌\n+0：从你的牌库中搜寻一张基本地牌，将它横置放进战场，然后将你的牌库洗牌\n-5：你获得具有“你可以使用任意数量的地。在你的维持开始时，你可以从你的牌库里搜寻一张基本地牌，然后将你的牌库洗牌”的徽记。\n野性之心古夫可以作为你的指挥官。
+Oracle:当古夫进战场时，占卜3，抓一张牌，从你的牌库中搜寻一张基本地牌并置入战场，然后将你的牌库洗牌。\n+1：抓一张牌\n+0：从你的牌库中搜寻一张基本地牌，将它横置放进战场，然后将你的牌库洗牌\n-5：你获得具有“你可以使用任意数量的地。在你的维持开始时，你可以从你的牌库里搜寻一张基本地牌，然后将你的牌库洗牌”的徽记。\n野性之心古夫可以作为你的指挥官。
