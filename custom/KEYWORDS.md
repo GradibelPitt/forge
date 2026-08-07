@@ -1,5 +1,14 @@
 # Forge DIY Keywords and Engine APIs
 
+## printedNamed（原始牌名筛选）
+
+- **Status:** 已实现为通用 `Card.isValid` 属性，用于复制状态下仍需按物理牌原始身份筛选的咒语或牌。
+- **DSL:** `Card.printedNamed<name>`；可与既有否定语法组合为 `Card.!printedNamed<name>`。含逗号的牌名继续用分号代替逗号，名称中的下划线会按既有 `named` 规则还原为空格。
+- **Semantics:** 读取 `Card` 关联的 `PaperCard` 名称，不受复制状态改变当前牌名影响；没有关联 `PaperCard` 的临时对象不会命中。普通 `named<name>` 仍按当前可复制牌名判断，两者不可混用。
+- **Use:** `殒命暗影` 的手牌追踪触发以此排除所有物理身份为 `殒命暗影` 的咒语，因此连续施放时保留更早的非同名瞬间／法术。
+- **Java implementation:** `forge-game/.../card/CardProperty.java`。
+- **Tests:** `ShadowOfDemiseTest` 覆盖复制后当前名称改变但原始牌名仍可识别、连续同名咒语跳过及空历史无效果结算。
+
 ## Durability
 
 - **Status:** 已实现为引擎级数值关键字。

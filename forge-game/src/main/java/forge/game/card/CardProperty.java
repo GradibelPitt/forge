@@ -65,6 +65,12 @@ public class CardProperty {
             if (!card.sharesNameWith(name)) {
                 return false;
             }
+        } else if (property.startsWith("printedNamed")) {
+            String name = TextUtil.fastReplace(property.substring(12), ";", ",");
+            name = TextUtil.fastReplace(name, "_", " ");
+            if (card.getPaperCard() == null || !card.getPaperCard().getName().equals(name)) {
+                return false;
+            }
         } else if (property.equals("NamedCard")) {
             boolean found = false;
             for (String name : source.getNamedCards()) {
