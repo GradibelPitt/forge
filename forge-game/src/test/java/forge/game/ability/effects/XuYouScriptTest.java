@@ -31,7 +31,7 @@ public class XuYouScriptTest {
 
     @Test
     public void realScriptParsesAllAbilitiesAndReplacementChains() throws Exception {
-        final Path script = Paths.get("..", "custom", "cards", "blue", "许攸.txt")
+        final Path script = Paths.get("..", "custom", "cards", "multicolor", "许攸.txt")
                 .toAbsolutePath().normalize();
         final CardRules cardRules = new CardRules.Reader().readCard(
                 Files.readAllLines(script, StandardCharsets.UTF_8), "许攸");
@@ -61,7 +61,7 @@ public class XuYouScriptTest {
         Assert.assertTrue(xuYou.getTriggers().stream().allMatch(trigger ->
                 trigger.hasParam("ActivatorThisTurnCastSharedCardType")));
         Assert.assertEquals(xuYou.getTriggers().get(0).getParam("ValidCard"),
-                "Instant,Sorcery");
+                "Instant.wasCastFromYourHandByYou,Sorcery.wasCastFromYourHandByYou");
         Assert.assertEquals(xuYou.getSpellAbilities().stream()
                 .filter(ability -> ability.isActivatedAbility()).count(), 2L);
     }
