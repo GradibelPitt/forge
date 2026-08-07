@@ -22,7 +22,7 @@ ORACLE = (
     "你改为从你的牌库底抓牌。\\n"
     "如果对手将于其抓牌步骤中抓本步骤的第一张牌，该牌手可以改为从你的牌库顶抓至多两张牌。\\n"
     "每当你施放一个瞬间或法术咒语时，若该咒语的类别与本回合中你施放的其他咒语均无相同类别，"
-    "你可以抓一张牌。若你如此做，则于该咒语结算时，改为将该牌置于目标牌手的牌库顶，而非置入你的坟墓场。\\n"
+    "你可以抓一张牌。若你如此做，于该咒语结算时，改为将该牌置于你的牌库顶，而非将其置入你的坟墓场。\\n"
     "{T}：抓一张牌，然后弃两张牌，在许攸上放置一个转换指示物。\\n"
     "{T}，从许攸上移去一个转换指示物：抓两张牌，然后弃一张牌。"
 )
@@ -73,27 +73,29 @@ class XuYouContractTest(unittest.TestCase):
         self.assertIn("OptionalDecider$ You", instant_sorcery)
 
         draw = next(line for line in lines if line.startswith("SVar:SpellDraw:"))
-        self.assertIn("ValidTgts$ Player", draw)
+        self.assertNotIn("ValidTgts$", draw)
+        self.assertNotIn("TgtPrompt$", draw)
         self.assertIn("RememberDrawn$ True", draw)
         self.assertIn("SubAbility$ DelayedTop", draw)
 
         delayed = next(line for line in lines if line.startswith("SVar:DelayedTop:"))
-        self.assertIn("RememberObjects$ TriggeredCard & TargetedPlayer", delayed)
+        self.assertIn("RememberObjects$ TriggeredCard", delayed)
+        self.assertNotIn("TargetedPlayer", delayed)
         self.assertIn("ConditionDefined$ Remembered", delayed)
         self.assertIn("ConditionPresent$ Card", delayed)
         self.assertIn("ExileOnMoved$ Stack", delayed)
 
         replacement = next(
-            line for line in lines if line.startswith("SVar:MoveToTargetTopReplace:")
+            line for line in lines if line.startswith("SVar:MoveToYourTopReplace:")
         )
         self.assertIn("Origin$ Stack", replacement)
         self.assertIn("Destination$ Graveyard", replacement)
         self.assertIn("Fizzle$ False", replacement)
 
-        move = next(line for line in lines if line.startswith("SVar:ReplaceTargetTop:"))
+        move = next(line for line in lines if line.startswith("SVar:ReplaceYourTop:"))
         self.assertIn("Defined$ ReplacedCard", move)
         self.assertIn("Destination$ Library", move)
-        self.assertIn("DestinationPlayer$ Player.IsRemembered", move)
+        self.assertIn("DestinationPlayer$ You", move)
         self.assertIn("LibraryPosition$ 0", move)
 
     def test_conversion_abilities(self):
