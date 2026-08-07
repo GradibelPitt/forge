@@ -64,6 +64,15 @@ public class DrawEffect extends SpellAbilityEffect {
         moveParams.put(AbilityKey.LastStateGraveyard, sa.getLastStateGraveyard());
 
         final List<Player> tgts = getTargetPlayersWithDuplicates(true, "Defined", sa);
+        Player libraryOwner = null;
+        if (sa.hasParam("FromLibrary")) {
+            final List<Player> libraryOwners = AbilityUtils.getDefinedPlayers(
+                    source, sa.getParam("FromLibrary"), sa);
+            if (libraryOwners.isEmpty()) {
+                return;
+            }
+            libraryOwner = libraryOwners.get(0);
+        }
 
         for (final Player p : Sets.newLinkedHashSet(tgts)) {
             if (!p.isInGame()) {
@@ -91,7 +100,9 @@ public class DrawEffect extends SpellAbilityEffect {
                 actualNum = p.getController().chooseNumber(sa, Localizer.getInstance().getMessage("lblHowManyCardDoYouWantDraw"), 0, actualNum);
             }
 
-            final CardCollectionView drawn = p.drawCards(actualNum, sa, moveParams);
+            final CardCollectionView drawn = libraryOwner == null
+                    ? p.drawCards(actualNum, sa, moveParams)
+                    : p.drawCardsFromLibrary(actualNum, libraryOwner, sa, moveParams);
             if (sa.hasParam("Reveal")) {
                 p.getGame().getAction().reveal(drawn, p, !sa.getParam("Reveal").equals("All"));
             }

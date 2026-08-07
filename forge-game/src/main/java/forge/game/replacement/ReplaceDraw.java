@@ -63,6 +63,12 @@ public class ReplaceDraw extends ReplacementEffect {
             }
         }
 
+        if (hasParam("FirstCardInDrawStep")) {
+            if (!ownDraw || p.numDrawnThisDrawStep() != 0) {
+                return false;
+            }
+        }
+
         if (hasParam("FirstExtraCardDrawnThisTurn")) {
             if ((int) runParams.get(AbilityKey.ExtraDraws) != (ownDraw ? 1 : 0)) {
                 return false;

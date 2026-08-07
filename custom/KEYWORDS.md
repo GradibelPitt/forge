@@ -31,6 +31,30 @@
 - **Java implementation:** `TriggerType.DrawnAll`、`TriggerDrawnAll.java` 与 `Player.drawCards(...)` 的批次完成路径。原有 `Drawn` 仍按每张牌单独触发，未改变其他卡牌语义。
 - **Edge cases:** 只统计本次 `drawCards` 实际抓到的牌；被替代、被禁止或因牌库不足而未抓到的部分不计入，实际为零时不触发。
 
+## 跨牌库抓牌与抓牌步骤首次替代
+
+- **Status:** 已实现为通用抓牌与 `Draw` 替代参数。
+- **DSL:** `DB$ Draw | Defined$ <drawing player> | FromLibrary$ <library owner>` 令前者从后者的牌库顶抓牌；这是抓牌而非单纯换区。`R:Event$ Draw | FirstCardInDrawStep$ True` 只匹配回合牌手在自己抓牌步骤尚未抓过牌时的逐张抓牌事件。
+- **Semantics:** `Defined$` 牌手接受牌、累计本回合／本抓牌步骤抓牌次数并触发 `Drawn`／`DrawnAll`；`FromLibrary$` 只改变取牌的牌库，且明确从顶抓，不会借用抓牌者或牌库拥有者的“从牌库底抓牌”关键字。空牌库抓牌失败与不能抓牌仍归于实际抓牌者。
+- **Java implementation:** `DrawEffect`、`Player.drawCardsFromLibrary(...)` 与 `ReplaceDraw`。
+- **Tests:** `DrawFromLibraryTest` 与 `ReplaceDrawFirstCardInDrawStepTest`。
+
+## SpellCast 本回合共享类别计数
+
+- **Status:** 已实现为 `SpellCast` 的通用条件参数。
+- **DSL:** `ActivatorThisTurnCastSharedCardType$ <comparison>` 配合 `ActivatorThisTurnCastSharedCardTypeValid$ <card filter>`。它统计同一施法者本回合较早施放、符合比较池过滤器且与当前咒语共享至少一个牌张类别的咒语，再用 `EQ0` 等表达式比较。
+- **Semantics:** 当前咒语不计入“其他咒语”；神器生物等多类别牌只要共享任一类别便计一次。比较池可写 `Permanent` 只看永久物咒语，或写 `Card` 查看所有较早咒语。
+- **Java implementation:** `TriggerSpellAbilityCastOrCopy`。
+- **Tests:** `TriggerSpellAbilityCastOrCopySharedTypeTest`。
+
+## ChangeZone 指定目标牌手区域
+
+- **Status:** 已实现为已知来源换区的可选目的牌手参数。
+- **DSL:** `DB$ ChangeZone | ... | Destination$ Library | DestinationPlayer$ <defined player> | LibraryPosition$ 0`。
+- **Semantics:** 省略时继续使用既有按拥有者决定区域的行为；指定时移动至该牌手对应区域，但不改变牌的拥有者。可用于把正常结算的己方咒语置于目标牌手牌库顶。
+- **Java implementation:** `ChangeZoneEffect`。
+- **Tests:** `ChangeZoneDestinationPlayerTest`。
+
 ## ColorChoice（有色费用择一减免）
 
 - **Status:** 已实现，供 `ReduceCost` 静态异能使用。
