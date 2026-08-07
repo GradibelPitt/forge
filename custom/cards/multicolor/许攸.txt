@@ -5,9 +5,9 @@ PT:2/3
 S:Mode$ Continuous | Affected$ You | AddKeyword$ You draw cards from the bottom of your library instead of the top of your library. | Description$ 你改为从你的牌库底抓牌。
 R:Event$ Draw | ActiveZones$ Battlefield | ValidPlayer$ Opponent | FirstCardInDrawStep$ True | Optional$ True | ReplaceWith$ DrawFromXuYou | Description$ 如果对手将于其抓牌步骤中抓本步骤的第一张牌，该牌手可以改为从你的牌库顶抓至多两张牌。
 SVar:DrawFromXuYou:DB$ Draw | Defined$ ReplacedPlayer | NumCards$ 2 | Upto$ True | FromLibrary$ You | AILogic$ OptionalDraw
-T:Mode$ SpellCast | ValidCard$ Instant.wasCastFromYourHandByYou,Sorcery.wasCastFromYourHandByYou | ValidActivatingPlayer$ You | ActivatorThisTurnCastSharedCardType$ EQ0 | ActivatorThisTurnCastSharedCardTypeValid$ Card | Execute$ DelayedTop | TriggerZones$ Battlefield | TriggerDescription$ 每当你从手上施放一个瞬间或法术咒语时，若该咒语的类别与本回合中你施放的其他咒语均无相同类别，于该咒语结算时，你可以改为将该牌置于你的牌库顶，而非将其置入你的坟墓场。若你如此做，抓一张牌。
+T:Mode$ SpellCast | ValidCard$ Instant.wasCastFromYourHandByYou,Sorcery.wasCastFromYourHandByYou | ValidActivatingPlayer$ You | ActivatorThisTurnCastSharedCardType$ EQ0 | ActivatorThisTurnCastSharedCardTypeValid$ Card | Execute$ DelayedTop | TriggerZones$ Battlefield | TriggerDescription$ 每当你从手上施放一个瞬间或法术咒语时，若其类别与你本回合施放的其他咒语均不相同，于该咒语结算时，你可以改为将该牌置于你的牌库顶而非坟墓场。若你如此做，抓一张牌。
 SVar:DelayedTop:DB$ Effect | ReplacementEffects$ MoveToYourTopReplace | RememberObjects$ TriggeredCard | ConditionDefined$ TriggeredCard | ConditionPresent$ Card | ConditionZone$ Stack | ExileOnMoved$ Stack
-SVar:MoveToYourTopReplace:Event$ Moved | ValidCard$ Card.IsRemembered+YouOwn | Origin$ Stack | Destination$ Graveyard | Fizzle$ False | ReplaceWith$ ReplaceYourTop | Optional$ True | Description$ 于该咒语结算时，你可以改为将该牌置于你的牌库顶，而非将其置入你的坟墓场。若你如此做，抓一张牌。
+SVar:MoveToYourTopReplace:Event$ Moved | ValidCard$ Card.IsRemembered+YouOwn | Origin$ Stack | Destination$ Graveyard | Fizzle$ False | ReplaceWith$ ReplaceYourTop | Optional$ True | Description$ 于该咒语结算时，你可以改为将该牌置于你的牌库顶而非坟墓场。若你如此做，抓一张牌。
 SVar:ReplaceYourTop:DB$ ChangeZone | Defined$ ReplacedCard | Origin$ Stack | Destination$ Library | DestinationPlayer$ You | LibraryPosition$ 0 | SubAbility$ DrawAfterTop
 SVar:DrawAfterTop:DB$ Draw | Defined$ You | NumCards$ 1
 A:AB$ Draw | Cost$ T | Defined$ You | NumCards$ 1 | SubAbility$ DiscardTwo | SpellDescription$ 抓一张牌，然后弃两张牌，在许攸上放置一个转换指示物。
@@ -15,4 +15,4 @@ SVar:DiscardTwo:DB$ Discard | Defined$ You | NumCards$ 2 | Mode$ TgtChoose | Sub
 SVar:AddConversion:DB$ PutCounter | Defined$ Self | CounterType$ CONVERSION | CounterNum$ 1
 A:AB$ Draw | Cost$ T SubCounter<1/CONVERSION> | Defined$ You | NumCards$ 2 | SubAbility$ DiscardOne | SpellDescription$ 抓两张牌，然后弃一张牌。
 SVar:DiscardOne:DB$ Discard | Defined$ You | NumCards$ 1 | Mode$ TgtChoose
-Oracle:你改为从你的牌库底抓牌。如果对手将于其抓牌步骤中抓本步骤的第一张牌，该牌手可以改为从你的牌库顶抓至多两张牌。\n每当你从手上施放一个瞬间或法术咒语时，若该咒语的类别与本回合中你施放的其他咒语均无相同类别，于该咒语结算时，你可以改为将该牌置于你的牌库顶，而非将其置入你的坟墓场。若你如此做，抓一张牌。\n{T}：抓一张牌，然后弃两张牌，在许攸上放置一个转换指示物。\n{T}，从许攸上移去一个转换指示物：抓两张牌，然后弃一张牌。
+Oracle:你改为从你的牌库底抓牌。如果对手将于其抓牌步骤中抓本步骤的第一张牌，该牌手可以改为从你的牌库顶抓至多两张牌。\n每当你从手上施放一个瞬间或法术咒语时，若其类别与你本回合施放的其他咒语均不相同，于该咒语结算时，你可以改为将该牌置于你的牌库顶而非坟墓场。若你如此做，抓一张牌。\n{T}：抓一张牌，然后弃两张牌，在许攸上放置一个转换指示物。\n{T}，从许攸上移去一个转换指示物：抓两张牌，然后弃一张牌。
