@@ -412,6 +412,8 @@ public class PlayEffect extends SpellAbilityEffect {
                 tgtSA.putParam("RaiseCost", raise);
             }
 
+            applyAlternativeCostMarker(sa, tgtSA);
+
             if (sa.isKeyword(Keyword.MADNESS)) {
                 tgtSA.setAlternativeCost(AlternativeCost.Madness);
             }
@@ -484,6 +486,14 @@ public class PlayEffect extends SpellAbilityEffect {
         if (controlledByPlayer != null) {
             controller.removeController(controlledByTimeStamp);
             controller.popPaidForSA();
+        }
+    }
+
+    static void applyAlternativeCostMarker(final SpellAbility playAbility,
+                                           final SpellAbility spellToCast) {
+        if (playAbility.hasParam("AlternativeCost")) {
+            spellToCast.setAlternativeCost(AlternativeCost.valueOf(
+                    playAbility.getParam("AlternativeCost")));
         }
     }
 

@@ -16,6 +16,7 @@ public enum AlternativeCost {
     Impending,
     Madness,
     Mayhem,
+    Miracle,
     MTMtE, // More Than Meets the Eye (Transformers Universes Beyond)
     Mutate,
     Overload,
