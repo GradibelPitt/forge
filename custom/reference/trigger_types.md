@@ -42,10 +42,10 @@ Triggered when a creature attacks.
 
 ### 4. `SpellCast` (Cast Triggers)
 Triggered when a player casts a spell.
-- **Parameters**: `ValidCard$`, `ValidPlayer$`, `Execute$`, `TriggerDescription$`
+- **Parameters**: `ValidCard$`, `ValidActivatingPlayer$`, `Execute$`, `TriggerDescription$`. Optional `ActivatorThisTurnCastSharedCardType$` compares how many earlier spells cast by that player share at least one card type with the current spell; `ActivatorThisTurnCastSharedCardTypeValid$` limits the earlier-spell pool.
 - **Example**:
   ```text
-  T:Mode$ SpellCast | ValidCard$ Spell.Instant,Spell.Sorcery | ValidPlayer$ You | Execute$ TrigDraw | TriggerDescription$ Whenever you cast an instant or sorcery spell, draw a card.
+  T:Mode$ SpellCast | ValidCard$ Instant,Sorcery | ValidActivatingPlayer$ You | ActivatorThisTurnCastSharedCardType$ EQ0 | ActivatorThisTurnCastSharedCardTypeValid$ Card | Execute$ TrigDraw | TriggerDescription$ Whenever you cast an instant or sorcery spell that shares no card type with another spell you cast this turn, draw a card.
   ```
 
 ---

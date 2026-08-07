@@ -1,0 +1,8 @@
+[metadata]
+Code=BT3K
+Name=博图三国新篇
+Date=2026-08-07
+Type=Custom_Set
+
+[cards]
+1 M 许攸 @Custom

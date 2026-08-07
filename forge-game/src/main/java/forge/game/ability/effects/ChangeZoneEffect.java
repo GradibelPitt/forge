@@ -483,6 +483,15 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
             libPos = pair.getValue();
         }
 
+        Player destinationPlayer = null;
+        if (sa.hasParam("DestinationPlayer")) {
+            final FCollectionView<Player> destinationPlayers = AbilityUtils.getDefinedPlayers(
+                    hostCard, sa.getParam("DestinationPlayer"), sa);
+            if (!destinationPlayers.isEmpty()) {
+                destinationPlayer = destinationPlayers.getFirst();
+            }
+        }
+
         final GameEntityCounterTable counterTable = new GameEntityCounterTable();
         final CardZoneTable triggerList = CardZoneTable.getSimultaneousInstance(sa);
         final CardCollectionView lastStateBattlefield = triggerList.getLastStateBattlefield();
@@ -729,7 +738,12 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                     handleExiledWith(gameCard, sa);
                 }
 
-                movedCard = game.getAction().moveTo(destination, gameCard, libPos, sa, moveParams);
+                if (destinationPlayer != null) {
+                    movedCard = game.getAction().moveTo(
+                            destinationPlayer.getZone(destination), gameCard, libPos, sa, moveParams);
+                } else {
+                    movedCard = game.getAction().moveTo(destination, gameCard, libPos, sa, moveParams);
+                }
 
                 if (destination.equals(ZoneType.Exile) && lastStateBattlefield.contains(gameCard) && hostCard.equals(gameCard)) {
                     // support Parallax Wave returning itself

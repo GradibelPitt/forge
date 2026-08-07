@@ -115,6 +115,46 @@ public class TriggerSpellAbilityCastOrCopy extends Trigger {
                     return false;
                 }
             }
+            if (hasParam("ActivatorThisTurnCastSharedCardType")) {
+                final String compare = getParam("ActivatorThisTurnCastSharedCardType");
+                final String valid = getParamOrDefault(
+                        "ActivatorThisTurnCastSharedCardTypeValid", "Card");
+                final List<SpellAbility> spellsCast = getHostCard().getGame()
+                        .getStack().getSpellsCastThisTurn();
+                int sharedTypeCount = 0;
+                int currentCastIndex = -1;
+
+                // Find the latest history entry for this physical card. Normal
+                // spell-cast triggers have one; copied spells are not recorded
+                // and should compare against every spell that was actually cast.
+                for (int i = spellsCast.size() - 1; i >= 0; i--) {
+                    final SpellAbility historicalCast = spellsCast.get(i);
+                    if (activator.equals(historicalCast.getActivatingPlayer())
+                            && historicalCast.getHostCard().getId() == cast.getId()) {
+                        currentCastIndex = i;
+                        break;
+                    }
+                }
+
+                for (int i = 0; i < spellsCast.size(); i++) {
+                    if (i == currentCastIndex) {
+                        continue;
+                    }
+                    final SpellAbility earlierCast = spellsCast.get(i);
+                    final Card earlierCard = earlierCast.getHostCard();
+                    if (activator.equals(earlierCast.getActivatingPlayer())
+                            && earlierCard.isValid(valid.split(","),
+                                    getHostCard().getController(), getHostCard(), this)
+                            && cast.sharesCardTypeWith(earlierCard)) {
+                        sharedTypeCount++;
+                    }
+                }
+
+                final int right = Integer.parseInt(compare.substring(2));
+                if (!Expressions.compare(sharedTypeCount, compare, right)) {
+                    return false;
+                }
+            }
         }
         if (!matchesValidParam("ValidCard", cast)) {
             return false;

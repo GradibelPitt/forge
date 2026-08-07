@@ -1152,6 +1152,24 @@ public class Player extends GameEntity implements Comparable<Player> {
     }
 
     public final CardCollectionView drawCards(final int n, SpellAbility cause, Map<AbilityKey, Object> params, PlayerZone zone) {
+        return drawCards(n, cause, params, zone, this, null);
+    }
+
+    /**
+     * Draws cards into this player's hand from the top of another player's
+     * library. The receiving player remains the player performing the draw for
+     * replacement effects, draw restrictions, triggers, and draw counters.
+     */
+    public final CardCollectionView drawCardsFromLibrary(final int n,
+            final Player libraryOwner, final SpellAbility cause,
+            final Map<AbilityKey, Object> params) {
+        return drawCards(n, cause, params, this.getZone(ZoneType.Hand),
+                libraryOwner, false);
+    }
+
+    private CardCollectionView drawCards(final int n, final SpellAbility cause,
+            final Map<AbilityKey, Object> params, final PlayerZone zone,
+            final Player libraryOwner, final Boolean drawFromBottomOverride) {
         final CardCollection drawn = new CardCollection();
         if (n <= 0) {
             return drawn;
@@ -1177,7 +1195,8 @@ public class Player extends GameEntity implements Comparable<Player> {
             if (gameStarted && !canDraw()) {
                 break;
             }
-            drawn.addAll(doDraw(toReveal, cause, params, zone));
+            drawn.addAll(doDraw(toReveal, cause, params, zone,
+                    libraryOwner, drawFromBottomOverride));
         }
 
         // reveal multiple drawn cards when playing with the top of the library revealed
@@ -1202,9 +1221,11 @@ public class Player extends GameEntity implements Comparable<Player> {
     /**
      * @return a CardCollectionView of cards actually drawn
      */
-    private CardCollectionView doDraw(Map<Player, CardCollection> revealed, SpellAbility sa, Map<AbilityKey, Object> params, PlayerZone hand) {
+    private CardCollectionView doDraw(Map<Player, CardCollection> revealed,
+            SpellAbility sa, Map<AbilityKey, Object> params, PlayerZone hand,
+            Player libraryOwner, Boolean drawFromBottomOverride) {
         final CardCollection drawn = new CardCollection();
-        final PlayerZone library = getZone(ZoneType.Library);
+        final PlayerZone library = libraryOwner.getZone(ZoneType.Library);
 
         SpellAbility cause = sa;
         if (cause != null && cause.isReplacementAbility()) {
@@ -1225,8 +1246,9 @@ public class Player extends GameEntity implements Comparable<Player> {
             }
         }
 
-        final boolean drawFromBottom = hasKeyword(
-                "You draw cards from the bottom of your library instead of the top of your library.");
+        final boolean drawFromBottom = drawFromBottomOverride != null
+                ? drawFromBottomOverride
+                : hasKeyword("You draw cards from the bottom of your library instead of the top of your library.");
         while (!library.isEmpty()) {
             final Card next = drawFromBottom
                     ? library.get(library.size() - 1) : library.get(0);
@@ -1287,7 +1309,7 @@ public class Player extends GameEntity implements Comparable<Player> {
                 }
 
                 // CR 121.8 card was drawn as part of another sa (e.g. paying with Chromantic Sphere), hide it temporarily
-                if (game.getTopLibForPlayer(this) != null && getPaidForSA() != null && cause != null && getPaidForSA() != cause.getRootAbility()) {
+                if (game.getTopLibForPlayer(libraryOwner) != null && getPaidForSA() != null && cause != null && getPaidForSA() != cause.getRootAbility()) {
                     c.turnFaceDown();
                     game.addFacedownWhileCasting(c, numDrawnThisTurn);
                     runParams.put(AbilityKey.CanReveal, false);
