@@ -107,3 +107,4 @@ Type=Custom_Set
 109 C 生物计划 @Custom
 110 M 野性之心古夫 @Custom
 111 M 盗版之王托尼 @Custom
+112 R 冰霜新星 @Custom
