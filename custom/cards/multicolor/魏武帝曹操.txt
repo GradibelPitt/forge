@@ -1,0 +1,9 @@
+Name:魏武帝曹操
+ManaCost:B R
+Types:Legendary Creature Human Noble
+PT:2/3
+K:Ward:Discard<2/Card>
+R:Event$ Moved | ActiveZones$ Battlefield | Origin$ Stack | Destination$ Graveyard | Fizzle$ False | ValidCard$ Instant.YouDontCtrl+dealtDamageToYouThisTurn,Sorcery.YouDontCtrl+dealtDamageToYouThisTurn | ReplaceWith$ ExileDamagingSpell | Description$ 奸雄 — 如果一个不由你操控且本回合曾对你造成过伤害的瞬间或法术咒语将因结算而置入坟墓场，改为将它放逐。
+SVar:ExileDamagingSpell:DB$ ChangeZone | Defined$ ReplacedCard | Origin$ Stack | Destination$ Exile | ExiledWithEffectSource$ True
+S:Mode$ Continuous | Affected$ Card.ExiledWithSource | AffectedZone$ Exile | MayPlay$ True | MayPlayWithoutManaCost$ True | Description$ 于这些牌持续被放逐期间，你可以不支付其法术力费用来施放它们。
+Oracle:守护～弃两张牌。\n奸雄 — 如果一个不由你操控且本回合曾对你造成过伤害的瞬间或法术咒语将因结算而置入坟墓场，改为将它放逐。\n于这些牌持续被放逐期间，你可以不支付其法术力费用来施放它们。
