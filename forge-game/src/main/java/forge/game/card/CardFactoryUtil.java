@@ -1465,7 +1465,8 @@ public class CardFactoryUtil {
             final String manacost = k[1];
             final String abStrReveal = "DB$ Reveal | Defined$ You | RevealDefined$ Self"
                     + " | MiracleCost$ " + manacost;
-            String abStrPlay = "DB$ Play | Defined$ Self | Optional$ True | PlayCost$ " + manacost;
+            String abStrPlay = "DB$ Play | Defined$ Self | Optional$ True | PlayCost$ " + manacost
+                    + " | AlternativeCost$ Miracle";
             if (k.length > 2) {
                 abStrPlay += " | PlayReduceCost$ " + k[2];
             }

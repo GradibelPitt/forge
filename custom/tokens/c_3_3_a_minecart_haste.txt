@@ -1,0 +1,6 @@
+Name:矿车
+ManaCost:no cost
+Types:Artifact Creature Vehicle
+PT:3/3
+K:Haste
+Oracle:敏捷

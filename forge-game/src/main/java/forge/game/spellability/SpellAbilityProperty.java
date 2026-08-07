@@ -103,6 +103,8 @@ public class SpellAbilityProperty {
             return sa.isExhaust();
         } else if (property.equals("Mayhem")) {
             return sa.isMayhem();
+        } else if (property.equals("Miracle")) {
+            return sa.isAlternativeCost(AlternativeCost.Miracle);
         } else if (property.equals("Mutate")) {
             return sa.isMutate();
         } else if (property.equals("Ninjutsu")) {
