@@ -14,23 +14,22 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "青玉魔像.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "当青玉魔像进战场时，本局游戏中每有一个在它之前进过战场的青玉魔像，"
-    "便在其上放置一个+1/+1指示物。"
+    "本局游戏每有一个青玉魔像在你的操控下进过战场，青玉魔像便得+1/+1。"
 )
 ENGLISH_ORACLE = (
-    "When CARDNAME enters the battlefield, put a +1/+1 counter on it for each "
-    "Jade Golem that entered the battlefield before it this game."
+    "CARDNAME gets +1/+1 for each Jade Golem that entered the battlefield "
+    "under your control this game."
 )
 
 
 class JadeGolemContractTest(unittest.TestCase):
-    def test_first_golem_creates_the_counter_emblem_without_growing(self):
+    def test_first_golem_creates_its_controllers_counter_emblem_immediately(self):
         lines = CARD.read_text(encoding="utf-8").splitlines()
 
         self.assertIn("Name:青玉魔像", lines)
         self.assertIn("ManaCost:G", lines)
         self.assertIn("Types:Artifact Creature Golem", lines)
-        self.assertIn("PT:1/1", lines)
+        self.assertIn("PT:0/0", lines)
         self.assertFalse(any("Mode$ NewGame" in line for line in lines))
 
         create_trigger = next(
@@ -41,6 +40,7 @@ class JadeGolemContractTest(unittest.TestCase):
         self.assertIn("Execute$ CreateJadeCounterEmblem", create_trigger)
         self.assertIn("CheckSVar$ JadeEmblemCount", create_trigger)
         self.assertIn("SVarCompare$ EQ0", create_trigger)
+        self.assertIn("Static$ True", create_trigger)
 
         create_emblem = next(
             line
@@ -50,13 +50,14 @@ class JadeGolemContractTest(unittest.TestCase):
         self.assertIn("DB$ Effect", create_emblem)
         self.assertIn("Name$ Emblem — 青玉魔像计数", create_emblem)
         self.assertIn("Triggers$ InitializeJadeCount,TrackJadeGolems", create_emblem)
+        self.assertIn("StaticAbilities$ ScaleJadeGolems", create_emblem)
         self.assertIn("Duration$ Permanent", create_emblem)
         self.assertIn("Unique$ True", create_emblem)
         self.assertIn("ConditionCheckSVar$ JadeEmblemCount", create_emblem)
         self.assertIn("ConditionSVarCompare$ EQ0", create_emblem)
         self.assertIn(
             "SVar:JadeEmblemCount:Count$ValidCommand "
-            "Effect.namedEmblem — 青玉魔像计数",
+            "Effect.YouCtrl+namedEmblem — 青玉魔像计数",
             lines,
         )
 
@@ -77,25 +78,25 @@ class JadeGolemContractTest(unittest.TestCase):
         self.assertIn("CounterType$ STORAGE", initial_counter)
         self.assertIn("CounterNum$ 1", initial_counter)
 
-    def test_emblem_grows_only_later_jade_golems_then_increments(self):
+    def test_emblem_tracks_only_its_controller_and_scales_all_current_golems(self):
         lines = CARD.read_text(encoding="utf-8").splitlines()
 
         tracker = next(
             line for line in lines if line.startswith("SVar:TrackJadeGolems:")
         )
         self.assertIn("Destination$ Battlefield", tracker)
-        self.assertIn("ValidCard$ Card.named青玉魔像", tracker)
-        self.assertNotIn("YouCtrl", tracker)
+        self.assertIn("ValidCard$ Card.named青玉魔像+YouCtrl", tracker)
         self.assertIn("TriggerZones$ Command", tracker)
-        self.assertIn("Execute$ GrowJadeGolem", tracker)
+        self.assertIn("Static$ True", tracker)
+        self.assertIn("Execute$ AddJadeCount", tracker)
 
-        grow = next(
-            line for line in lines if line.startswith("SVar:GrowJadeGolem:")
+        scale = next(
+            line for line in lines if line.startswith("SVar:ScaleJadeGolems:")
         )
-        self.assertIn("Defined$ TriggeredCard", grow)
-        self.assertIn("CounterType$ P1P1", grow)
-        self.assertIn("CounterNum$ JadeCount", grow)
-        self.assertIn("SubAbility$ AddJadeCount", grow)
+        self.assertIn("Mode$ Continuous", scale)
+        self.assertIn("Affected$ Card.named青玉魔像+YouCtrl", scale)
+        self.assertIn("AddPower$ JadeCount", scale)
+        self.assertIn("AddToughness$ JadeCount", scale)
 
         increment = next(
             line for line in lines if line.startswith("SVar:AddJadeCount:")
@@ -104,6 +105,7 @@ class JadeGolemContractTest(unittest.TestCase):
         self.assertIn("CounterType$ STORAGE", increment)
         self.assertIn("CounterNum$ 1", increment)
         self.assertIn("SVar:JadeCount:Count$CardCounters.STORAGE", lines)
+        self.assertFalse(any("CounterType$ P1P1" in line for line in lines))
         self.assertIn(f"Oracle:{ENGLISH_ORACLE}", lines)
 
     def test_registration_localization_art_and_documentation(self):
@@ -116,7 +118,7 @@ class JadeGolemContractTest(unittest.TestCase):
             ZH_CN.read_text(encoding="utf-8").splitlines(),
         )
         self.assertIn(
-            "| 青玉魔像 | `{G}`，1/1 神器生物～魔像 | "
+            "| 青玉魔像 | `{G}`，0/0 神器生物～魔像 | "
             "`cards/green/青玉魔像.txt` | 105 |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
