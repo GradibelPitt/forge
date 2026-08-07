@@ -20,9 +20,10 @@ ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
     "你改为从你的牌库底抓牌。"
-    "如果对手将于其抓牌步骤中抓本步骤的第一张牌，该牌手可以改为从你的牌库顶抓至多两张牌。\\n"
-    "每当你从手上施放一个瞬间或法术咒语时，若其类别与你本回合施放的其他咒语均不相同，"
-    "于该咒语结算时，你可以改为将该牌置于你的牌库顶而非坟墓场。若你如此做，抓一张牌。\\n"
+    "你的对手可以略过其抓牌步骤，然后从你的牌库顶抓至多两张牌。\\n"
+    "每当你从手上施放一个瞬间或法术咒语时，于该咒语结算时，"
+    "你可以改为将该牌置于你的牌库顶而非坟墓场。若你如此做，抓一张牌。"
+    "每种类别至多触发一次。\\n"
     "{T}：抓一张牌，然后弃两张牌，在许攸上放置一个转换指示物。\\n"
     "{T}，从许攸上移去一个转换指示物：抓两张牌，然后弃一张牌。"
 )
@@ -44,11 +45,15 @@ class XuYouContractTest(unittest.TestCase):
             bottom_draw,
         )
 
-        replacement = next(line for line in lines if line.startswith("R:Event$ Draw"))
+        replacement = next(
+            line for line in lines if line.startswith("R:Event$ BeginPhase")
+        )
         self.assertIn("ValidPlayer$ Opponent", replacement)
-        self.assertIn("FirstCardInDrawStep$ True", replacement)
+        self.assertIn("Phase$ Draw", replacement)
+        self.assertIn("Layer$ Other", replacement)
         self.assertIn("Optional$ True", replacement)
         self.assertIn("ReplaceWith$ DrawFromXuYou", replacement)
+        self.assertNotIn("FirstCardInDrawStep$", replacement)
 
         replacement_draw = next(
             line for line in lines if line.startswith("SVar:DrawFromXuYou:")
@@ -73,6 +78,8 @@ class XuYouContractTest(unittest.TestCase):
         )
         self.assertIn("ActivatorThisTurnCastSharedCardType$ EQ0", instant_sorcery)
         self.assertIn("ActivatorThisTurnCastSharedCardTypeValid$ Card", instant_sorcery)
+        self.assertIn("每种类别至多触发一次。", instant_sorcery)
+        self.assertNotIn("若其类别与", instant_sorcery)
         self.assertNotIn("OptionalDecider$", instant_sorcery)
         self.assertIn("Execute$ DelayedTop", instant_sorcery)
         self.assertFalse(any(line.startswith("SVar:SpellDraw:") for line in lines))
