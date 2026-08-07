@@ -37,7 +37,7 @@ public class TonyKingOfPiracyScriptTest {
     @Test
     public void realScriptParsesManaConversionDrawReplacementsAndEtbCondition()
             throws Exception {
-        final Path script = Paths.get("..", "custom", "cards", "blue",
+        final Path script = Paths.get("..", "custom", "cards", "multicolor",
                 "盗版之王托尼.txt").toAbsolutePath().normalize();
         final CardRules cardRules = new CardRules.Reader().readCard(
                 Files.readAllLines(script, StandardCharsets.UTF_8),
@@ -58,6 +58,9 @@ public class TonyKingOfPiracyScriptTest {
                 new PaperCard(cardRules, "PH01", CardRarity.MythicRare),
                 controller, game);
 
+        Assert.assertEquals(tony.getManaCost().getCMC(), 6);
+        Assert.assertEquals(tony.getNetPower(), 4);
+        Assert.assertEquals(tony.getNetToughness(), 6);
         Assert.assertEquals(tony.getStaticAbilities().size(), 1);
         Assert.assertFalse(tony.getStaticAbilities().get(0)
                 .hasParam("ValidPlayer"));
