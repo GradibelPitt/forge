@@ -1,0 +1,13 @@
+Name:盗版之王托尼
+ManaCost:3 U U
+Types:Legendary Creature Troll
+PT:4/4
+S:Mode$ ManaConvert | ValidSA$ Spell | ManaConversion$ AnyType->AnyColor | Description$ Players may spend mana as though it were mana of any color to cast spells.
+R:Event$ Draw | ActiveZones$ Battlefield | ValidPlayer$ You | ReplaceWith$ ChooseOpponentLibrary | Description$ If you would draw a card, instead choose an opponent and draw a card from that player's library.
+SVar:ChooseOpponentLibrary:DB$ ChoosePlayer | Defined$ ReplacedPlayer | ChoiceTitle$ Choose an opponent whose library to draw from | Choices$ Player.OpponentOf ReplacedPlayer | AILogic$ Curse | SubAbility$ DrawFromChosenLibrary | DontNotify$ True
+SVar:DrawFromChosenLibrary:DB$ Draw | Defined$ ReplacedPlayer | NumCards$ 1 | FromLibrary$ Player.Chosen
+R:Event$ Draw | ActiveZones$ Battlefield | ValidPlayer$ Opponent | ReplaceWith$ DrawFromTonyLibrary | Description$ If an opponent would draw a card, instead that player draws a card from your library.
+SVar:DrawFromTonyLibrary:DB$ Draw | Defined$ ReplacedPlayer | NumCards$ 1 | FromLibrary$ You
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | TriggerZones$ Battlefield | IsPresent$ Land.untapped+YouCtrl | PresentCompare$ EQ0 | Execute$ TrigDraw | TriggerDescription$ When CARDNAME enters, if you control no untapped lands, draw a card.
+SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1
+Oracle:Players may spend mana as though it were mana of any color to cast spells.\nIf you would draw a card, instead choose an opponent and draw a card from that player's library.\nIf an opponent would draw a card, instead that player draws a card from your library.\nWhen CARDNAME enters, if you control no untapped lands, draw a card.
