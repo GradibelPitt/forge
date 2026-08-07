@@ -19,14 +19,16 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "埃辛诺斯壁垒.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 SOURCE_ORACLE = (
-    "Durability 4 (This permanent enters with four durability counters on it. "
+    "Hexproof, indestructible\\n"
+    "Durability 7 (This permanent enters with seven durability counters on it. "
     "When the last durability counter is removed from it, sacrifice it.)\\n"
     "Remove a durability counter from CARDNAME: Choose a source. Prevent the next "
     "damage that source would deal to target player or the next effect from that "
     "source that would cause that player to lose life this turn."
 )
 ZH_ORACLE = (
-    "耐久4（此永久物进战场时上面有四个耐久指示物。当最后一个耐久指示物从其上移去时，将它牺牲。）\\n"
+    "辟邪，不灭。\\n"
+    "耐久7（此永久物进战场时上面有七个耐久指示物。当最后一个耐久指示物从其上移去时，将它牺牲。）\\n"
     "从埃辛诺斯壁垒上移去一个耐久指示物：选择一个来源，于本回合中，"
     "防止该来源下一次将对目标牌手造成的伤害或失去生命的效应。"
 )
@@ -39,7 +41,9 @@ class AzzinothBulwarkContractTest(unittest.TestCase):
         self.assertIn("Name:埃辛诺斯壁垒", lines)
         self.assertIn("ManaCost:1 W W", lines)
         self.assertIn("Types:Legendary Artifact", lines)
-        self.assertIn("K:Durability:4", lines)
+        self.assertIn("K:Durability:7", lines)
+        self.assertIn("K:Hexproof", lines)
+        self.assertIn("K:Indestructible", lines)
 
         ability = next(line for line in lines if line.startswith("A:AB$ ChooseSource"))
         self.assertIn("Cost$ SubCounter<1/DURABILITY>", ability)
