@@ -40,6 +40,7 @@
 - `forge-game/src/main/java/forge/game/HearthstoneMode.java`：独立炉石模式的维持选地、持久伤害与强制阻挡规则；强制阻挡通过 `CombatUtil.canHearthstoneForceBlock` 对飞行与威慑采用攻击者到目标的反向层级。`Game`／`Player` 负责开局生命、手牌上限和疲劳，`PhaseHandler` 接入维持、cleanup 与战斗时点，`Combat` 保存当次战斗的强制阻挡选择。
 - `forge-game/src/main/java/forge/game/GameType.java` 与 `forge-core/src/main/java/forge/deck/DeckFormat.java`：炉石模式注册及至少 30 张主牌的构筑格式；桌面大厅入口由 `forge-gui-desktop/.../VLobby.java` 提供。
 - `forge-game/src/main/java/forge/game/ability/ApiType.java` 与 `ability/effects/CardDiscoverEffect.java`：炉石式发现 AbilityFactory API。
+- `forge-game/src/main/java/forge/game/card/CardProperty.java`：除既有当前名称筛选外，提供 `printedNamed<name>` 原始牌名筛选；复制状态改变当前牌名后仍可按关联 `PaperCard` 身份排除物理同名牌。
 - `forge-game/src/main/java/forge/game/ability/effects/StealSameNameEffect.java`：按战场、手牌、牌库、坟墓场的固定顺序取得目标对手的第一张同名牌，不创建玩家选择窗口；战场对象更改操控者，其他对象以原实体转移到施放者手中并更改拥有者。
 - `forge-game/src/main/java/forge/game/card/GameRuleCard.java`、`player/Player.java` 及 `ability/effects` 下的发现、制造、替换、选牌、直接打出与复制实现：统一保护只用于建立对局规则的牌；抽牌兜底会跳过并放逐，所有数据库生成和复制入口都不会物化或复制它们。
 - `forge-game/src/main/java/forge/game/ability/effects/MakeCardEffect.java`：霍格的 `StartingDeckLegendaryPermanents` 专用来源；直接遍历注册主牌 `CardPool` 的计数条目和 `PaperCard` 类型元数据，不扫描全局卡库，也不物化临时候选 `Card`。

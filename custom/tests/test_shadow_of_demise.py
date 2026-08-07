@@ -25,8 +25,8 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "殒命暗影.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "殒命暗影是蓝黑双色。当你施放殒命暗影时，你改为施放你施放的上一个瞬间或法术咒语"
-    "（你仍然需要支付其法术力费用）"
+    "殒命暗影是蓝黑双色。当你施放殒命暗影时，你改为施放你上一个施放且不为殒命暗影的瞬间或法术咒语"
+    "（你仍然需要支付其法术力费用）。若不存在这样的咒语，殒命暗影结算且没有效果。"
 )
 
 
@@ -40,7 +40,11 @@ class ShadowOfDemiseContractTest(unittest.TestCase):
         self.assertIn("Types:Instant", lines)
 
         trigger = next(line for line in lines if line.startswith("T:Mode$ SpellCast"))
-        self.assertIn("ValidCard$ Instant,Sorcery", trigger)
+        self.assertIn(
+            "ValidCard$ Instant.!printedNamed殒命暗影,"
+            "Sorcery.!printedNamed殒命暗影",
+            trigger,
+        )
         self.assertIn("ValidActivatingPlayer$ You", trigger)
         self.assertIn("TriggerZones$ Hand", trigger)
         self.assertIn("Execute$ BecomeLastSpell", trigger)
@@ -52,12 +56,8 @@ class ShadowOfDemiseContractTest(unittest.TestCase):
         self.assertIn("CloneZone$ Hand", clone)
         self.assertIn("GainThisAbility$ True", clone)
 
-        cant_cast = next(line for line in lines if line.startswith("S:Mode$ CantBeCast"))
-        self.assertIn("ValidCard$ Card.Self", cant_cast)
-        self.assertIn("EffectZone$ All", cant_cast)
-        self.assertIn("CheckSVar$ Uncopied", cant_cast)
-        self.assertIn("SVarCompare$ EQ1", cant_cast)
-        self.assertIn("SVar:Uncopied:1", lines)
+        self.assertFalse(any(line.startswith("S:Mode$ CantBeCast") for line in lines))
+        self.assertNotIn("SVar:Uncopied:1", lines)
 
     def test_registration_localization_art_and_documentation(self):
         self.assertIn("97 M 殒命暗影 @Custom", EDITION.read_text(encoding="utf-8"))
@@ -68,7 +68,8 @@ class ShadowOfDemiseContractTest(unittest.TestCase):
         self.assertIn(
             "| 殒命暗影 | `{0}` 蓝黑双色瞬间 | "
             "`cards/multicolor/殒命暗影.txt` | 97 | "
-            "施放时改为施放你施放的上一个瞬间或法术咒语，并照常支付其法术力费用。 |",
+            "施放时改为施放你上一个施放且不为殒命暗影的瞬间或法术咒语，"
+            "并照常支付其法术力费用；若不存在则结算且没有效果。 |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
 
