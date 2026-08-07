@@ -57,9 +57,11 @@ public class XuYouScriptTest {
         Assert.assertEquals(xuYou.getReplacementEffects().get(0)
                 .getOverridingAbility().getParam("FromLibrary"), "You");
 
-        Assert.assertEquals(xuYou.getTriggers().size(), 2);
+        Assert.assertEquals(xuYou.getTriggers().size(), 1);
         Assert.assertTrue(xuYou.getTriggers().stream().allMatch(trigger ->
                 trigger.hasParam("ActivatorThisTurnCastSharedCardType")));
+        Assert.assertEquals(xuYou.getTriggers().get(0).getParam("ValidCard"),
+                "Instant,Sorcery");
         Assert.assertEquals(xuYou.getSpellAbilities().stream()
                 .filter(ability -> ability.isActivatedAbility()).count(), 2L);
     }
