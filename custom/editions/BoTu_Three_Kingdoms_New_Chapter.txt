@@ -6,3 +6,4 @@ Type=Custom_Set
 
 [cards]
 1 M 许攸 @Custom
+3 M 魏武帝曹操 @Custom
