@@ -1,5 +1,5 @@
 Name:青玉魔像
-ManaCost:G
+ManaCost:0
 Types:Artifact Creature Golem
 PT:0/0
 K:etbCounter:P1P1:X

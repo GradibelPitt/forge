@@ -90,6 +90,8 @@ public class JadeGolemTest {
                 Files.readAllLines(script, StandardCharsets.UTF_8), "青玉魔像");
 
         final Card first = enterWithCalculatedCounters(cardRules, controller, game, 1);
+        Assert.assertEquals(first.getManaCost().getCMC(), 0);
+        Assert.assertTrue(first.isColorless());
         assertP1P1Counters(first, 1);
         createAndInitializeEmblem(first, controller, game);
 

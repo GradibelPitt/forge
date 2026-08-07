@@ -28,7 +28,7 @@ class JadeGolemContractTest(unittest.TestCase):
         lines = CARD.read_text(encoding="utf-8").splitlines()
 
         self.assertIn("Name:青玉魔像", lines)
-        self.assertIn("ManaCost:G", lines)
+        self.assertIn("ManaCost:0", lines)
         self.assertIn("Types:Artifact Creature Golem", lines)
         self.assertIn("PT:0/0", lines)
         self.assertFalse(any("Mode$ NewGame" in line for line in lines))
@@ -118,7 +118,7 @@ class JadeGolemContractTest(unittest.TestCase):
             ZH_CN.read_text(encoding="utf-8").splitlines(),
         )
         self.assertIn(
-            "| 青玉魔像 | `{G}`，0/0 神器生物～魔像 | "
+            "| 青玉魔像 | `{0}`，0/0 无色神器生物～魔像 | "
             "`cards/green/青玉魔像.txt` | 105 |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
