@@ -19,19 +19,19 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "海中向导芬利爵士.artcrop.j
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "当芬利进战场时，你可以放逐X张手牌，将牌库底的X张牌置于你手上，"
+    "当芬利进战场时，放逐你的手牌，每以此法放逐一张牌，便将牌库底的一张牌置入手中，"
     "然后将所有被芬利放逐的牌以任意顺序放回牌库底。"
 )
 ENGLISH_ORACLE = (
-    "When CARDNAME enters, you may exile any number of cards from your hand. "
-    "Put that many cards from the bottom of your library into your hand, then "
+    "When CARDNAME enters, exile your hand. For each card exiled this way, put a card "
+    "from the bottom of your library into your hand, then "
     "put all cards exiled with CARDNAME on the bottom of your library in any order."
 )
 SOURCE_ART_SHA256 = "01A9A1455A110A872CDEC5F1A461A64A8367A4992D898521CC50AF760F532C57"
 
 
 class SirFinleySeaGuideContractTest(unittest.TestCase):
-    def test_etb_exchanges_any_number_of_hand_cards_with_library_bottom(self):
+    def test_etb_exchanges_entire_hand_with_library_bottom(self):
         lines = CARD.read_text(encoding="utf-8").splitlines()
 
         self.assertIn("Name:海中向导芬利爵士", lines)
@@ -50,11 +50,11 @@ class SirFinleySeaGuideContractTest(unittest.TestCase):
         self.assertIn(f"TriggerDescription$ {ENGLISH_ORACLE}", trigger)
 
         exile = next(line for line in lines if line.startswith("SVar:TrigFinley:"))
-        self.assertIn("DB$ ChangeZone", exile)
+        self.assertIn("DB$ ChangeZoneAll", exile)
         self.assertIn("Origin$ Hand", exile)
         self.assertIn("Destination$ Exile", exile)
-        self.assertIn("ChangeType$ Card", exile)
-        self.assertIn("ChangeNum$ XFetch", exile)
+        self.assertIn("ChangeType$ Card.YouOwn", exile)
+        self.assertNotIn("ChangeNum$", exile)
         self.assertIn("RememberChanged$ True", exile)
         self.assertIn("SubAbility$ DBDig", exile)
 
@@ -76,7 +76,7 @@ class SirFinleySeaGuideContractTest(unittest.TestCase):
         self.assertNotIn("RandomOrder$ True", replace)
         self.assertIn("SubAbility$ DBCleanup", replace)
 
-        self.assertIn("SVar:XFetch:Count$ValidHand Card.YouOwn", lines)
+        self.assertFalse(any(line.startswith("SVar:XFetch:") for line in lines))
         self.assertIn("SVar:X:Remembered$Amount", lines)
         self.assertIn("SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True", lines)
         self.assertIn(f"Oracle:{ORACLE}", lines)
