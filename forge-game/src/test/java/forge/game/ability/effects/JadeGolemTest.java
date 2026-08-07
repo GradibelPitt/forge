@@ -12,10 +12,13 @@ import forge.game.Match;
 import forge.game.ability.AbilityKey;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
+import forge.game.card.CardCopyService;
 import forge.game.card.CardFactory;
 import forge.game.card.CounterType;
 import forge.game.phase.PhaseType;
 import forge.game.player.Player;
+import forge.game.replacement.ReplacementEffect;
+import forge.game.replacement.ReplacementType;
 import forge.game.spellability.SpellAbility;
 import forge.game.trigger.Trigger;
 import forge.game.trigger.TriggerType;
@@ -66,7 +69,7 @@ public class JadeGolemTest {
     }
 
     @Test
-    public void realScriptScalesGolemsPerControllerFromOneOneUpward() throws Exception {
+    public void realScriptComputesEtbCountersPerControllerFromOneUpward() throws Exception {
         final GameRules rules = new GameRules(GameType.Constructed);
         final Game game = new Game(Collections.emptyList(), rules,
                 new Match(rules, Collections.emptyList(), "Jade Golem test"));
@@ -86,24 +89,25 @@ public class JadeGolemTest {
         final CardRules cardRules = new CardRules.Reader().readCard(
                 Files.readAllLines(script, StandardCharsets.UTF_8), "青玉魔像");
 
-        final Card first = createGolem(cardRules, controller, game);
-        game.getAction().moveTo(ZoneType.Battlefield, first, null, null);
+        final Card first = enterWithCalculatedCounters(cardRules, controller, game, 1);
+        assertP1P1Counters(first, 1);
         createAndInitializeEmblem(first, controller, game);
 
         final Card controllerEmblem = jadeEmblem(controller);
         Assert.assertEquals(controllerEmblem.getCounters(CounterType.getType("STORAGE")), 1);
         assertStatsAndZone(first, 1, 1, controller);
 
-        final Card second = createGolem(cardRules, controller, game);
-        game.getAction().moveTo(ZoneType.Battlefield, second, null, null);
+        final Card second = enterWithCalculatedCounters(cardRules, controller, game, 2);
+        assertP1P1Counters(second, 2);
         trackEntry(controllerEmblem, second, game);
 
         Assert.assertEquals(controllerEmblem.getCounters(CounterType.getType("STORAGE")), 2);
-        assertStatsAndZone(first, 2, 2, controller);
+        assertP1P1Counters(first, 1);
+        assertStatsAndZone(first, 1, 1, controller);
         assertStatsAndZone(second, 2, 2, controller);
 
-        final Card opposingGolem = createGolem(cardRules, opponent, game);
-        game.getAction().moveTo(ZoneType.Battlefield, opposingGolem, null, null);
+        final Card opposingGolem = enterWithCalculatedCounters(cardRules, opponent, game, 1);
+        assertP1P1Counters(opposingGolem, 1);
         final Trigger controllerTracker = zoneEntryTrigger(controllerEmblem);
         Assert.assertFalse(controllerTracker.performTest(zoneEntryParams(opposingGolem)),
                 "one player's emblem must not count an opponent's Jade Golem");
@@ -113,13 +117,35 @@ public class JadeGolemTest {
         Assert.assertNotEquals(opponentEmblem, controllerEmblem);
         Assert.assertEquals(controllerEmblem.getCounters(CounterType.getType("STORAGE")), 2);
         Assert.assertEquals(opponentEmblem.getCounters(CounterType.getType("STORAGE")), 1);
-        assertStatsAndZone(first, 2, 2, controller);
+        assertStatsAndZone(first, 1, 1, controller);
         assertStatsAndZone(second, 2, 2, controller);
         assertStatsAndZone(opposingGolem, 1, 1, opponent);
     }
 
     private static Card createGolem(final CardRules rules, final Player owner, final Game game) {
         return CardFactory.getCard(new PaperCard(rules, "PH01", CardRarity.Common), owner, game);
+    }
+
+    private static Card enterWithCalculatedCounters(final CardRules rules, final Player owner,
+                                                    final Game game, final int expected) {
+        final Card card = createGolem(rules, owner, game);
+        final ReplacementEffect replacement = card.getReplacementEffects().stream()
+                .filter(effect -> effect.getMode() == ReplacementType.Moved)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Jade Golem has no ETB replacement"));
+        final SpellAbility addCounters = replacement.getOverridingAbility();
+        Assert.assertEquals(addCounters.getParam("Defined"), "Self");
+        Assert.assertEquals(addCounters.getParam("CounterType"), "P1P1");
+        Assert.assertEquals(addCounters.getParam("CounterNum"), "X");
+        Assert.assertEquals(AbilityUtils.calculateAmount(card, "X", addCounters), expected);
+
+        card.setCounters(CounterType.getType("P1P1"), expected);
+        owner.getZone(ZoneType.Library).add(card);
+        final Card latestState = CardCopyService.getLKICopy(card);
+        owner.getZone(ZoneType.Library).remove(card);
+        owner.getZone(ZoneType.Battlefield).add(card, null, latestState);
+        card.setController(owner, game.getNextTimestamp());
+        return card;
     }
 
     private static void createAndInitializeEmblem(final Card golem, final Player controller,
@@ -201,9 +227,13 @@ public class JadeGolemTest {
     private static void assertStatsAndZone(final Card card, final int power,
                                            final int toughness, final Player controller) {
         Assert.assertEquals(card.getZone().getZoneType(), ZoneType.Battlefield,
-                "a 0/0 Jade Golem should survive because its emblem scales it immediately");
+                "a 0/0 Jade Golem must enter with its +1/+1 counters already on it");
         Assert.assertEquals(card.getController(), controller);
         Assert.assertEquals(card.getNetPower(), power);
         Assert.assertEquals(card.getNetToughness(), toughness);
+    }
+
+    private static void assertP1P1Counters(final Card card, final int expected) {
+        Assert.assertEquals(card.getCounters(CounterType.getType("P1P1")), expected);
     }
 }
