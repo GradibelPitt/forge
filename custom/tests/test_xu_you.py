@@ -21,7 +21,6 @@ ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 ORACLE = (
     "你改为从你的牌库底抓牌。\\n"
     "如果对手将于其抓牌步骤中抓本步骤的第一张牌，该牌手可以改为从你的牌库顶抓至多两张牌。\\n"
-    "每当你施放一个永久物咒语时，若该咒语的类别与本回合中你施放的其他永久物咒语均无相同类别，抓一张牌。\\n"
     "每当你施放一个瞬间或法术咒语时，若该咒语的类别与本回合中你施放的其他咒语均无相同类别，"
     "你可以抓一张牌。若你如此做，则于该咒语结算时，改为将该牌置于目标牌手的牌库顶，而非置入你的坟墓场。\\n"
     "{T}：抓一张牌，然后弃两张牌，在许攸上放置一个转换指示物。\\n"
@@ -60,20 +59,15 @@ class XuYouContractTest(unittest.TestCase):
         self.assertIn("Upto$ True", replacement_draw)
         self.assertIn("FromLibrary$ You", replacement_draw)
 
-    def test_spell_type_triggers_and_feather_timing(self):
+    def test_instant_sorcery_trigger_and_feather_timing(self):
         lines = CARD.read_text(encoding="utf-8").splitlines()
         triggers = [line for line in lines if line.startswith("T:Mode$ SpellCast")]
-        self.assertEqual(2, len(triggers))
+        self.assertEqual(1, len(triggers))
+        self.assertFalse(any("ValidCard$ Permanent" in line for line in triggers))
+        self.assertFalse(any(line.startswith("SVar:PermanentDraw:") for line in lines))
 
-        permanent = next(line for line in triggers if "ValidCard$ Permanent" in line)
-        self.assertIn("ActivatorThisTurnCastSharedCardType$ EQ0", permanent)
-        self.assertIn(
-            "ActivatorThisTurnCastSharedCardTypeValid$ Permanent", permanent
-        )
-
-        instant_sorcery = next(
-            line for line in triggers if "ValidCard$ Instant,Sorcery" in line
-        )
+        instant_sorcery = triggers[0]
+        self.assertIn("ValidCard$ Instant,Sorcery", instant_sorcery)
         self.assertIn("ActivatorThisTurnCastSharedCardType$ EQ0", instant_sorcery)
         self.assertIn("ActivatorThisTurnCastSharedCardTypeValid$ Card", instant_sorcery)
         self.assertIn("OptionalDecider$ You", instant_sorcery)

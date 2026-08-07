@@ -5,8 +5,6 @@ PT:2/3
 S:Mode$ Continuous | Affected$ You | AddKeyword$ You draw cards from the bottom of your library instead of the top of your library. | Description$ 你改为从你的牌库底抓牌。
 R:Event$ Draw | ActiveZones$ Battlefield | ValidPlayer$ Opponent | FirstCardInDrawStep$ True | Optional$ True | ReplaceWith$ DrawFromXuYou | Description$ 如果对手将于其抓牌步骤中抓本步骤的第一张牌，该牌手可以改为从你的牌库顶抓至多两张牌。
 SVar:DrawFromXuYou:DB$ Draw | Defined$ ReplacedPlayer | NumCards$ 2 | Upto$ True | FromLibrary$ You | AILogic$ OptionalDraw
-T:Mode$ SpellCast | ValidCard$ Permanent | ValidActivatingPlayer$ You | ActivatorThisTurnCastSharedCardType$ EQ0 | ActivatorThisTurnCastSharedCardTypeValid$ Permanent | Execute$ PermanentDraw | TriggerZones$ Battlefield | TriggerDescription$ 每当你施放一个永久物咒语时，若该咒语的类别与本回合中你施放的其他永久物咒语均无相同类别，抓一张牌。
-SVar:PermanentDraw:DB$ Draw | Defined$ You | NumCards$ 1
 T:Mode$ SpellCast | ValidCard$ Instant,Sorcery | ValidActivatingPlayer$ You | ActivatorThisTurnCastSharedCardType$ EQ0 | ActivatorThisTurnCastSharedCardTypeValid$ Card | OptionalDecider$ You | Execute$ SpellDraw | TriggerZones$ Battlefield | TriggerDescription$ 每当你施放一个瞬间或法术咒语时，若该咒语的类别与本回合中你施放的其他咒语均无相同类别，你可以抓一张牌。若你如此做，则于该咒语结算时，改为将该牌置于目标牌手的牌库顶，而非置入你的坟墓场。
 SVar:SpellDraw:DB$ Draw | Defined$ You | NumCards$ 1 | ValidTgts$ Player | TgtPrompt$ 选择该咒语结算时置于其牌库顶的目标牌手 | RememberDrawn$ True | SubAbility$ DelayedTop
 SVar:DelayedTop:DB$ Effect | ReplacementEffects$ MoveToTargetTopReplace | RememberObjects$ TriggeredCard & TargetedPlayer | ConditionDefined$ Remembered | ConditionPresent$ Card | ExileOnMoved$ Stack | SubAbility$ CleanupDrawn
@@ -18,4 +16,4 @@ SVar:DiscardTwo:DB$ Discard | Defined$ You | NumCards$ 2 | Mode$ TgtChoose | Sub
 SVar:AddConversion:DB$ PutCounter | Defined$ Self | CounterType$ CONVERSION | CounterNum$ 1
 A:AB$ Draw | Cost$ T SubCounter<1/CONVERSION> | Defined$ You | NumCards$ 2 | SubAbility$ DiscardOne | SpellDescription$ 抓两张牌，然后弃一张牌。
 SVar:DiscardOne:DB$ Discard | Defined$ You | NumCards$ 1 | Mode$ TgtChoose
-Oracle:你改为从你的牌库底抓牌。\n如果对手将于其抓牌步骤中抓本步骤的第一张牌，该牌手可以改为从你的牌库顶抓至多两张牌。\n每当你施放一个永久物咒语时，若该咒语的类别与本回合中你施放的其他永久物咒语均无相同类别，抓一张牌。\n每当你施放一个瞬间或法术咒语时，若该咒语的类别与本回合中你施放的其他咒语均无相同类别，你可以抓一张牌。若你如此做，则于该咒语结算时，改为将该牌置于目标牌手的牌库顶，而非置入你的坟墓场。\n{T}：抓一张牌，然后弃两张牌，在许攸上放置一个转换指示物。\n{T}，从许攸上移去一个转换指示物：抓两张牌，然后弃一张牌。
+Oracle:你改为从你的牌库底抓牌。\n如果对手将于其抓牌步骤中抓本步骤的第一张牌，该牌手可以改为从你的牌库顶抓至多两张牌。\n每当你施放一个瞬间或法术咒语时，若该咒语的类别与本回合中你施放的其他咒语均无相同类别，你可以抓一张牌。若你如此做，则于该咒语结算时，改为将该牌置于目标牌手的牌库顶，而非置入你的坟墓场。\n{T}：抓一张牌，然后弃两张牌，在许攸上放置一个转换指示物。\n{T}，从许攸上移去一个转换指示物：抓两张牌，然后弃一张牌。
