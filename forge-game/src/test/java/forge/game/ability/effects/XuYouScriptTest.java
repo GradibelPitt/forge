@@ -52,8 +52,12 @@ public class XuYouScriptTest {
 
         Assert.assertEquals(xuYou.getStaticAbilities().size(), 1);
         Assert.assertEquals(xuYou.getReplacementEffects().size(), 1);
-        Assert.assertTrue(xuYou.getReplacementEffects().get(0)
+        Assert.assertFalse(xuYou.getReplacementEffects().get(0)
                 .hasParam("FirstCardInDrawStep"));
+        Assert.assertEquals(xuYou.getReplacementEffects().get(0)
+                .getParam("Phase"), "Draw");
+        Assert.assertTrue(xuYou.getReplacementEffects().get(0)
+                .hasParam("Optional"));
         Assert.assertEquals(xuYou.getReplacementEffects().get(0)
                 .getOverridingAbility().getParam("FromLibrary"), "You");
 
