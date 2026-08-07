@@ -103,3 +103,4 @@ Type=Custom_Set
 105 C 青玉魔像 @Custom
 106 R 变节 @Custom
 107 R 末日预言者 @Custom
+108 M 海中向导芬利爵士 @Custom
