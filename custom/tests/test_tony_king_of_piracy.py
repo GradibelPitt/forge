@@ -7,7 +7,8 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 FORGE_ROOT = ROOT.parent
-CARD = ROOT / "cards" / "blue" / "盗版之王托尼.txt"
+CARD = ROOT / "cards" / "multicolor" / "盗版之王托尼.txt"
+OLD_CARD = ROOT / "cards" / "blue" / "盗版之王托尼.txt"
 EDITION = ROOT / "editions" / "Placeholder_Set.txt"
 ART_BACKUP = (
     ROOT
@@ -42,9 +43,9 @@ class TonyKingOfPiracyContractTest(unittest.TestCase):
         lines = CARD.read_text(encoding="utf-8").splitlines()
 
         self.assertIn("Name:盗版之王托尼", lines)
-        self.assertIn("ManaCost:3 U U", lines)
+        self.assertIn("ManaCost:4 B U", lines)
         self.assertIn("Types:Legendary Creature Troll", lines)
-        self.assertIn("PT:4/4", lines)
+        self.assertIn("PT:4/6", lines)
 
         mana = next(line for line in lines if line.startswith("S:Mode$ ManaConvert"))
         self.assertIn("ValidSA$ Spell", mana)
@@ -119,6 +120,7 @@ class TonyKingOfPiracyContractTest(unittest.TestCase):
         self.assertIn(f"Oracle:{EN_ORACLE}", lines)
 
     def test_registration_localization_art_and_documentation(self):
+        self.assertFalse(OLD_CARD.exists())
         self.assertIn(
             "111 M 盗版之王托尼 @Custom",
             EDITION.read_text(encoding="utf-8").splitlines(),
@@ -128,8 +130,8 @@ class TonyKingOfPiracyContractTest(unittest.TestCase):
             ZH_CN.read_text(encoding="utf-8").splitlines(),
         )
         self.assertIn(
-            "| 盗版之王托尼 | `{3}{U}{U}`，4/4 传奇生物～巨魔 | "
-            "`cards/blue/盗版之王托尼.txt` | 111 |",
+            "| 盗版之王托尼 | `{4}{B}{U}`，4/6 传奇生物～巨魔 | "
+            "`cards/multicolor/盗版之王托尼.txt` | 111 |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
 

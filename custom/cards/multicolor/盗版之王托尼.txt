@@ -1,7 +1,7 @@
 Name:盗版之王托尼
-ManaCost:3 U U
+ManaCost:4 B U
 Types:Legendary Creature Troll
-PT:4/4
+PT:4/6
 S:Mode$ ManaConvert | ValidSA$ Spell | ManaConversion$ AnyType->AnyColor | Description$ Players may spend mana as though it were mana of any color to cast spells.
 R:Event$ Draw | ActiveZones$ Battlefield | ValidPlayer$ You | ReplaceWith$ ChooseOpponentLibrary | Description$ If you would draw a card, instead choose an opponent and draw a card from that player's library.
 SVar:ChooseOpponentLibrary:DB$ ChoosePlayer | Defined$ ReplacedPlayer | ChoiceTitle$ Choose an opponent whose library to draw from | Choices$ Player.OpponentOf ReplacedPlayer | AILogic$ Curse | SubAbility$ DrawFromChosenLibrary | DontNotify$ True
