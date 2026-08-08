@@ -32,15 +32,25 @@ import java.util.stream.Collectors;
 public class CardManager extends ItemManager<PaperCard> {
     
     private boolean QuestMode;
+    private final Set<String> defaultSetCodes;
 
     public CardManager(final CDetailPicture cDetailPicture, final boolean wantUnique0, final boolean qm, boolean sr) {
+        this(cDetailPicture, wantUnique0, qm, sr, Collections.emptySet());
+    }
+
+    public CardManager(final CDetailPicture cDetailPicture, final boolean wantUnique0, final boolean qm, boolean sr,
+                       final Collection<String> defaultSetCodes0) {
         super(PaperCard.class, cDetailPicture, wantUnique0, sr);
         QuestMode = qm;
+        defaultSetCodes = Collections.unmodifiableSet(new LinkedHashSet<>(defaultSetCodes0));
     }
 
     @Override
     protected void addDefaultFilters() {
         addDefaultFilters(this);
+        if (!defaultSetCodes.isEmpty()) {
+            addFilter(new CardSetFilter(this, defaultSetCodes, false));
+        }
     }
 
     @Override

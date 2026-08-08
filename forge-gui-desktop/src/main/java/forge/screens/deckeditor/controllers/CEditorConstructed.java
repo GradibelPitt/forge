@@ -42,6 +42,7 @@ import forge.util.Localizer;
 
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.function.Supplier;
@@ -57,6 +58,12 @@ import java.util.function.Supplier;
  * @version $Id: CEditorConstructed.java 24868 2014-02-17 05:08:05Z drdev $
  */
 public final class CEditorConstructed extends CDeckEditor<Deck> {
+    private static final List<String> DEFAULT_CATALOG_SET_CODES = Arrays.asList("BT3K", "PH01");
+
+    static List<String> getDefaultCatalogSetCodes() {
+        return DEFAULT_CATALOG_SET_CODES;
+    }
+
     private DeckController<Deck> controller;
     private final List<DeckSection> allSections = new ArrayList<>();
     private ItemPool<PaperCard> normalPool, avatarPool, planePool, schemePool, conspiracyPool,
@@ -150,7 +157,8 @@ public final class CEditorConstructed extends CDeckEditor<Deck> {
         if(!contraptionPool.isEmpty()) //Hide if un-cards are disabled.
             allSections.add(DeckSection.Contraptions);
 
-        catalogManager = new CardManager(getCDetailPicture(), wantUnique, false, false);
+        catalogManager = new CardManager(getCDetailPicture(), wantUnique, false, false,
+                DEFAULT_CATALOG_SET_CODES);
         deckManager = new CardManager(getCDetailPicture(), false, false, false);
         deckManager.setAlwaysNonUnique(true);
 
