@@ -1,0 +1,14 @@
+Name:水栖形态
+ManaCost:0
+Colors:blue
+Types:Sorcery
+A:SP$ Dig | DigNum$ 3 | ChangeNum$ 1 | FromBottom$ True | ChangeValid$ Card | DestinationZone$ Library | LibraryPosition$ 0 | DestinationZone2$ Library | LibraryPosition2$ -1 | SkipReorder$ True | NoReveal$ True | RememberChanged$ True | SubAbility$ CheckSpell | StackDescription$ SpellDescription | SpellDescription$ 检视你牌库底的三张牌，选择其中一张置于你的牌库顶。如果你有足够的法术力可以施放该咒语，则你可以改为展示该牌，然后将其置于你手上。
+SVar:CheckSpell:DB$ Branch | BranchConditionSVar$ RememberedNonland | BranchConditionSVarCompare$ GE1 | TrueSubAbility$ CheckMana | FalseSubAbility$ Cleanup
+SVar:CheckMana:DB$ Branch | BranchConditionSVar$ AvailableMana | BranchConditionSVarCompare$ GERememberedManaValue | TrueSubAbility$ MoveToHand | FalseSubAbility$ Cleanup
+SVar:MoveToHand:DB$ ChangeZone | Defined$ Remembered | Origin$ Library | Destination$ Hand | Optional$ True | OptionalPrompt$ 展示该牌并将其置于你手上？ | Reveal$ True | SubAbility$ Cleanup
+SVar:AvailableMana:Count$Valid Land.YouCtrl+untapped+hasManaAbility/Plus.FloatingMana
+SVar:FloatingMana:Count$ManaPool:All
+SVar:RememberedManaValue:Remembered$CardManaCost
+SVar:RememberedNonland:Count$ValidLibrary Card.IsRemembered+nonLand
+SVar:Cleanup:DB$ Cleanup | ClearRemembered$ True
+Oracle:检视你牌库底的三张牌，选择其中一张置于你的牌库顶。如果你有足够的法术力可以施放该咒语，则你可以改为展示该牌，然后将其置于你手上。
