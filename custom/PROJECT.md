@@ -61,22 +61,29 @@
 3. 新功能或修复先写能正确失败的测试。
 4. 只实现使测试通过的最小改动。
 5. 运行相关 Java/Python 测试与 `python tools/lint_card.py <card>`。
-6. 审查差异和状态表述；源文件正确后再运行 `tools/install_to_forge.ps1`。准备运行包时使用 `forge-diy-runtime/tools/publish_git_payload.ps1 -SyncCustom`，让卡牌与简中资源作为同一 payload 发布。
-7. 将“自动测试”“已部署”“客户端重启后实测”分别记录，不互相替代。
+6. 审查差异和状态表述；源文件正确后再运行 `tools/install_to_forge.ps1`。每次完成卡牌后使用 `forge-diy-runtime/tools/publish_git_payload.ps1 -SyncCustom`，让卡牌与简中资源作为同一 payload 发布。
+7. 立即分别提交并 push 源码仓库和运行仓库，确认 `forge:diy` 与 `forge-diy-runtime:main` 的远端 ref 指向本次提交。
+8. 将“自动测试”“已部署”“Git 已发布”“客户端重启后实测”分别记录，不互相替代。
 
 ## Git 保存与发布策略
 
-### 普通卡牌和数据层改动
+### 每次卡牌和数据层改动
 
-以下改动验证完成后必须及时创建本地 Git commit，防止工作丢失，但默认不逐项 push：
+以下改动完成相称验证和本机部署后，必须立即发布，不再等待卡牌批次：
 
 - 卡牌或 Token 脚本；
 - 卡图、Token 图片和图片流程；
 - `cardnames-zh-CN.txt` 等显示文本；
 - 只复用 Forge 现有 DSL、无需修改 Java 的卡牌效果；
-- 项目文档和测试数据。
+- 与制卡/机制任务一起更新的项目文档和测试数据；纯文档维护只提交并 push 源码仓库，不生成无变化的运行 payload。
 
-当完成一批卡牌、准备让双方联机、需要朋友同步或用户明确要求时，再把这些本地提交批量 push。准备联机时必须同时更新运行仓库的受管文件和 `BUILD-ID`。
+每次卡牌内容执行顺序为：
+
+1. 只暂存本次目标源码，创建范围明确的 commit，并 push 到 `https://github.com/GradibelPitt/forge` 的 `diy` 分支；
+2. 在运行仓库执行 `publish_git_payload.ps1 -SyncCustom`，使用唯一 `BUILD-ID` 同步卡牌、版本、图片、Token 和简中资源；
+3. 审查运行仓库差异，只暂存本次 payload 与发布元数据，运行 `tests/test_scripts.ps1`；
+4. 创建运行仓库 commit，并 push 到 `https://github.com/GradibelPitt/forge-diy-runtime` 的 `main` 分支；
+5. 核对两个远端 ref。`publish_git_payload.ps1` 本身不会测试、commit 或 push，不能把脚本成功当成 Git 已发布。
 
 ### 引擎层改动
 
@@ -88,15 +95,15 @@
 - 需要 Java 注册、解析或执行的新 keyword；
 - 会造成两台客户端运行语义不同的任何改动。
 
-完成相应 Java 测试和必要回归测试后，立即执行：
+完成相应 Java 测试和必要回归测试后，立即执行精准注入发布：
 
-1. 重建 `forge-gui-desktop` 聚合 JAR，并确认新类/方法已进入最终 JAR；
+1. 只构建受影响模块并检查目标类/方法进入模块 JAR；用 `publish_git_payload.ps1 -Module <module> -SyncCustom` 更新 `app/overlays/<module>.jar`；
 2. commit 并 push 到 `https://github.com/GradibelPitt/forge` 的 `diy` 分支；
 3. 更新 `https://github.com/GradibelPitt/forge-diy-runtime` 的 `app/`、关键哈希清单和 `BUILD-ID`；
 4. push 运行仓库，并做一次公开无凭据 clone/更新验证；
 5. 告知联机双方先运行一键启动脚本，确认显示相同 `BUILD-ID` 后再对战。
 
-普通卡牌改动可以批量发布；引擎改动必须第一时间发布。这两种节奏不得混淆。
+只有跨模块/API、依赖或资源打包边界，或者明确建立新基线时，才重建桌面聚合 JAR。普通卡牌和精准注入引擎补丁都必须在每次完成后立即发布源码与运行仓库。
 
 ## Constraints and open work
 

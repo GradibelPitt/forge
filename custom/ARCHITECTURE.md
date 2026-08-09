@@ -13,9 +13,10 @@
 | DIY 测试 | `D:\Forge\forge-latest\custom\tests\` | 无 | Python 契约测试 |
 | Forge 源码 | `D:\Forge\forge-latest\` | Maven 构建产物 | Java 引擎的权威来源；上游基线为 `ebf9001` |
 | 中文卡牌资源 | `D:\Forge\forge-latest\forge-gui\res\languages\cardnames-zh-CN.txt` | 开发客户端直接读取该文件；运行仓库使用 `D:\Forge\forge-diy-runtime\app\res\languages\cardnames-zh-CN.txt` | `publish_git_payload.ps1 -SyncCustom` 会自动同步运行版简中资源 |
-| 桌面 JAR | Java 源码与 Maven 配置 | `forge-gui-desktop\target\forge-gui-desktop-2.0.14-SNAPSHOT-jar-with-dependencies.jar` | 构建产物，不直接手改源逻辑 |
-| DIY 源码远端 | `D:\Forge\forge-latest\` | `https://github.com/GradibelPitt/forge` 的 `diy` 分支 | 引擎层更新验证后立即 push |
-| 玩家运行仓库 | 构建后的 JAR、`forge-gui/res` 与 `custom` 受管内容 | `https://github.com/GradibelPitt/forge-diy-runtime` | 一键脚本 clone/update；卡牌可批量发布，引擎更新必须同步发布 |
+| 模块 overlay JAR | Java 源码与 Maven 配置 | `D:\Forge\forge-diy-runtime\app\overlays\<module>.jar` | Java 小改的默认精准注入产物；只构建和发布受影响模块 |
+| 桌面聚合 JAR | Java 源码与 Maven 配置 | `forge-gui-desktop\target\forge-gui-desktop-2.0.14-SNAPSHOT-jar-with-dependencies.jar` | 仅跨模块/API、依赖、资源打包边界或明确新基线时重建 |
+| DIY 源码远端 | `D:\Forge\forge-latest\` | `https://github.com/GradibelPitt/forge` 的 `diy` 分支 | 每次卡牌或精准补丁验证完成后立即 commit 并 push |
+| 玩家运行仓库 | overlay/聚合 JAR、`forge-gui/res` 与 `custom` 受管内容 | `https://github.com/GradibelPitt/forge-diy-runtime` 的 `main` 分支 | 每次制卡完成后同步 payload、门禁、commit、push，并核对远端 ref |
 
 ## DIY card and edition sources
 
@@ -79,7 +80,8 @@
 1. 在权威简中资源中新增或更新完整四字段记录；
 2. 使用 `custom/tools/install_to_forge.ps1` 同步卡牌、版本与卡图；
 3. 发布玩家运行包时使用 `forge-diy-runtime/tools/publish_git_payload.ps1 -SyncCustom`，该开关会自动同步简中资源到 `app/res/languages/cardnames-zh-CN.txt` 并校验两端 SHA-256；
-4. 重启客户端后才可把中文名称、类别和规则文字记为客户端已验证。
+4. 立即分别 commit 并 push 源码与运行仓库，核对两个远端 ref；
+5. 重启客户端后才可把中文名称、类别和规则文字记为客户端已验证。
 
 `install_to_forge.ps1` 不负责复制语言文件，因为开发客户端本来就直接读取权威资源；它也不能代替运行仓库的发布步骤。
 
@@ -98,7 +100,7 @@
 
 `D:\Forge\forge-latest\forge-gui-desktop\target\forge-gui-desktop-2.0.14-SNAPSHOT-jar-with-dependencies.jar`
 
-它由 Maven 构建生成。2026-07-11 在补迁 `NewGame` 堆栈路由后重新构建的文件大小为 39,325,385 字节，SHA-256 为 `CF499A80DE72FA5390CF62DB7585BA5E0148985F01AC954ADE49767D8ED392FC`。部署引擎改动时必须先通过针对性和回归测试，再构建并确认实际运行客户端使用了新产物。
+它由 Maven 构建生成。2026-07-11 在补迁 `NewGame` 堆栈路由后重新构建的文件大小为 39,325,385 字节，SHA-256 为 `CF499A80DE72FA5390CF62DB7585BA5E0148985F01AC954ADE49767D8ED392FC`。该值只是历史基线。日常 Java 小改先通过针对性和必要回归测试，再构建受影响模块并以 overlay 精准注入；只有跨越模块/API、依赖或资源打包边界时才重建聚合 JAR。两种路径都必须确认实际运行客户端加载了目标产物。
 
 ## Source-to-client data flow
 
@@ -106,7 +108,10 @@
 cards / editions / tokens ──install_to_forge.ps1──> %APPDATA%\Forge\custom
 cards/pictures ─────────────install_to_forge.ps1──> %LOCALAPPDATA%\Forge\Cache\pics\cards
 forge-gui/res/languages/cardnames-zh-CN.txt ──────> 开发客户端（启动时预载）
-Forge Java source ──────────Maven package─────────> forge-gui-desktop aggregate JAR
-aggregate JAR + res + DIY managed files ──publish_git_payload.ps1──> forge-diy-runtime/app
-                                └─SyncCustom 自动同步 zh-CN 卡牌资源
+Forge Java source ──affected-module package──> module JAR ──publish_git_payload.ps1 -Module──> app/overlays
+       └─cross-module/package boundary──> forge-gui-desktop aggregate JAR
+JAR/overlays + res + DIY managed files ──publish_git_payload.ps1──> forge-diy-runtime/app
+                                       └─SyncCustom 自动同步 zh-CN 卡牌资源
+validated source ──commit/push──> forge:diy
+validated runtime payload ──commit/push──> forge-diy-runtime:main ──bootstrap/update──> player client
 ```

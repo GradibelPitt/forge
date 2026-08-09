@@ -116,15 +116,16 @@ powershell -ExecutionPolicy Bypass -File .\tools\install_to_forge.ps1
 
 #### 普通卡牌和数据层修改
 
-- 验证后及时创建本地提交，防止工作丢失。
-- 默认按批次、联机节点或用户明确要求再 push。
+- 完成相称验证和本机部署后，立即创建范围明确的源码提交并 push 到 `forge:diy`。
+- 每张卡、每次修改都立即发布，不等待批次、联机节点或后续提醒。
+- 随后立即生成运行 payload，运行门禁，提交并 push `forge-diy-runtime:main`，最后核对两个远端 ref。
 
 #### Java/引擎修改
 
 - 完成测试后立即提交并 push 到 `forge:diy`。
-- 窄范围单模块修改优先发布对应 overlay JAR。
+- 窄范围单模块修改优先发布对应 overlay JAR，作为精准注入补丁。
 - 跨模块/API 兼容性变化或 intentional baseline 才重建桌面聚合 JAR。
-- 同步更新 runtime，避免联机双方加载不同引擎。
+- 同步更新、提交并 push runtime，避免联机双方加载不同引擎。
 
 #### Runtime Git 发布
 
@@ -134,8 +135,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\install_to_forge.ps1
 .\tools\publish_git_payload.ps1 `
   -ForgeRoot D:\Forge\forge-latest `
   -BuildId <build-id> `
-  -SyncCustom `
-  -SyncLocalization
+  -SyncCustom
 ```
 
 该脚本负责同步受管内容，并刷新：
@@ -146,7 +146,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\install_to_forge.ps1
 - `app/manifest-critical.sha256`
 - `release.json`
 
-如果指定 `-Module`，还会更新 `app/overlays/<module>.jar`。
+`-SyncCustom` 已隐式同步简中资源。如果指定 `-Module`，还会更新 `app/overlays/<module>.jar`，这是 Java 小改的默认精准注入路径。
 
 发布前必须先暂存最终 runtime payload，再运行：
 
@@ -154,7 +154,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\install_to_forge.ps1
 .\tests\test_scripts.ps1
 ```
 
-`test_scripts.ps1` 会比较 manifest、磁盘和 Git 索引字节；未暂存的新 payload 可能导致门禁失败。最终 push 后应核对远端 ref，并在高风险或共享发布时从公开 GitHub 做干净克隆验证。
+`test_scripts.ps1` 会比较 manifest、磁盘和 Git 索引字节；未暂存的新 payload 可能导致门禁失败。`publish_git_payload.ps1` 不会自动测试、暂存、commit 或 push。脚本成功后必须审查差异、只暂存本次 payload 与元数据、运行门禁、commit、push，并核对源码与运行仓库的远端 ref；不得使用 `git add -A` 混入无关文件。在高风险或共享发布时再从公开 GitHub 做干净克隆验证。
 
 ## Windows 启动与安装脚本历史
 
@@ -323,7 +323,7 @@ CMD/BAT
 
 - 普通更新先使用 `一键安装并启动.cmd`；不应先手工清缓存。
 - 强制修复只用于正常更新失败、clone 损坏或 manifest 不一致。
-- `publish_git_payload.ps1` 只生成/同步 payload 和元数据，不负责测试、Git commit、push 或客户端验收。
+- `publish_git_payload.ps1` 只生成/同步 payload 和元数据，不负责测试、Git commit、push 或客户端验收；每次制卡或精准注入补丁完成后，紧随其后的双仓库 commit/push 与远端 ref 核对是强制步骤。
 - `tools/build_release.ps1` 用于明确要求的完整 ZIP 发布；日常卡牌或窄模块更新不应调用。
 - manifest、脚本测试、Git 远端一致和 fresh clone 不能代替实际客户端显示、玩法或联机验收。
 - 客户端验收必须记录实际加载的 Build ID、JAR/overlay、关键卡牌行为和双方版本一致性。

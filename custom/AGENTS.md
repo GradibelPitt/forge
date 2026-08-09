@@ -27,9 +27,10 @@
 6. **目标与定义不可混用。** 规则写“目标”时使用目标字段；非目标选择和已解析对象使用 `Defined$` 等机制。
 7. **状态必须分层。** 设计批准、代码存在、自动测试通过、部署完成和客户端实测是五种不同状态。
 8. **保护用户改动。** 不覆盖无关文件，不使用破坏性 Git 命令，不因缺少 Git 仓库自行初始化。
-9. **普通卡牌改动先本地保存，不逐张推送。** 新增或修改卡牌脚本、图片、Token、中文文本或仅使用现有 DSL 的效果时，验证和部署完成后必须创建本地 Git 提交，确保工作不会丢失；除非用户明确要求、准备双方联机或完成一批内容，否则不需要每加一张牌就 push。
-10. **引擎改动必须第一时间发布。** 任何 Java 引擎、Ability API、规则执行路径或引擎级 keyword 的改动，在目标测试、必要回归测试和桌面聚合 JAR 重建通过后，必须立即提交并 push 到 `GradibelPitt/forge` 的 `diy` 分支；同时更新 `GradibelPitt/forge-diy-runtime` 中的 JAR、受管资源和 `BUILD-ID` 并 push，避免联机双方加载不同引擎。
+9. **每次制卡完成后立即发布。** 新增或修改卡牌脚本、图片、Token、中文文本或仅使用现有 DSL 的效果时，完成与改动相称的验证和本机部署后，必须立即创建范围明确的源码 commit 并 push 到 `GradibelPitt/forge` 的 `diy` 分支；随后用 `publish_git_payload.ps1 -SyncCustom` 更新运行仓库，完成运行时门禁后立即 commit 并 push `GradibelPitt/forge-diy-runtime` 的 `main` 分支。每张卡、每次修改都执行，不等待后续批次。
+10. **精准注入补丁完成后立即发布。** 任何 Java 引擎、Ability API、规则执行路径或引擎级 keyword 的改动，在目标测试和必要回归测试通过后，优先只构建受影响模块，并用 `publish_git_payload.ps1 -Module <module> -SyncCustom` 发布 overlay JAR；只有跨模块/API、依赖、资源打包边界或明确的新基线才重建桌面聚合 JAR。随后必须立即 push 源码与运行仓库，并核对两个远端 ref，避免联机双方加载不同引擎。
 11. **新卡与简中翻译是同一发布单元。** 每张新卡都必须在 `forge-gui/res/languages/cardnames-zh-CN.txt` 有完整四字段记录；发布运行仓库时用 `publish_git_payload.ps1 -SyncCustom` 自动同步简中资源。`CardTranslation` 只在启动时预载，未重启的客户端不得记为中文显示已验证。
+12. **发布脚本不等于 Git 发布。** `publish_git_payload.ps1` 只生成或同步 payload 与发布元数据，不会代替测试、暂存、commit 或 push。脚本成功后仍必须审查差异、只暂存本次目标文件、运行运行时门禁、提交、推送并确认远端提交；不得用 `git add -A` 混入无关工作。
 
 ## Change workflow
 
@@ -38,9 +39,9 @@
 3. 实现最小改动，通过目标测试后再整理代码。
 4. 卡牌必须登记到正确版本，内部名称必须与版本条目和图片查找一致。
 5. 更新对应的权威主文档；不要把新状态只写入历史 plan/design。
-6. 源内容验证完成后，才运行 `tools/install_to_forge.ps1` 或构建桌面 JAR；发布卡牌批次到运行仓库时使用 `publish_git_payload.ps1 -SyncCustom`，由脚本一并同步简中资源。
-7. 普通卡牌/图片/本地化/纯 DSL 改动在本地 commit 保存；按批次、联机节点或用户要求再 push。中文显示的客户端验收必须发生在资源同步并重启之后。
-8. Java/API/规则路径/引擎级 keyword 改动完成验证后立即重建桌面 JAR，更新源码仓库与运行仓库并 push，不得留到后续卡牌批次。
+6. 源内容验证完成后，才运行 `tools/install_to_forge.ps1`；每次完成卡牌后都使用 `publish_git_payload.ps1 -SyncCustom` 发布运行 payload，由脚本一并同步简中资源。
+7. 每次卡牌/图片/本地化/纯 DSL 改动完成后，立即分别提交并 push 源码仓库和运行仓库，再核对两个远端 ref；中文显示的客户端验收必须发生在资源同步并重启之后。
+8. Java/API/规则路径/引擎级 keyword 改动完成验证后，立即构建并精准注入受影响模块的 overlay，更新源码仓库与运行仓库并 push；只有确有打包边界时才改用桌面聚合 JAR，不得留到后续卡牌批次。
 
 ## Validation before handoff
 
