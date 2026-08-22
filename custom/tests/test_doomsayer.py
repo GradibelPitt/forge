@@ -13,7 +13,11 @@ ART_BACKUP = ROOT / "tools" / "card-artwork" / "Doomsayer_照片-1.jpg"
 ART = ROOT / "cards" / "pictures" / "PH01" / "末日预言者.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
-ORACLE = "在你的维持开始时，消灭所有生物。它们不能重生。"
+ORACLE = (
+    "在你的维持开始时，消灭所有生物。它们不能重生。\\n"
+    "如果末日预言者可以阻挡，则它必须阻挡。\\n"
+    "末日预言者受到的伤害不会被清除。"
+)
 ENGLISH_ORACLE = (
     "At the beginning of your upkeep, destroy all creatures. "
     "They can't be regenerated."
@@ -28,7 +32,7 @@ class DoomsayerContractTest(unittest.TestCase):
         self.assertIn("Name:末日预言者", lines)
         self.assertIn("ManaCost:B B", lines)
         self.assertIn("Types:Creature Warlock", lines)
-        self.assertIn("PT:0/5", lines)
+        self.assertIn("PT:0/7", lines)
 
         trigger = next(line for line in lines if line.startswith("T:Mode$ Phase"))
         self.assertIn("Phase$ Upkeep", trigger)
@@ -47,6 +51,24 @@ class DoomsayerContractTest(unittest.TestCase):
         self.assertNotIn("ValidTgts$", destroy_all)
         self.assertIn(f"Oracle:{ORACLE}", lines)
 
+    def test_must_block_if_able(self):
+        lines = CARD.read_text(encoding="utf-8").splitlines()
+
+        self.assertIn(
+            "S:Mode$ MustBlock | ValidCreature$ Card.Self | "
+            "Description$ 如果CARDNAME可以阻挡，则它必须阻挡。",
+            lines,
+        )
+
+    def test_marked_damage_is_not_removed_during_cleanup(self):
+        lines = CARD.read_text(encoding="utf-8").splitlines()
+
+        self.assertIn(
+            "S:Mode$ NoCleanupDamage | ValidCard$ Card.Self | "
+            "Description$ CARDNAME受到的伤害不会被清除。",
+            lines,
+        )
+
     def test_registration_localization_art_and_documentation(self):
         self.assertIn(
             "107 R 末日预言者 @Custom",
@@ -57,7 +79,7 @@ class DoomsayerContractTest(unittest.TestCase):
             ZH_CN.read_text(encoding="utf-8").splitlines(),
         )
         self.assertIn(
-            "| 末日预言者 | `{B}{B}`，0/5 生物～术士 | "
+            "| 末日预言者 | `{B}{B}`，0/7 生物～术士 | "
             "`cards/black/末日预言者.txt` | 107 |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
