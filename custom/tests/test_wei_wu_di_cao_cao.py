@@ -33,7 +33,7 @@ class WeiWuDiCaoCaoContractTest(unittest.TestCase):
         self.assertIn("Name:魏武帝曹操", lines)
         self.assertIn("ManaCost:B R", lines)
         self.assertIn("Types:Legendary Creature Human Noble", lines)
-        self.assertIn("PT:2/3", lines)
+        self.assertIn("PT:1/2", lines)
         self.assertIn("K:Ward:Discard<2/Card>", lines)
 
     def test_jianxiong_replaces_only_damaging_spells_resolving(self):
@@ -81,7 +81,7 @@ class WeiWuDiCaoCaoContractTest(unittest.TestCase):
             ZH_CN.read_text(encoding="utf-8").splitlines(),
         )
         self.assertIn(
-            "| 魏武帝曹操 | `{B}{R}` 2/3 传奇生物～人类／贵族 |",
+            "| 魏武帝曹操 | `{B}{R}` 1/2 传奇生物～人类／贵族 |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
 

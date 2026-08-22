@@ -1,5 +1,7 @@
 # Forge DIY Verification Status
 
+- 2026-08-22 按用户要求将 BT3K #3 `魏武帝曹操` 的身材由 2/3 改为 1/2；法术力费用、守护与奸雄的全部规则文字和实际行为保持不变，版本登记、简中与卡图无需修改。TDD 红阶段按预期由旧脚本与旧 `CARDS.md` 得到 2 项失败；实现后目标契约 4/4、单卡 lint、DIY Python 全量 439/439 与 `git diff --check` 均通过。`tools/install_to_forge.ps1` 已同步本机 profile，源码／profile 脚本 SHA-256 均为 `EC59780874FA729B5F0EE644F5A24BC9BD38B7879559C79F7D0C6601BC5D3C7D`，且两处均为 `PT:1/2`。同步时没有运行中的 Forge；下次启动会直接读取新身材，但客户端牌面显示尚未实测。
+
 - 2026-08-22 按用户最终要求修订 PH01 #107 `末日预言者`：身材由 0/5 改为 0/7；新增“如果末日预言者可以阻挡，则它必须阻挡。”与“末日预言者受到的伤害不会被清除。”，原有己方维持开始时消灭所有生物且不能重生的能力保持不变。强制阻挡复用官方 `Watchdog`／`Razorgrass Screen` 已验证的 `MustBlock | ValidCreature$ Card.Self`，保留伤害复用官方 `Ancient Adamantoise` 已验证的 `NoCleanupDamage | ValidCard$ Card.Self`；均为现有 DSL，未修改 Java。第一轮 TDD 红阶段得到 3/3 预期失败，追加保留伤害需求后又以独立目标测试得到 1/1 预期失败；实现后目标契约 4/4、单卡 lint、DIY Python 全量 439/439 均通过。脚本、权威简中四字段记录与 `CARDS.md` 已同步用户原句；`tools/install_to_forge.ps1` 已部署本机 profile，源码／profile 脚本 SHA-256 均为 `2242D9A0EC08506DE7C3813F15B6D9476EAAB325148E87186926D6DB2C973A67`，源码、profile 与权威简中资源中均只有一条本牌记录。同步时没有运行中的 Forge；下次启动会读取最终脚本与简中资源，但牌面显示、强制阻挡及跨清理步骤保留已标记伤害尚未在完整客户端对局中实测。
 
 - 2026-08-22 将 BT3K #2 `超世之杰曹操`、#3 `魏武帝曹操`与朋友端 `Pull Up a Chair` 音乐作为同一发布批次：源码只从最新远端 `diy` 基线挑入两张卡及音乐，不包含水栖形态、默认目录筛选器等其他本地提交；运行载荷包含两张卡的脚本、BT3K 登记、简中、卡图、`forge-game` overlay，以及菜单／对局音乐和每次启动应用的 `Warmwood`／音乐偏好。两张卡与音乐 Python 契约 9/9、两张卡 lint、Java 定向回归 4/4、参与模块 Checkstyle、`forge-core`／`forge-game` reactor 打包、`PROFILE_SYNC_TESTS=OK`、`SCRIPT_TESTS=OK` 均通过；运行批次为 `BUILD-ID=20260822-cao-cao-friend-music`。
