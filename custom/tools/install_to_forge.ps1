@@ -17,12 +17,14 @@ $WorkspaceRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $WorkspaceCards = Join-Path $WorkspaceRoot "cards"
 $WorkspaceEditions = Join-Path $WorkspaceRoot "editions"
 $WorkspaceTokens = Join-Path $WorkspaceRoot "tokens"
+$WorkspaceMusic = Join-Path $WorkspaceRoot "music"
 $WorkspacePictures = Join-Path $WorkspaceCards "pictures"
 $WorkspaceTokenPictures = Join-Path $WorkspaceTokens "pictures"
 
 $ForgeCards = Join-Path $ForgeCustomDir "cards"
 $ForgeEditions = Join-Path $ForgeCustomDir "editions"
 $ForgeTokens = Join-Path $ForgeCustomDir "tokens"
+$ForgeMusic = Join-Path $ForgeCustomDir "music"
 $ForgeConstructedDecks = Join-Path $AppData "Forge\decks\constructed"
 $ForgeCardPictures = Join-Path $env:LOCALAPPDATA "Forge\Cache\pics\cards"
 $ForgeTokenPictures = Join-Path $env:LOCALAPPDATA "Forge\Cache\pics\tokens"
@@ -124,6 +126,17 @@ if ($Uninstall) {
         }
     }
 
+    if (Test-Path $WorkspaceMusic) {
+        Get-ChildItem -Path $WorkspaceMusic -Recurse -File | ForEach-Object {
+            $relPath = $_.FullName.Substring($WorkspaceMusic.Length + 1)
+            $target = Join-Path $ForgeMusic $relPath
+            if (Test-Path $target) {
+                Remove-Item -Path $target -Force
+                Write-Host "Removed Music: $relPath" -ForegroundColor DarkGray
+            }
+        }
+    }
+
     Write-Host "Uninstall complete." -ForegroundColor Green
     exit 0
 }
@@ -132,7 +145,7 @@ Write-Host "Syncing DIY cards to Forge AppData directory..." -ForegroundColor Cy
 Write-Host "Destination: $ForgeCustomDir" -ForegroundColor Gray
 
 # Ensure target directories exist
-$dirs = @($ForgeCards, $ForgeEditions, $ForgeTokens, $ForgeCardPictures, $ForgeTokenPictures)
+$dirs = @($ForgeCards, $ForgeEditions, $ForgeTokens, $ForgeMusic, $ForgeCardPictures, $ForgeTokenPictures)
 foreach ($dir in $dirs) {
     if (-not (Test-Path $dir)) {
         New-Item -ItemType Directory -Path $dir | Out-Null
@@ -188,6 +201,21 @@ if (Test-Path $WorkspaceCards) {
     }
 }
 
+# Copy custom menu and match playlists while preserving music-set structure.
+if (Test-Path $WorkspaceMusic) {
+    Get-ChildItem -Path $WorkspaceMusic -Recurse -File | ForEach-Object {
+        $relPath = $_.FullName.Substring($WorkspaceMusic.Length + 1)
+        $destFile = Join-Path $ForgeMusic $relPath
+        $destParent = Split-Path $destFile -Parent
+        if (-not (Test-Path $destParent)) {
+            New-Item -ItemType Directory -Path $destParent | Out-Null
+        }
+
+        Copy-Item -Path $_.FullName -Destination $destFile -Force
+        Write-Host "Synced Music: $relPath" -ForegroundColor Gray
+    }
+}
+
 # Copy card pictures to Forge's default local image cache, preserving the
 # edition/name path expected by Forge's image lookup.
 if (Test-Path $WorkspacePictures) {
@@ -220,5 +248,5 @@ if (Test-Path $WorkspaceTokenPictures) {
     }
 }
 
-Write-Host "Sync complete! Custom cards are ready to play in Forge." -ForegroundColor Green
+Write-Host "Sync complete! Custom cards and music are ready to play in Forge." -ForegroundColor Green
 Write-Host "Remember to restart Forge (or reload via Developer Mode) to see the changes." -ForegroundColor Yellow

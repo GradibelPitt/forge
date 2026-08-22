@@ -15,7 +15,7 @@
 
 ## Purpose and source of truth
 
-`D:\Forge\forge-latest\custom` 是自定义卡牌、版本、图片、文档和相关契约测试的权威来源。`D:\Forge\forge-latest` 是同一 Git 工作树中的 Forge 引擎源码来源；其上游基线为 `ebf900109c882d7027b0651ddcff65a57519237a`（`ebf9001`），本项目的迁移改动与 custom 内容都保留在该工作树中。复制到 Forge 用户目录的内容和构建出的 JAR 都是部署产物，不应作为首选编辑位置。
+`D:\Forge\forge-latest\custom` 是自定义卡牌、版本、图片、音乐、文档和相关契约测试的权威来源。`D:\Forge\forge-latest` 是同一 Git 工作树中的 Forge 引擎源码来源；其上游基线为 `ebf900109c882d7027b0651ddcff65a57519237a`（`ebf9001`），本项目的迁移改动与 custom 内容都保留在该工作树中。复制到 Forge 用户目录的内容和构建出的 JAR 都是部署产物，不应作为首选编辑位置。
 
 项目同时覆盖两层：Magic/自定义规则定义“效果是什么”，当前 Forge 源码、官方脚本和已验证 DSL 定义“如何执行”。
 
@@ -61,7 +61,7 @@
 3. 新功能或修复先写能正确失败的测试。
 4. 只实现使测试通过的最小改动。
 5. 运行相关 Java/Python 测试与 `python tools/lint_card.py <card>`。
-6. 审查差异和状态表述；源文件正确后再运行 `tools/install_to_forge.ps1`。每次完成卡牌后使用 `forge-diy-runtime/tools/publish_git_payload.ps1 -SyncCustom`，让卡牌与简中资源作为同一 payload 发布。
+6. 审查差异和状态表述；源文件正确后再运行 `tools/install_to_forge.ps1`。每次完成卡牌后使用 `forge-diy-runtime/tools/publish_git_payload.ps1 -SyncCustom`，让卡牌、音乐与简中资源作为同一 payload 发布。
 7. 立即分别提交并 push 源码仓库和运行仓库，确认 `forge:diy` 与 `forge-diy-runtime:main` 的远端 ref 指向本次提交。
 8. 将“自动测试”“已部署”“Git 已发布”“客户端重启后实测”分别记录，不互相替代。
 
