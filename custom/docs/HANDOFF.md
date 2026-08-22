@@ -26,9 +26,14 @@
 | Token | `custom/tokens/` | `%APPDATA%\Forge\custom\tokens`；runtime `app/managed/custom/tokens` |
 | 卡图 | `custom/cards/pictures/` | `%LOCALAPPDATA%\Forge\Cache\pics\cards`；runtime 受管卡图 |
 | Token 图 | `custom/tokens/pictures/` | `%LOCALAPPDATA%\Forge\Cache\pics\tokens`；runtime 受管 Token 图 |
+| 自定义音乐集 | `custom/music/` | `%APPDATA%\Forge\custom\music`；runtime `app/managed/custom/music` |
 | 简体中文卡牌资源 | `forge-gui/res/languages/cardnames-zh-CN.txt` | runtime `app/res/languages/cardnames-zh-CN.txt` |
 | Java 引擎 | Forge 各 Java 模块 | 模块 overlay 或桌面聚合 JAR |
 | 玩家运行包 | `forge-diy-runtime` | 朋友机器的 `%LOCALAPPDATA%\ForgeDIY\repo` |
+
+朋友端的启动同步会在每次启动时固定使用 `Warmwood` UI，并启用音量 100 的
+`Pull Up a Chair` 音乐集：菜单播放 `Pull Up a Chair.mp3`，对局播放黑石山曲目
+`Bad Down to the Molten Core.mp3`。
 
 `forge-latest/custom` 是 DIY 内容、版本、图片、测试与文档的权威源；AppData、图片缓存、Maven `target` 和 runtime `app` 都是部署或发布产物，不应作为优先编辑位置。
 
