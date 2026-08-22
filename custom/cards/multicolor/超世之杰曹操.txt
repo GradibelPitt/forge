@@ -1,0 +1,14 @@
+Name:超世之杰曹操
+ManaCost:W U B
+Types:Legendary Creature Human Noble
+PT:3/4
+R:Event$ DamageDone | ActiveZones$ Battlefield | ValidSource$ Card.OppCtrl,Emblem.OppCtrl | ValidTarget$ You,Card.Self | ReplaceWith$ TaxedPrevention | PreventionEffect$ True | Description$ 如果一个由对手操控的来源将对你或超世之杰曹操造成伤害，除非该来源的操控者支付{1}，否则防止该伤害。
+SVar:TaxedPrevention:DB$ ReplaceDamage | Amount$ ShieldAmount | UnlessCost$ 1 | UnlessPayer$ ReplacedSourceController
+SVar:ShieldAmount:ReplaceCount$DamageAmount
+T:Mode$ DamageDone | ValidSource$ Card.OppCtrl,Emblem.OppCtrl | ValidTarget$ You | TriggerZones$ Battlefield | Execute$ TrigChoice | TriggerDescription$ 每当一个由对手操控的来源对你造成伤害时，该来源的操控者选择一项——选择一个由其操控的永久物，你获得该永久物的操控权；或从其手牌放逐一张牌。
+SVar:TrigChoice:DB$ GenericChoice | Defined$ TriggeredSourceController | Choices$ GivePermanent,ExileHand | TempRemember$ Chooser | ShowChoice$ True | ChoicePrompt$ 选择一项
+SVar:GivePermanent:DB$ ChooseCard | Defined$ Player.IsRemembered | Choices$ Permanent.RememberedPlayerCtrl | Amount$ 1 | Mandatory$ True | ChoiceTitle$ 选择一个由你操控的永久物 | SubAbility$ GainChosenPermanent | SpellDescription$ 选择一个由其操控的永久物。你获得该永久物的操控权。
+SVar:GainChosenPermanent:DB$ GainControl | Defined$ ChosenCard | NewController$ You
+SVar:ExileHand:DB$ ChooseCard | Defined$ Player.IsRemembered | Choices$ Card.RememberedPlayerCtrl | ChoiceZone$ Hand | Amount$ 1 | Mandatory$ True | ChoiceTitle$ 从你的手牌选择一张牌放逐 | SubAbility$ ExileChosenCard | SpellDescription$ 从其手牌放逐一张牌。
+SVar:ExileChosenCard:DB$ ChangeZone | Defined$ ChosenCard | Origin$ Hand | Destination$ Exile
+Oracle:如果一个由对手操控的来源将对你或超世之杰曹操造成伤害，除非该来源的操控者支付{1}，否则防止该伤害。\n每当一个由对手操控的来源对你造成伤害时，该来源的操控者选择一项——\n• 选择一个由其操控的永久物。你获得该永久物的操控权。\n• 从其手牌放逐一张牌。

@@ -28,6 +28,7 @@ import forge.game.phase.PhaseType;
 import forge.game.player.Player;
 import forge.game.player.PlayerCollection;
 import forge.game.player.PlayerPredicates;
+import forge.game.replacement.ReplacementResult;
 import forge.game.spellability.*;
 import forge.game.trigger.Trigger;
 import forge.game.trigger.TriggerType;
@@ -1456,14 +1457,32 @@ public class AbilityUtils {
             alreadyPaid |= payer.getController().payCostToPreventEffect(cost, sa, alreadyPaid, allPayers);
         }
 
-        if (alreadyPaid == isSwitched) {
+        final boolean resolveMainEffect = alreadyPaid == isSwitched;
+        if (resolveMainEffect) {
             if (!resolveEffectSafely(sa, game)) {
                 return;
             }
+        } else {
+            markSkippedReplacementEffectAsNotReplaced(sa);
         }
 
         if (alreadyPaid && execSubsWhenPaid || !alreadyPaid && execSubsWhenNotPaid) { // switched refers only to main ability!
             resolveSubAbilities(sa, game);
+        }
+    }
+
+    static void markSkippedReplacementEffectAsNotReplaced(final SpellAbility sa) {
+        if (!sa.isReplacementAbility()) {
+            return;
+        }
+
+        final SpellAbility root = sa.getRootAbility();
+        @SuppressWarnings("unchecked")
+        final Map<AbilityKey, Object> originalParams =
+                (Map<AbilityKey, Object>) root.getReplacingObject(AbilityKey.OriginalParams);
+        if (originalParams != null) {
+            originalParams.put(AbilityKey.ReplacementResult,
+                    ReplacementResult.NotReplaced);
         }
     }
 
