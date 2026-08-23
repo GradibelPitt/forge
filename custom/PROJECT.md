@@ -42,6 +42,7 @@
 - 通用 `GameRule` 规则牌保护机制仍保留给其他未来规则牌：在起手与调度之前放逐并锁定在放逐区，同时从发现、化生／制造、批量数据库替换、选牌、直接打出和复制中排除。
 - 破链灾星霍格通过 `StartingDeckLegendaryPermanents` 直接枚举注册牌手当前主牌 `CardPool`，开局复制其中其他传奇永久物，并提供传奇规则徽记与超级延势；复制结果不依赖结算时的手牌/牌库状态，也不会像数据库发现那样物化全卡池候选。
 - 启迪者伊利斯通过 `Count$StartingDeckDuplicateNonlandNames` 检查注册的起始主牌构筑；地牌不参与重名判定，同名不同版本会合并计数，满足条件时在施放触发结算时化生当前手牌中每张牌的一个复制。
+- 启迪者伊利斯与海中向导芬利爵士均以 Forge 原生分组搭档 `Partner:探险者协会` 实现“探险者协会”；Commander 构筑会把同组的两名传奇角色视为合法的双指挥官，并合并其颜色标识。
 - 海盗帕奇斯通过牌张脚本从手牌/牌库登场；突牙使用引擎级 `Boarding:3`。
 - 卡图同步工具已支持从 `cards/pictures/` 安装到 Forge 本地图片缓存。
 - 简中卡牌资源以 `forge-gui/res/languages/cardnames-zh-CN.txt` 为唯一源码；开发客户端在启动时预载该文件，运行仓库的 `publish_git_payload.ps1 -SyncCustom` 会同时同步到 `app/res/languages/cardnames-zh-CN.txt` 并校验哈希，避免只发布卡牌而漏发中文类别或规则文字。

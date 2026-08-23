@@ -61,6 +61,14 @@ These keywords require a cost value (mana and/or other resources) separated by a
 
 ---
 
+## 🤝 Grouped Partner
+
+- `K:Partner:<Group>`
+  - *Example*: `K:Partner:探险者协会`
+  - Two legendary cards with the exact same non-empty `<Group>` value can be designated as a player's two commanders. Typed Partner does not pair with ordinary `K:Partner` or a different group.
+
+---
+
 ## 🔢 Keywords with Amount or Type
 These keywords take a numeric amount or card type constraint:
 
