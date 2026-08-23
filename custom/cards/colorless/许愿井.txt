@@ -1,0 +1,9 @@
+Name:许愿井
+ManaCost:5
+Types:Artifact Creature Wall
+PT:0/7
+T:Mode$ Sacrificed | ValidCard$ Treasure.token+YouCtrl | TriggerZones$ Battlefield | Execute$ TrigDiscover | TriggerDescription$ Whenever you sacrifice a Treasure token, discover a legendary creature card and put it into your hand. Its mana cost perpetually becomes {1}.
+SVar:TrigDiscover:DB$ CardDiscover | Defined$ You | Source$ CardDatabase | ValidCards$ Creature.Legendary | OptionCount$ 3 | Destination$ Hand | RememberChosen$ True | SubAbility$ SetCost
+SVar:SetCost:DB$ Animate | Defined$ Remembered | ManaCost$ 1 | Duration$ Perpetual | SubAbility$ Cleanup | StackDescription$ None
+SVar:Cleanup:DB$ Cleanup | ClearRemembered$ True
+Oracle:Whenever you sacrifice a Treasure token, discover a legendary creature card and put it into your hand. Its mana cost perpetually becomes {1}.

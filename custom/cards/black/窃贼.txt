@@ -1,0 +1,8 @@
+Name:窃贼
+ManaCost:1 B
+Types:Creature Zombie Rogue
+PT:2/2
+T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigToken | TriggerDescription$ Whenever CARDNAME attacks, create a Treasure token.
+SVar:TrigToken:DB$ Token | TokenScript$ c_a_treasure_sac | TokenOwner$ You
+DeckHas:Ability$Token
+Oracle:Whenever CARDNAME attacks, create a Treasure token.

@@ -112,5 +112,7 @@ Type=Custom_Set
 114 R 水栖形态 @Custom
 115 R 青玉护符 @Custom
 116 C 青玉飞镖 @Izzy Hoover
+117 R 许愿井 @Custom
 118 R 艾雅，玉莲帮主 @James Ryman
 119 R 绞肉车 @Rafael Zanchetin
+120 R 窃贼 @Ralph Horsley
