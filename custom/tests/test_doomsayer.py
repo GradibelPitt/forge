@@ -15,7 +15,7 @@ ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
     "在你的维持开始时，消灭所有生物。它们不能重生。\\n"
-    "如果末日预言者可以阻挡，则它必须阻挡。\\n"
+    "不由你操控的生物可以攻击末日预言者。\\n"
     "末日预言者受到的伤害不会被清除。"
 )
 ENGLISH_ORACLE = (
@@ -51,14 +51,16 @@ class DoomsayerContractTest(unittest.TestCase):
         self.assertNotIn("ValidTgts$", destroy_all)
         self.assertIn(f"Oracle:{ORACLE}", lines)
 
-    def test_must_block_if_able(self):
+    def test_opposing_creatures_can_attack_doomsayer(self):
         lines = CARD.read_text(encoding="utf-8").splitlines()
 
         self.assertIn(
-            "S:Mode$ MustBlock | ValidCreature$ Card.Self | "
-            "Description$ 如果CARDNAME可以阻挡，则它必须阻挡。",
+            "S:Mode$ CanBeAttacked | ValidDefender$ Card.Self | "
+            "ValidAttacker$ Creature.OppCtrl | "
+            "Description$ 不由你操控的生物可以攻击CARDNAME。",
             lines,
         )
+        self.assertFalse(any("Mode$ MustBlock" in line for line in lines))
 
     def test_marked_damage_is_not_removed_during_cleanup(self):
         lines = CARD.read_text(encoding="utf-8").splitlines()

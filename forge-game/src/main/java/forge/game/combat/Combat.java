@@ -37,6 +37,7 @@ import forge.game.replacement.ReplacementType;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.SpellAbilityStackInstance;
 import forge.game.staticability.StaticAbilityAssignCombatDamageAsUnblocked;
+import forge.game.staticability.StaticAbilityCanBeAttacked;
 import forge.game.trigger.TriggerType;
 import forge.game.zone.ZoneType;
 import forge.util.IterableUtil;
@@ -62,7 +63,7 @@ public class Combat {
     private AttackConstraints attackConstraints;
     // Defenders, as they are attacked by hostile forces
     private final Supplier<FCollection<GameEntity>> attackableEntries = Suppliers.memoize(FCollection::new);
-    // Keyed by attackable defender (player or planeswalker or battle)
+    // Keyed by attackable defender (player, planeswalker, battle, or explicitly attackable card)
     private final Supplier<Multimap<GameEntity, AttackingBand>> attackedByBands = Suppliers.memoize(() -> Multimaps.synchronizedMultimap(ArrayListMultimap.create()));
     private final Supplier<Multimap<AttackingBand, Card>> blockedBands = Suppliers.memoize(() -> Multimaps.synchronizedMultimap(ArrayListMultimap.create()));
     private final Supplier<Map<Card, CardCollection>> attackersOrderedForDamageAssignment = Suppliers.memoize(Maps::newHashMap);
@@ -661,7 +662,8 @@ public class Combat {
                 }
             }
             if (ee.getKey() instanceof Card c) {
-                if (!c.isBattle() && !c.isPlaneswalker()) {
+                if (!c.isBattle() && !c.isPlaneswalker()
+                        && !StaticAbilityCanBeAttacked.canBeAttacked(c)) {
                     missingCombatants.add(c);
                 }
             }

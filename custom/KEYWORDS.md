@@ -1,5 +1,13 @@
 # Forge DIY Keywords and Engine APIs
 
+## CanBeAttacked（牌张可作为攻击目标）
+
+- **Status:** 已实现为通用静止式异能，复用鹏洛客／战役的 `Card` defender 战斗管线。
+- **DSL:** `S:Mode$ CanBeAttacked | ValidDefender$ Card.Self | ValidAttacker$ Creature.OppCtrl`。
+- **Semantics:** 符合 `ValidAttacker$` 的生物可在宣告攻击者时选择符合 `ValidDefender$` 的牌张作为攻击目标；攻击箭头、阻挡、战斗伤害和防御牌手解析均继续使用现有 `Combat` 逻辑。它不是强制阻挡，也不改变召唤失调规则。
+- **Java implementation:** `StaticAbilityCanBeAttacked` 将合格生物牌加入 `CombatUtil.getAllPossibleDefenders`，并由 `CombatUtil.canAttack` 对具体攻击者再次校验。
+- **Tests:** `AttackableCreatureTest` 覆盖对手生物可攻击、己方生物不可攻击、普通生物不进入 defender 列表，以及 `Combat` 保存牌张攻击目标。
+
 ## printedNamed（原始牌名筛选）
 
 - **Status:** 已实现为通用 `Card.isValid` 属性，用于复制状态下仍需按物理牌原始身份筛选的咒语或牌。
