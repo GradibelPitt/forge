@@ -1,6 +1,7 @@
 package forge.game.ability.effects;
 
 import forge.CardStorageReader;
+import forge.ImageKeys;
 import forge.StaticData;
 import forge.card.CardRarity;
 import forge.card.CardRules;
@@ -26,6 +27,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,6 +40,8 @@ public class AyaLotusKingpinScriptTest {
     public void initializeCardData() {
         Lang.createInstance("en-US");
         Localizer.getInstance().initialize("en-US", path("forge-gui", "res", "languages"));
+        ImageKeys.initializeDirs(path("custom", "cards", "pictures") + File.separator,
+                Collections.emptyMap(), "", "", "", "", "", "", "");
         if (StaticData.instance() == null) {
             new StaticData(
                     new CardStorageReader(path("forge-gui", "res", "cardsfolder"), null, false),
@@ -97,6 +101,17 @@ public class AyaLotusKingpinScriptTest {
                 "DealRandomDamage");
         assertEmblem(fixture, "Emblem — 艾雅的智谋财宝", ApiType.Draw,
                 "DrawCard");
+    }
+
+    @Test
+    public void registeredPrintUsesTheNormalizedArtworkFilename() {
+        final PaperCard registered = StaticData.instance().getCommonCards()
+                .getAllCards("艾雅，玉莲帮主").stream()
+                .filter(card -> "PH01".equals(card.getEdition()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("missing PH01 Aya registration"));
+        Assert.assertEquals(registered.getArtist(), "James Ryman");
+        Assert.assertEquals(registered.getCardImageKey(), "PH01/艾雅,玉莲帮主.full");
     }
 
     private static void assertEmblem(final Fixture fixture, final String name,

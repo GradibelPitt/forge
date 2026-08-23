@@ -9,7 +9,7 @@ FORGE_ROOT = ROOT.parent
 CARD = ROOT / "cards" / "multicolor" / "艾雅，玉莲帮主.txt"
 EDITION = ROOT / "editions" / "Placeholder_Set.txt"
 ART_BACKUP = ROOT / "tools" / "card-artwork" / "Aya_Lotus_Kingpin_full_hswiki.jpg"
-ART = ROOT / "cards" / "pictures" / "PH01" / "艾雅，玉莲帮主.artcrop.jpg"
+ART = ROOT / "cards" / "pictures" / "PH01" / "艾雅,玉莲帮主.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 
