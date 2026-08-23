@@ -1,0 +1,7 @@
+Name:青玉飞镖
+ManaCost:1 G
+Types:Sorcery
+A:SP$ DealDamage | ValidTgts$ Any | NumDmg$ 3 | SubAbility$ DBJadeGolem | SpellDescription$ 青玉飞镖对任一目标造成3点伤害，如果此咒语不是你本回合施放的第一个咒语，派出一个青玉魔像
+SVar:DBJadeGolem:DB$ MakeCard | Defined$ You | Conjure$ True | Name$ 青玉魔像 | Amount$ 1 | Zone$ Battlefield | ConditionCheckSVar$ SpellsCastThisTurn | ConditionSVarCompare$ GE2
+SVar:SpellsCastThisTurn:Count$ThisTurnCast_Card.YouCtrl
+Oracle:青玉飞镖对任一目标造成3点伤害，如果此咒语不是你本回合施放的第一个咒语，派出一个青玉魔像
