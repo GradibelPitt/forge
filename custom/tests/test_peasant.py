@@ -15,7 +15,7 @@ class PeasantContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn("Name:农夫", text)
-        self.assertIn("ManaCost:2", text)
+        self.assertIn("ManaCost:U", text)
         self.assertIn("Types:Creature Human Citizen", text)
         self.assertIn("PT:2/1", text)
         self.assertIn(
@@ -24,7 +24,15 @@ class PeasantContractTest(unittest.TestCase):
             text,
         )
         self.assertIn("SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1", text)
-        self.assertIn("Oracle:在你的维持开始时，抓一张牌。", text)
+        self.assertIn(
+            "S:Mode$ MustBlock | ValidCreature$ Card.Self | "
+            "Description$ CARDNAME blocks each combat if able.",
+            text,
+        )
+        self.assertIn(
+            "Oracle:在你的维持开始时，抓一张牌。\\n只要农夫可以阻挡，他便必须阻挡。",
+            text,
+        )
 
     def test_upkeep_trigger_only_functions_on_the_battlefield(self):
         text = CARD.read_text(encoding="utf-8")
@@ -47,7 +55,10 @@ class PeasantContractTest(unittest.TestCase):
             self.assertEqual("RGB", image.mode)
 
     def test_zh_cn_display_text_matches_the_requested_description(self):
-        expected = "农夫|农夫|生物～人类／平民|在你的维持开始时，抓一张牌。"
+        expected = (
+            "农夫|农夫|生物～人类／平民|在你的维持开始时，抓一张牌。"
+            "\\n只要农夫可以阻挡，他便必须阻挡。"
+        )
 
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

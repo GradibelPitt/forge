@@ -1,7 +1,8 @@
 Name:农夫
-ManaCost:2
+ManaCost:U
 Types:Creature Human Citizen
 PT:2/1
 T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDraw | TriggerDescription$ At the beginning of your upkeep, draw a card.
 SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1
-Oracle:在你的维持开始时，抓一张牌。
+S:Mode$ MustBlock | ValidCreature$ Card.Self | Description$ CARDNAME blocks each combat if able.
+Oracle:在你的维持开始时，抓一张牌。\n只要农夫可以阻挡，他便必须阻挡。
