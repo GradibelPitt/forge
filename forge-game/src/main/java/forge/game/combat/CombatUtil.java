@@ -32,6 +32,7 @@ import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.staticability.StaticAbility;
 import forge.game.staticability.StaticAbilityBlockRestrict;
+import forge.game.staticability.StaticAbilityCanBeAttacked;
 import forge.game.staticability.StaticAbilityCantAttackBlock;
 import forge.game.staticability.StaticAbilityMode;
 import forge.game.staticability.StaticAbilityMustBlock;
@@ -59,11 +60,13 @@ import java.util.Map;
 public class CombatUtil {
 
     public static FCollectionView<GameEntity> getAllPossibleDefenders(final Player playerWhoAttacks) {
-        // Opponents, opposing planeswalkers, and any battle you don't protect
+        // Opponents, opposing planeswalkers, attackable creatures, and any battle you don't protect
         final FCollection<GameEntity> defenders = new FCollection<>();
         for (final Player defender : playerWhoAttacks.getOpponents()) {
             defenders.add(defender);
             defenders.addAll(defender.getPlaneswalkersInPlay());
+            defenders.addAll(CardLists.filter(defender.getCreaturesInPlay(),
+                    StaticAbilityCanBeAttacked::canBeAttacked));
         }
 
         // Relevant battles (protected by the attacking player's opponents)
@@ -202,6 +205,13 @@ public class CombatUtil {
         final Game game = attacker.getGame();
 
         if (attacker.isBattle()) {
+            return false;
+        }
+
+        if (defender instanceof Card cardDefender
+                && !cardDefender.isPlaneswalker()
+                && !cardDefender.isBattle()
+                && !StaticAbilityCanBeAttacked.canBeAttackedBy(cardDefender, attacker)) {
             return false;
         }
 
