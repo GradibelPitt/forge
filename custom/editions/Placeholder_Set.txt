@@ -112,3 +112,4 @@ Type=Custom_Set
 114 R 水栖形态 @Custom
 115 R 青玉护符 @Custom
 116 C 青玉飞镖 @Izzy Hoover
+118 R 艾雅，玉莲帮主 @James Ryman
