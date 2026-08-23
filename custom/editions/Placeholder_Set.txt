@@ -110,3 +110,4 @@ Type=Custom_Set
 112 R 冰霜新星 @Custom
 113 R 矿车难题 @L. Lullabi & K. Turovec
 114 R 水栖形态 @Custom
+115 R 青玉护符 @Custom
