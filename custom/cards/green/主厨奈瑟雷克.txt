@@ -4,7 +4,7 @@ Types:Legendary Creature Spider
 PT:3/3
 K:Companion:Card.cmcLE3:Each card in your starting deck has mana value 3 or less.
 K:Reach
-S:Mode$ CantBeCast | ValidCard$ Card.Self | EffectZone$ All | CheckSVar$ Count$YourTurns | SVarCompare$ LT3 | Description$ You can't cast CARDNAME unless you have taken three or more turns.
+S:Mode$ CantBeCast | ValidCard$ Card.Self | EffectZone$ All | CheckSVar$ Count$YourTurns | SVarCompare$ LT5 | Description$ You can't cast CARDNAME unless you have taken five or more turns.
 T:Mode$ SpellCast | ValidCard$ Card.Self+IsCompanion | TriggerZones$ Stack | Execute$ TrigLands | TriggerDescription$ When you cast CARDNAME, if it is your companion, search your library for up to ten land cards and put them onto the battlefield.
 SVar:TrigLands:DB$ ChangeZone | Origin$ Library | Destination$ Battlefield | ChangeType$ Land | ChangeNum$ 10 | NoShuffle$ True
-Oracle:Companion — Each card in your starting deck has mana value 3 or less.\nReach\nYou can't cast CARDNAME unless you have taken three or more turns.\nWhen you cast CARDNAME, if it is your companion, search your library for up to ten land cards and put them onto the battlefield.
+Oracle:Companion — Each card in your starting deck has mana value 3 or less.\nReach\nYou can't cast CARDNAME unless you have taken five or more turns.\nWhen you cast CARDNAME, if it is your companion, search your library for up to ten land cards and put them onto the battlefield.

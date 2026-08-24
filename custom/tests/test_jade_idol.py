@@ -16,7 +16,7 @@ ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 ORACLE = (
     "选择一项：\\n"
     "• 化生三张青玉护符到你的牌库中，然后将你的牌库洗牌。\\n"
-    "• 化生一个青玉魔像并置入战场。"
+    "• 派出一个青玉魔像。"
 )
 
 
@@ -52,6 +52,7 @@ class JadeIdolContractTest(unittest.TestCase):
         self.assertIn("Name$ 青玉魔像", golem_mode)
         self.assertIn("Amount$ 1", golem_mode)
         self.assertIn("Zone$ Battlefield", golem_mode)
+        self.assertIn("SpellDescription$ 派出一个青玉魔像", golem_mode)
 
         self.assertIn(f"Oracle:{ORACLE}", lines)
 

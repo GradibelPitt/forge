@@ -21,7 +21,7 @@ ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 ZH_ORACLE = (
     "行侣～你起始套牌中每张牌的总法术力费用均为3或更少。\\n"
     "延势\\n"
-    "除非你已经进行过三个或更多回合，否则你不能施放主厨奈瑟雷克。\\n"
+    "除非你已经进行过五个或更多回合，否则你不能施放主厨奈瑟雷克。\\n"
     "当你施放主厨奈瑟雷克时，如果此牌为你的行侣，从你的牌堆中搜寻至多十张地牌，并将他们放进战场。"
 )
 
@@ -44,9 +44,9 @@ class ChefNethrazekContractTest(unittest.TestCase):
         self.assertIn("ValidCard$ Card.Self", turn_gate)
         self.assertIn("EffectZone$ All", turn_gate)
         self.assertIn("CheckSVar$ Count$YourTurns", turn_gate)
-        self.assertIn("SVarCompare$ LT3", turn_gate)
+        self.assertIn("SVarCompare$ LT5", turn_gate)
         self.assertIn(
-            "Description$ You can't cast CARDNAME unless you have taken three or more turns.",
+            "Description$ You can't cast CARDNAME unless you have taken five or more turns.",
             turn_gate,
         )
 

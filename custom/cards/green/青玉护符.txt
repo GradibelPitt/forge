@@ -1,7 +1,7 @@
 Name:青玉护符
 ManaCost:G
 Types:Sorcery
-A:SP$ Charm | Choices$ DBShuffleIdols,DBJadeGolem | SpellDescription$ 选择一项：\n• 化生三张青玉护符到你的牌库中，然后将你的牌库洗牌。\n• 化生一个青玉魔像并置入战场。
+A:SP$ Charm | Choices$ DBShuffleIdols,DBJadeGolem | SpellDescription$ 选择一项：\n• 化生三张青玉护符到你的牌库中，然后将你的牌库洗牌。\n• 派出一个青玉魔像。
 SVar:DBShuffleIdols:DB$ MakeCard | Defined$ You | Conjure$ True | Name$ 青玉护符 | Amount$ 3 | Zone$ Library | SpellDescription$ 化生三张青玉护符到你的牌库中，然后将你的牌库洗牌。
-SVar:DBJadeGolem:DB$ MakeCard | Defined$ You | Conjure$ True | Name$ 青玉魔像 | Amount$ 1 | Zone$ Battlefield | SpellDescription$ 化生一个青玉魔像并置入战场。
-Oracle:选择一项：\n• 化生三张青玉护符到你的牌库中，然后将你的牌库洗牌。\n• 化生一个青玉魔像并置入战场。
+SVar:DBJadeGolem:DB$ MakeCard | Defined$ You | Conjure$ True | Name$ 青玉魔像 | Amount$ 1 | Zone$ Battlefield | SpellDescription$ 派出一个青玉魔像
+Oracle:选择一项：\n• 化生三张青玉护符到你的牌库中，然后将你的牌库洗牌。\n• 派出一个青玉魔像。

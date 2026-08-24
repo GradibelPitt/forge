@@ -56,7 +56,7 @@ public class ChefNethrazekTest {
     }
 
     @Test
-    public void realScriptEnforcesTheCompanionRestrictionAndThirdTurnGate() throws Exception {
+    public void realScriptEnforcesTheCompanionRestrictionAndFifthTurnGate() throws Exception {
         final Game game = game();
         final Player controller = game.getPlayers().get(0);
         final Card chef = cardFromScript(game, controller);
@@ -80,6 +80,10 @@ public class ChefNethrazekTest {
 
         final SpellAbility spell = chef.getSpellAbilities().getFirst();
         spell.setActivatingPlayer(controller);
+        Assert.assertTrue(StaticAbilityCantBeCast.cantBeCastAbility(spell, chef, controller));
+        controller.incrementTurn();
+        Assert.assertTrue(StaticAbilityCantBeCast.cantBeCastAbility(spell, chef, controller));
+        controller.incrementTurn();
         Assert.assertTrue(StaticAbilityCantBeCast.cantBeCastAbility(spell, chef, controller));
         controller.incrementTurn();
         Assert.assertTrue(StaticAbilityCantBeCast.cantBeCastAbility(spell, chef, controller));

@@ -25,7 +25,7 @@ class JadeShurikenContractTest(unittest.TestCase):
         lines = CARD.read_text(encoding="utf-8").splitlines()
 
         self.assertIn("Name:青玉飞镖", lines)
-        self.assertIn("ManaCost:1 G", lines)
+        self.assertIn("ManaCost:1 B", lines)
         self.assertIn("Types:Sorcery", lines)
 
         spell = next(line for line in lines if line.startswith("A:SP$ DealDamage"))
@@ -61,7 +61,7 @@ class JadeShurikenContractTest(unittest.TestCase):
             ZH_CN.read_text(encoding="utf-8").splitlines(),
         )
         self.assertIn(
-            "| 青玉飞镖 | `{1}{G}` 法术 | `cards/green/青玉飞镖.txt` | 116 |",
+            "| 青玉飞镖 | `{1}{B}` 法术 | `cards/green/青玉飞镖.txt` | 116 |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
 
