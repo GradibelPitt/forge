@@ -1,0 +1,8 @@
+Name:恐鳞
+ManaCost:1 R R
+Types:Legendary Creature Beast Wurm
+PT:4/2
+K:Partner with:酸喉
+T:Mode$ Phase | Phase$ End of Turn | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDamageAll | TriggerDescription$ At the beginning of your end step, Dreadscale deals 1 damage to each opponent and each creature they control.
+SVar:TrigDamageAll:DB$ DamageAll | ValidPlayers$ Player.Opponent | ValidCards$ Creature.OppCtrl | NumDmg$ 1 | ValidDescription$ each opponent and each creature they control
+Oracle:Partner with Acidmaw\nAt the beginning of your end step, Dreadscale deals 1 damage to each opponent and each creature they control.

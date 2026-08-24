@@ -117,3 +117,5 @@ Type=Custom_Set
 120 R 窃贼 @Ralph Horsley
 121 R 妙手空空 @Zoltan Boros
 122 R 戏水雏龙 @Caroline Gariba
+123 M 酸喉 @Andrew Hou
+124 M 恐鳞 @Zoltan Boros

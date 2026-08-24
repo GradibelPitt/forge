@@ -1,0 +1,8 @@
+Name:酸喉
+ManaCost:1 B B
+Types:Legendary Creature Beast Wurm
+PT:4/2
+K:Partner with:恐鳞
+T:Mode$ DamageDoneOnce | ValidTarget$ Creature.!named酸喉+!named恐鳞 | TriggerZones$ Battlefield | Execute$ TrigDestroy | TriggerDescription$ Whenever a creature other than Acidmaw and Dreadscale is dealt damage, destroy it.
+SVar:TrigDestroy:DB$ Destroy | Defined$ TriggeredTargetLKICopy
+Oracle:Partner with Dreadscale\nWhenever a creature other than Acidmaw and Dreadscale is dealt damage, destroy it.
