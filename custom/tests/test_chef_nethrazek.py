@@ -22,7 +22,15 @@ ZH_ORACLE = (
     "行侣～你起始套牌中每张牌的法术力值均等于或小于3。\\n"
     "延势\\n"
     "除非你已经进行过五个或更多回合，否则你不能施放主厨奈瑟雷克。\\n"
-    "当你施放主厨奈瑟雷克时，如果此牌为你的行侣，则从你的牌库中搜寻至多十张地牌，并将它们放进战场。"
+    "当你施放主厨奈瑟雷克时，如果此牌为你的行侣，则从你的牌库中搜寻至多十张各具有基本地类别的地牌，并将它们放进战场。"
+)
+
+EN_ORACLE = (
+    "Companion — Each card in your starting deck has mana value 3 or less.\\n"
+    "Reach\\n"
+    "You can't cast CARDNAME unless you have taken five or more turns.\\n"
+    "When you cast CARDNAME, if it is your companion, search your library for up to ten "
+    "land cards that each have a basic land type and put them onto the battlefield."
 )
 
 
@@ -57,15 +65,20 @@ class ChefNethrazekContractTest(unittest.TestCase):
         self.assertIn("ValidCard$ Card.Self+IsCompanion", trigger)
         self.assertIn("TriggerZones$ Stack", trigger)
         self.assertIn("Execute$ TrigLands", trigger)
+        self.assertIn(
+            "TriggerDescription$ When you cast CARDNAME, if it is your companion, search "
+            "your library for up to ten land cards that each have a basic land type and put "
+            "them onto the battlefield.",
+            trigger,
+        )
 
         search = next(line for line in lines if line.startswith("SVar:TrigLands:"))
-        self.assertIn("DB$ ChangeZone", search)
-        self.assertIn("Origin$ Library", search)
-        self.assertIn("Destination$ Battlefield", search)
-        self.assertIn("ChangeType$ Land", search)
-        self.assertIn("ChangeNum$ 10", search)
-        self.assertIn("NoShuffle$ True", search)
-        self.assertNotIn("Tapped$ True", search)
+        self.assertEqual(
+            "SVar:TrigLands:DB$ ChangeZone | Origin$ Library | Destination$ Battlefield | "
+            "ChangeType$ Land.hasABasicLandType | ChangeNum$ 10 | NoShuffle$ True",
+            search,
+        )
+        self.assertIn(f"Oracle:{EN_ORACLE}", lines)
 
     def test_registration_localization_documentation_and_art(self):
         self.assertIn(
@@ -79,6 +92,10 @@ class ChefNethrazekContractTest(unittest.TestCase):
         self.assertIn(
             "| 主厨奈瑟雷克 | `{1}{G}{G}`，3/3 传奇生物～蜘蛛 | "
             "`cards/green/主厨奈瑟雷克.txt` | 99 |",
+            (ROOT / "CARDS.md").read_text(encoding="utf-8"),
+        )
+        self.assertIn(
+            "从牌库中搜寻至多十张各具有基本地类别的地牌并放进战场",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
 
