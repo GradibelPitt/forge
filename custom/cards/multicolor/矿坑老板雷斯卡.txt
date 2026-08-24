@@ -7,4 +7,4 @@ S:Mode$ ReduceCost | ValidCard$ Card.Self | Type$ Spell | Amount$ X | ColorChoic
 SVar:X:Count$ValidGraveyard Creature.YouOwn
 T:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Card.Self | Execute$ TrigGainControl | TriggerDescription$ 当矿坑老板雷斯卡死去时，获得目标非地永久物的操控权。
 SVar:TrigGainControl:DB$ GainControl | ValidTgts$ Permanent.nonLand | TgtPrompt$ Select target nonland permanent
-Oracle:敏捷\n坟墓场中的每张生物牌都使此咒语减少{U}或{B}。\n当矿坑老板雷斯卡死去时，获得目标非地永久物的操控权。
+Oracle:敏捷\n你坟墓场中的每张生物牌均使你施放此咒语时可以少支付{U}或{B}。\n当矿坑老板雷斯卡死去时，获得目标非地永久物的操控权。

@@ -6,4 +6,4 @@ S:Mode$ CanBeAttacked | ValidDefender$ Card.Self | ValidAttacker$ Creature.OppCt
 S:Mode$ NoCleanupDamage | ValidCard$ Card.Self | Description$ CARDNAME受到的伤害不会被清除。
 T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigDestroyAll | TriggerDescription$ At the beginning of your upkeep, destroy all creatures. They can't be regenerated.
 SVar:TrigDestroyAll:DB$ DestroyAll | ValidCards$ Creature | NoRegen$ True
-Oracle:在你的维持开始时，消灭所有生物。它们不能重生。\n不由你操控的生物可以攻击末日预言者。\n末日预言者受到的伤害不会被清除。
+Oracle:不由你操控的生物可以攻击末日预言者。\n末日预言者受到的伤害不会被清除。\n在你的维持开始时，消灭所有生物。它们不能重生。

@@ -37,7 +37,7 @@ class SoulfireContractTest(unittest.TestCase):
         self.assertTrue(ART.is_file())
 
     def test_zh_cn_display_text_matches_the_requested_description(self):
-        expected = "灵魂之火|灵魂之火|法术|灵魂之火对任一目标造成3点伤害，随机弃一张牌。"
+        expected = "灵魂之火|灵魂之火|法术|灵魂之火对任一目标造成3点伤害。然后随机弃一张牌。"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
 

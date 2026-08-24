@@ -13,7 +13,7 @@ ART_BACKUP = ROOT / "tools" / "card-artwork" / "Treachery_original.jpg"
 ART = ROOT / "cards" / "pictures" / "PH01" / "变节.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
-ORACLE = "选择目标由你控制的生物，目标对手获得该生物的操控权。"
+ORACLE = "选择目标由你操控的生物。目标对手获得该生物的操控权。"
 SOURCE_ART_SHA256 = "657B54F35736ED33AEDD5712670B7371351567DB883BB88343034BF077E54C49"
 
 

@@ -14,8 +14,8 @@ ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
     "灵技\\n"
-    "每当你弃一张或数张瞬间或法术牌时，你施放瞬间或法术咒语时可以支付{X}，"
-    "而不支付其法术力费用，X等同于这些牌中最小的法术力值。每回合只能如此作一次。\\n"
+    "每当你弃一张或数张瞬间或法术牌时，本回合中，你可以支付{X}而非支付其法术力费用来施放一个瞬间或法术咒语，"
+    "X为这些牌中最小的法术力值。每回合只能如此作一次。\\n"
     "{R}，弃一张牌：占卜1，然后抓一张牌。"
 )
 
@@ -60,7 +60,7 @@ class PortalManipulatorSkiraContractTest(unittest.TestCase):
         self.assertIn(f"Oracle:{ORACLE}", text)
         self.assertIn("73 M 传送门操控师斯奇拉 @Custom", EDITION.read_text(encoding="utf-8"))
         self.assertIn(
-            f"传送门操控师斯奇拉|传送门操控师斯奇拉|传奇生物～灵俑／法术师|{ORACLE}",
+            f"传送门操控师斯奇拉|传送门操控师斯奇拉|传奇生物～狼人／法术师|{ORACLE}",
             ZH_CN.read_text(encoding="utf-8").splitlines(),
         )
 

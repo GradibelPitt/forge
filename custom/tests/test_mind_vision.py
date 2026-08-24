@@ -20,8 +20,8 @@ class MindVisionContractTest(unittest.TestCase):
         self.assertIn("Types:Sorcery", text)
         self.assertIn("39 C 心灵视界 @Custom", EDITION.read_text(encoding="utf-8"))
         expected = (
-            "心灵视界|心灵视界|法术|检视目标对手的手牌，从中选择一张牌。"
-            "化生一张以此法选择的牌名的复制并置于你的手上。它减少{1}来施放。"
+            "心灵视界|心灵视界|法术|检视目标对手的手牌，然后从中选择一张牌。"
+            "将一张与该牌同名之牌化生到你手上。它永久减少{1}来施放。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

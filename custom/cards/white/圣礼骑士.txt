@@ -2,6 +2,6 @@ Name:圣礼骑士
 ManaCost:W
 Types:Creature Human Paladin
 PT:1/1
-T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigSeek | TriggerDescription$ 当圣礼骑士进战场时，随机将一张白色法术或瞬间咒语从你的牌库置于你手上。
-SVar:TrigSeek:DB$ Seek | Type$ Instant.White,Sorcery.White | Num$ 1 | SpellDescription$ 随机将一张白色法术或瞬间咒语从你的牌库置于你手上。
-Oracle:当圣礼骑士进战场时，随机将一张白色法术或瞬间咒语从你的牌库置于你手上。
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigSeek | TriggerDescription$ 当圣礼骑士进战场时，随机将一张白色瞬间或法术牌从你的牌库置于你手上。
+SVar:TrigSeek:DB$ Seek | Type$ Instant.White,Sorcery.White | Num$ 1 | SpellDescription$ 随机将一张白色瞬间或法术牌从你的牌库置于你手上。
+Oracle:当圣礼骑士进战场时，随机将一张白色瞬间或法术牌从你的牌库置于你手上。

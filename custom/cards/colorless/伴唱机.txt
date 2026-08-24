@@ -2,8 +2,8 @@ Name:伴唱机
 ManaCost:3
 Types:Artifact Creature
 PT:2/4
-A:AB$ Effect | Cost$ T | ValidTgts$ Planeswalker.YouCtrl | TgtPrompt$ 选择目标由你控制的鹏洛客 | Triggers$ CopyTargetedLoyalty | RememberObjects$ Targeted | SpellDescription$ 选择目标由你控制的鹏洛客。在本回合中，当你启动其忠诚异能时，复制该异能，你可以为复制品选择新的目标。
-SVar:CopyTargetedLoyalty:Mode$ AbilityCast | ValidCard$ Planeswalker.IsRemembered | ValidSA$ Activated.Loyalty | ValidActivatingPlayer$ You | TriggerZones$ Command | Execute$ CopyLoyaltyAbility | TriggerDescription$ 在本回合中，当你启动其忠诚异能时，复制该异能，你可以为复制品选择新的目标。
+A:AB$ Effect | Cost$ T | ValidTgts$ Planeswalker.YouCtrl | TgtPrompt$ 选择目标由你操控的鹏洛客 | Triggers$ CopyTargetedLoyalty | RememberObjects$ Targeted | SpellDescription$ 选择目标由你操控的鹏洛客。本回合中，每当你起动其忠诚异能时，复制该异能。你可以为该复制品选择新的目标。
+SVar:CopyTargetedLoyalty:Mode$ AbilityCast | ValidCard$ Planeswalker.IsRemembered | ValidSA$ Activated.Loyalty | ValidActivatingPlayer$ You | TriggerZones$ Command | Execute$ CopyLoyaltyAbility | TriggerDescription$ 本回合中，每当你起动其忠诚异能时，复制该异能。你可以为该复制品选择新的目标。
 SVar:CopyLoyaltyAbility:DB$ CopySpellAbility | Defined$ TriggeredSpellAbility | MayChooseTarget$ True
 DeckHints:Type$Planeswalker
-Oracle:{T}：选择目标由你控制的鹏洛客。在本回合中，当你启动其忠诚异能时，复制该异能，你可以为复制品选择新的目标。
+Oracle:{T}：选择目标由你操控的鹏洛客。本回合中，每当你起动其忠诚异能时，复制该异能。你可以为该复制品选择新的目标。

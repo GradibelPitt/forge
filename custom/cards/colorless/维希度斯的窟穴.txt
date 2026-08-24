@@ -3,7 +3,7 @@ ManaCost:B R
 Types:Artifact
 R:Event$ Moved | ValidCard$ Card.Self | Destination$ Battlefield | ReplaceWith$ DBAddCounter | ReplacementResult$ Updated | Description$ CARDNAME enters with two depletion counters on it.
 SVar:DBAddCounter:DB$ PutCounter | Defined$ Self | ETB$ True | CounterType$ DEPLETION | CounterNum$ 2
-A:AB$ Discard | Cost$ T SubCounter<1/DEPLETION> | Defined$ You | NumCards$ 1 | Mode$ TgtChoose | SubAbility$ DBDraw | PlayerTurn$ True | SorcerySpeed$ True | SpellDescription$ 弃一张牌，抽两张牌。如果此地上没有消耗指示物，则将它牺牲。只能于你的回合中起动且只能于法术时机起动。
+A:AB$ Discard | Cost$ T SubCounter<1/DEPLETION> | Defined$ You | NumCards$ 1 | Mode$ TgtChoose | SubAbility$ DBDraw | PlayerTurn$ True | SorcerySpeed$ True | SpellDescription$ 弃一张牌，然后抓两张牌。若此神器上没有消耗指示物，则将它牺牲。只能于你的回合中且于法术时机起动此异能。
 SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 2 | SubAbility$ DBSac
 SVar:DBSac:DB$ Sacrifice | SacValid$ Self | ConditionPresent$ Card.Self+counters_EQ0_DEPLETION
-Oracle:此神器进场时上面有两个消耗指示物。\n{T}，从此神器上移去一个消耗指示物：弃一张牌，抽两张牌。如果此地上没有消耗指示物，则将它牺牲。只能于你的回合中起动且只能于法术时机起动。
+Oracle:此神器进场时上面有两个消耗指示物。\n{T}，从此神器上移去一个消耗指示物：弃一张牌，然后抓两张牌。若此神器上没有消耗指示物，则将它牺牲。只能于你的回合中且于法术时机起动此异能。

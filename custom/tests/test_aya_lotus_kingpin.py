@@ -120,7 +120,7 @@ class AyaLotusKingpinContractTest(unittest.TestCase):
                     "艾雅，玉莲帮主|艾雅，玉莲帮主|生物～熊猫人／浪客|"
                 )
                 and "派出三个珍宝衍生物" in line
-                and "之前未选择过的一项" in line
+                and "此前未选择过的选项中选择一项" in line
                 and "派出一个青玉魔像" in line
                 and "随机选择" in line
                 and "抓一张牌" in line

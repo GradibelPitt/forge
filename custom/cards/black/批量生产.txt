@@ -1,7 +1,7 @@
 Name:批量生产
 ManaCost:B
 Types:Sorcery
-A:SP$ DealDamage | Defined$ You | NumDmg$ 3 | SubAbility$ DBDraw | SpellDescription$ 批量生产对你造成3点伤害，抓两张牌，化生两张批量生产并置入牌库，然后将你的牌库洗牌
+A:SP$ DealDamage | Defined$ You | NumDmg$ 3 | SubAbility$ DBDraw | SpellDescription$ 批量生产对你造成3点伤害。抓两张牌。化生两张批量生产并置入你的牌库，然后将你的牌库洗牌。
 SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 2 | SubAbility$ DBConjure
 SVar:DBConjure:DB$ MakeCard | Defined$ You | Conjure$ True | Name$ 批量生产 | Amount$ 2 | Zone$ Library
-Oracle:批量生产对你造成3点伤害，抓两张牌，化生两张批量生产并置入牌库，然后将你的牌库洗牌
+Oracle:批量生产对你造成3点伤害。抓两张牌。化生两张批量生产并置入你的牌库，然后将你的牌库洗牌。

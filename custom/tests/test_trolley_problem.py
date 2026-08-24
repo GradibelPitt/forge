@@ -22,8 +22,8 @@ TOKEN_ART = ROOT / "tokens" / "pictures" / "c_3_3_a_minecart_haste.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "除非你支付了矿车难题的奇迹费用，否则弃一张法术或瞬间牌以作为施放本咒语的额外费用。\\n"
-    "将两个3/3并具有敏捷的矿车衍生生物置入战场。\\n"
+    "除非你支付了矿车难题的奇迹费用，否则弃一张瞬间或法术牌，以作为施放此咒语的额外费用。\\n"
+    "派出两个3/3、具敏捷异能的无色矿车衍生神器生物。\\n"
     "奇迹{B}{R}{R}"
 )
 SOURCE_ART_SHA256 = "A4DEFE69471D6679A2E5D47684463F08E36B302476F97E72BC6C7E8AB0C2C4CD"
@@ -60,7 +60,7 @@ class TrolleyProblemContractTest(unittest.TestCase):
         self.assertIn("TokenAmount$ 2", spell)
         self.assertIn("TokenOwner$ You", spell)
         self.assertIn(
-            "SpellDescription$ 将两个3/3并具有敏捷的矿车衍生生物置入战场。",
+            "SpellDescription$ 派出两个3/3、具敏捷异能的无色矿车衍生神器生物。",
             spell,
         )
         self.assertIn(f"Oracle:{ORACLE}", lines)

@@ -1,6 +1,6 @@
 Name:变节
 ManaCost:B
 Types:Instant
-A:SP$ Pump | ValidTgts$ Opponent | SubAbility$ DBGainControl | AILogic$ DonateTargetPlayer | StackDescription$ None | SpellDescription$ 选择目标由你控制的生物，目标对手获得该生物的操控权。
-SVar:DBGainControl:DB$ GainControl | ValidTgts$ Creature.YouCtrl | TgtPrompt$ 选择目标由你控制的生物 | NewController$ ParentTarget
-Oracle:选择目标由你控制的生物，目标对手获得该生物的操控权。
+A:SP$ Pump | ValidTgts$ Opponent | SubAbility$ DBGainControl | AILogic$ DonateTargetPlayer | StackDescription$ None | SpellDescription$ 选择目标由你操控的生物。目标对手获得该生物的操控权。
+SVar:DBGainControl:DB$ GainControl | ValidTgts$ Creature.YouCtrl | TgtPrompt$ 选择目标由你操控的生物 | NewController$ ParentTarget
+Oracle:选择目标由你操控的生物。目标对手获得该生物的操控权。

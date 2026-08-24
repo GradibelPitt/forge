@@ -18,7 +18,7 @@ ART_BACKUP = (
 ART = ROOT / "cards" / "pictures" / "PH01" / "狗头人图书管理员.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
-ORACLE = "当狗头人图书管理员进战场时，你可以支付两点生命并抓一张牌"
+ORACLE = "当狗头人图书管理员进战场时，你可以支付2点生命。若你如此作，抓一张牌。"
 
 
 class KoboldLibrarianContractTest(unittest.TestCase):

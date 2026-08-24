@@ -14,9 +14,9 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "末日预言者.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "在你的维持开始时，消灭所有生物。它们不能重生。\\n"
     "不由你操控的生物可以攻击末日预言者。\\n"
-    "末日预言者受到的伤害不会被清除。"
+    "末日预言者受到的伤害不会被清除。\\n"
+    "在你的维持开始时，消灭所有生物。它们不能重生。"
 )
 ENGLISH_ORACLE = (
     "At the beginning of your upkeep, destroy all creatures. "

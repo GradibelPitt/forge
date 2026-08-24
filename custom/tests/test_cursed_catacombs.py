@@ -58,7 +58,7 @@ class CursedCatacombsContractTest(unittest.TestCase):
         expected = (
             "咒怨之墓|咒怨之墓|法术|咒怨之墓是黑色。\\n"
             "从你的坟墓场放逐三张牌，以作为施放此咒语的额外费用。\\n"
-            "发现你牌堆中的一张牌，在你的回合结束时，弃掉以此法获得的且仍然在你手牌中的牌。"
+            "发现你牌库中的一张牌。在你的结束步骤开始时，弃掉以此法获得且仍在你手上的牌。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

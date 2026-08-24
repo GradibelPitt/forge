@@ -51,7 +51,7 @@ class BonewebEggAndFistOfJaraxxusContractTest(unittest.TestCase):
             text,
         )
         self.assertIn(
-            "Oracle:延势\\n当此生物死去时，派出两个2/1，黑绿双色的蜘蛛衍生生物。\\n疯魔{0}",
+            "Oracle:延势\\n当此生物死去时，派出两个2/1黑绿双色蜘蛛衍生生物。\\n疯魔{0}",
             text,
         )
 
@@ -80,7 +80,7 @@ class BonewebEggAndFistOfJaraxxusContractTest(unittest.TestCase):
         self.assertIn("TargetsAtRandom$ True", text)
         self.assertNotIn("TgtPrompt$", text)
         self.assertIn(
-            "Oracle:加拉克苏斯之拳对随机选择之一个由对手操控的生物造成4点伤害。\\n疯魔{0}",
+            "Oracle:加拉克苏斯之拳对一个随机选择的由对手操控的生物造成4点伤害。\\n疯魔{0}",
             text,
         )
 
@@ -123,12 +123,12 @@ class BonewebEggAndFistOfJaraxxusContractTest(unittest.TestCase):
         lines = ZH_CN.read_text(encoding="utf-8").splitlines()
         self.assertIn(
             "骨网之卵|骨网之卵|生物～蜘蛛|"
-            "延势\\n当此生物死去时，派出两个2/1，黑绿双色的蜘蛛衍生生物。\\n疯魔{0}",
+            "延势\\n当此生物死去时，派出两个2/1黑绿双色蜘蛛衍生生物。\\n疯魔{0}",
             lines,
         )
         self.assertIn(
             "加拉克苏斯之拳|加拉克苏斯之拳|瞬间|"
-            "加拉克苏斯之拳对随机选择之一个由对手操控的生物造成4点伤害。\\n疯魔{0}",
+            "加拉克苏斯之拳对一个随机选择的由对手操控的生物造成4点伤害。\\n疯魔{0}",
             lines,
         )
 

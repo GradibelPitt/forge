@@ -19,8 +19,8 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "妒意收割者.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "在你施放一个咒语后，从你对手的战场上，手中，牌库或坟墓场"
-    "如顺手牵羊般地拿走一张与该咒语同名的牌或永久物。"
+    "每当你施放一个咒语时，获得目标对手操控的一个与该咒语同名之永久物的操控权。"
+    "若没有，则依次从该牌手的手牌、牌库或坟墓场中将一张同名牌置入你手上。"
 )
 
 

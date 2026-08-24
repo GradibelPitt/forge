@@ -14,8 +14,8 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "青玉飞镖.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "青玉飞镖对任一目标造成3点伤害，如果此咒语不是你本回合施放的第一个咒语，"
-    "派出一个青玉魔像"
+    "青玉飞镖对任一目标造成3点伤害。若此咒语不是你本回合施放的第一个咒语，"
+    "则派出一个青玉魔像。"
 )
 SOURCE_ART_SHA256 = "9466AE7CB4E5FF9A81A95BD18AD981C2D02B98967C025CC58E20C195D5DC6A41"
 

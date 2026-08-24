@@ -18,7 +18,7 @@ ART_BACKUP = (
 ART = ROOT / "cards" / "pictures" / "PH01" / "生物计划.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
-ORACLE = "每位牌手从牌库中搜寻两张基本地牌，并将它们横置放入战场"
+ORACLE = "每位牌手各从自己的牌库中搜寻两张基本地牌，并将它们横置放进战场。"
 SOURCE_ART_SHA256 = "6CCC603FC091B1A765709EB085060BB613F182E600F41E917B0C87281F5165CE"
 
 

@@ -19,12 +19,12 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "海中向导芬利爵士.artcrop.j
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "当芬利进战场时，放逐你的手牌，每以此法放逐一张牌，便将牌库底的一张牌置入手中，"
-    "然后将所有被芬利放逐的牌以任意顺序放回牌库底。"
+    "当芬利进战场时，放逐你的手牌。每以此法放逐一张牌，便将你牌库底的一张牌置入你手上。"
+    "然后将所有被芬利放逐的牌以任意顺序置于你的牌库底。"
 )
 FULL_ORACLE = (
-    f"{ORACLE}\\n"
-    "探险者协会（你可以将两个来自探险者协会的角色共同用作指挥官）"
+    "探险者协会（你可以将两个来自探险者协会的角色共同用作指挥官。）\\n"
+    f"{ORACLE}"
 )
 ENGLISH_ORACLE = (
     "When CARDNAME enters, exile your hand. For each card exiled this way, put a card "

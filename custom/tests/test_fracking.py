@@ -18,7 +18,7 @@ ART_BACKUP = (
 ART = ROOT / "cards" / "pictures" / "PH01" / "液力压裂.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
-ORACLE = "检视你牌堆底的三张牌，选择其中一张放在你手上，然后将其余两张牌放入坟墓场"
+ORACLE = "检视你牌库底的三张牌。将其中一张置于你手上，其余两张则置入你的坟墓场。"
 
 
 class FrackingContractTest(unittest.TestCase):

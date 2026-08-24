@@ -19,8 +19,8 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "伴唱机.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ABILITY_TEXT = (
-    "选择目标由你控制的鹏洛客。在本回合中，当你启动其忠诚异能时，"
-    "复制该异能，你可以为复制品选择新的目标。"
+    "选择目标由你操控的鹏洛客。本回合中，每当你起动其忠诚异能时，"
+    "复制该异能。你可以为该复制品选择新的目标。"
 )
 ORACLE = f"{{T}}：{ABILITY_TEXT}"
 

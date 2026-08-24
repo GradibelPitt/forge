@@ -18,7 +18,7 @@ ART_BACKUP = (
 ART = ROOT / "cards" / "pictures" / "PH01" / "山岭巨人.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
-ORACLE = "你每有一张其他手牌，本牌便减少1来施放"
+ORACLE = "你每有一张其他手牌，此咒语便减少{1}来施放。"
 
 
 class MountainGiantContractTest(unittest.TestCase):

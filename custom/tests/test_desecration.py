@@ -19,8 +19,8 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "亵渎.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "亵渎对所有生物造成1点伤害，如果有生物因亵渎死去，则直到你的回合结束，"
-    "你可以从坟墓场施放亵渎且无需支付其费用"
+    "亵渎对所有生物造成1点伤害。若有生物因亵渎死去，则直到你的回合结束，"
+    "你可以从你的坟墓场施放亵渎，且不需支付其法术力费用。"
 )
 
 
@@ -73,7 +73,7 @@ class DesecrationContractTest(unittest.TestCase):
             ZH_CN.read_text(encoding="utf-8").splitlines(),
         )
         self.assertIn(
-            f"| 亵渎 | `{{B}}{{B}}` 法术 | `cards/black/亵渎.txt` | 94 | {ORACLE}。 |",
+            f"| 亵渎 | `{{B}}{{B}}` 法术 | `cards/black/亵渎.txt` | 94 | {ORACLE} |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
 

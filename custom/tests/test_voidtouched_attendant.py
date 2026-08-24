@@ -33,7 +33,7 @@ class VoidtouchedAttendantContractTest(unittest.TestCase):
         self.assertIn("28 R 虚触侍从 @Custom", EDITION.read_text(encoding="utf-8"))
         self.assertTrue(BACKUP.is_file())
         self.assertTrue(ART.is_file())
-        expected = "虚触侍从|虚触侍从|生物～人类／术士|每位牌手受到的所有伤害增加1点。"
+        expected = "虚触侍从|虚触侍从|生物～人类／术士|如果将对一位牌手造成伤害，改为对该牌手造成该伤害加1点的伤害。"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
     def test_art_is_an_rgb_landscape_crop(self):

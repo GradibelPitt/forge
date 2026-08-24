@@ -2,6 +2,6 @@ Name:矿车难题
 ManaCost:B R R
 Types:Sorcery
 K:Miracle:B R R
-S:Mode$ RaiseCost | ValidCard$ Card.Self | ValidSpell$ Spell.!Miracle | Activator$ You | Type$ Spell | Cost$ Discard<1/Instant;Sorcery/instant or sorcery> | EffectZone$ All | Description$ 除非你支付了矿车难题的奇迹费用，否则弃一张法术或瞬间牌以作为施放本咒语的额外费用。
-A:SP$ Token | TokenScript$ c_3_3_a_minecart_haste | TokenAmount$ 2 | TokenOwner$ You | SpellDescription$ 将两个3/3并具有敏捷的矿车衍生生物置入战场。
-Oracle:除非你支付了矿车难题的奇迹费用，否则弃一张法术或瞬间牌以作为施放本咒语的额外费用。\n将两个3/3并具有敏捷的矿车衍生生物置入战场。\n奇迹{B}{R}{R}
+S:Mode$ RaiseCost | ValidCard$ Card.Self | ValidSpell$ Spell.!Miracle | Activator$ You | Type$ Spell | Cost$ Discard<1/Instant;Sorcery/instant or sorcery> | EffectZone$ All | Description$ 除非你支付了矿车难题的奇迹费用，否则弃一张瞬间或法术牌，以作为施放此咒语的额外费用。
+A:SP$ Token | TokenScript$ c_3_3_a_minecart_haste | TokenAmount$ 2 | TokenOwner$ You | SpellDescription$ 派出两个3/3、具敏捷异能的无色矿车衍生神器生物。
+Oracle:除非你支付了矿车难题的奇迹费用，否则弃一张瞬间或法术牌，以作为施放此咒语的额外费用。\n派出两个3/3、具敏捷异能的无色矿车衍生神器生物。\n奇迹{B}{R}{R}

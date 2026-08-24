@@ -31,7 +31,7 @@ class ImpKnightContractTest(unittest.TestCase):
         self.assertIn("SVar:X:TriggerCount$Amount", text)
         self.assertIn("SVar:DBTrample:DB$ Pump | Defined$ Self | KW$ Trample", text)
         self.assertIn(
-            "Oracle:每当你弃一张或数张牌时，在此生物上放置等量的+1/+1指示物且直到回合结束获得践踏异能。",
+            "Oracle:每当你弃一张或数张牌时，在此生物上放置等量的+1/+1指示物，且它获得践踏异能直到回合结束。",
             text,
         )
 
@@ -51,7 +51,7 @@ class ImpKnightContractTest(unittest.TestCase):
     def test_zh_cn_display_text_matches_the_requested_oracle(self):
         expected = (
             "小鬼骑士|小鬼骑士|生物～恶魔／骑士|"
-            "每当你弃一张或数张牌时，在此生物上放置等量的+1/+1指示物且直到回合结束获得践踏异能。"
+            "每当你弃一张或数张牌时，在此生物上放置等量的+1/+1指示物，且它获得践踏异能直到回合结束。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

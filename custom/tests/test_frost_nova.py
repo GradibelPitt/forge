@@ -18,7 +18,7 @@ ART_BACKUP = (
 ART = ROOT / "cards" / "pictures" / "PH01" / "冰霜新星.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
-ORACLE = "每个不由你操控的生物成为横置，它们在下一个重置阶段不能被重置"
+ORACLE = "横置所有不由你操控的生物。它们于其操控者的下一个重置步骤中不能重置。"
 SOURCE_ART_SHA256 = "95216C283A558CF3B0CB57871621EA1180915BF00CEB49ACA960B7F503D5D529"
 
 

@@ -14,8 +14,8 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "强能雷象.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "每当一张牌不因强能雷象的效应进入牌堆时，化生一张该牌的复制并置入牌堆，"
-    "然后牌堆的拥有者将其牌堆洗牌"
+    "每当一张牌因强能雷象以外的效应进入牌库时，化生一张该牌的复制并置入该牌库，"
+    "然后该牌库的拥有者将它洗牌。"
 )
 
 

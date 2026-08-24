@@ -25,8 +25,8 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "食肉格块.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "当食肉格块进战场时，消灭一个由你控制的生物。"
-    "食肉格块具有「在你的结束阶段，化生一个以此法消灭的生物并在你的操控下放入战场」。"
+    "当食肉格块进战场时，消灭一个由你操控的生物。\\n"
+    "在你的结束步骤开始时，化生一个以此法消灭的生物并在你的操控下放进战场。"
 )
 
 

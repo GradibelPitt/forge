@@ -13,7 +13,7 @@ ART_BACKUP = ROOT / "tools" / "card-artwork" / "Mass_Production_original.jpg"
 ART = ROOT / "cards" / "pictures" / "PH01" / "批量生产.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
-ORACLE = "批量生产对你造成3点伤害，抓两张牌，化生两张批量生产并置入牌库，然后将你的牌库洗牌"
+ORACLE = "批量生产对你造成3点伤害。抓两张牌。化生两张批量生产并置入你的牌库，然后将你的牌库洗牌。"
 
 
 class MassProductionContractTest(unittest.TestCase):

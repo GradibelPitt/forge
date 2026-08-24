@@ -14,9 +14,9 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "占领冷齿矿洞.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ZH_ORACLE = (
-    "选择一项 —\\n"
-    "• 将你牌堆中法术力费用最高的牌置于你手上。\\n"
-    "• 将你牌堆中法术力费用最低的牌置于你手上。"
+    "选择一项—\\n"
+    "• 将你牌库中一张具有最高法术力值的牌置于你手上。\\n"
+    "• 将你牌库中一张具有最低法术力值的牌置于你手上。"
 )
 
 

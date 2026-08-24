@@ -1,5 +1,5 @@
 Name:液力压裂
 ManaCost:B
 Types:Sorcery
-A:SP$ Dig | DigNum$ 3 | ChangeNum$ 1 | FromBottom$ True | ChangeValid$ Card | DestinationZone$ Hand | DestinationZone2$ Graveyard | StackDescription$ SpellDescription | SpellDescription$ 检视你牌堆底的三张牌，选择其中一张放在你手上，然后将其余两张牌放入坟墓场
-Oracle:检视你牌堆底的三张牌，选择其中一张放在你手上，然后将其余两张牌放入坟墓场
+A:SP$ Dig | DigNum$ 3 | ChangeNum$ 1 | FromBottom$ True | ChangeValid$ Card | DestinationZone$ Hand | DestinationZone2$ Graveyard | StackDescription$ SpellDescription | SpellDescription$ 检视你牌库底的三张牌。将其中一张置于你手上，其余两张则置入你的坟墓场。
+Oracle:检视你牌库底的三张牌。将其中一张置于你手上，其余两张则置入你的坟墓场。

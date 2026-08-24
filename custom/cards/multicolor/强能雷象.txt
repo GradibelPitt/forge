@@ -2,6 +2,6 @@ Name:强能雷象
 ManaCost:1 G U
 Types:Creature Elephant
 PT:3/4
-T:Mode$ ChangesZone | Origin$ Any | Destination$ Library | ValidCard$ Card.!token | ValidCause$ SpellAbility.named强能雷象 | InvertValidCause$ True | NotThisAbility$ True | TriggerZones$ Battlefield | Execute$ TrigConjure | TriggerDescription$ 每当一张牌不因强能雷象的效应进入牌堆时，化生一张该牌的复制并置入牌堆，然后牌堆的拥有者将其牌堆洗牌
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Library | ValidCard$ Card.!token | ValidCause$ SpellAbility.named强能雷象 | InvertValidCause$ True | NotThisAbility$ True | TriggerZones$ Battlefield | Execute$ TrigConjure | TriggerDescription$ 每当一张牌因强能雷象以外的效应进入牌库时，化生一张该牌的复制并置入该牌库，然后该牌库的拥有者将它洗牌。
 SVar:TrigConjure:DB$ MakeCard | Defined$ TriggeredCardOwner | DefinedName$ TriggeredCard | Conjure$ True | Zone$ Library
-Oracle:每当一张牌不因强能雷象的效应进入牌堆时，化生一张该牌的复制并置入牌堆，然后牌堆的拥有者将其牌堆洗牌
+Oracle:每当一张牌因强能雷象以外的效应进入牌库时，化生一张该牌的复制并置入该牌库，然后该牌库的拥有者将它洗牌。

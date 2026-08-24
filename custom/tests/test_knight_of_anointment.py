@@ -18,7 +18,7 @@ ART_BACKUP = (
 ART = ROOT / "cards" / "pictures" / "PH01" / "圣礼骑士.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
-ORACLE = "当圣礼骑士进战场时，随机将一张白色法术或瞬间咒语从你的牌库置于你手上。"
+ORACLE = "当圣礼骑士进战场时，随机将一张白色瞬间或法术牌从你的牌库置于你手上。"
 
 
 class KnightOfAnointmentContractTest(unittest.TestCase):

@@ -55,8 +55,8 @@ class EarthPendantContractTest(unittest.TestCase):
     def test_zh_cn_display_text_matches_the_requested_description(self):
         expected = (
             "大地坠饰|大地坠饰|瞬间|"
-            "发现你牌库中的一张生物牌，你获得X点生命，"
-            "X等同于所选择生物牌的总法术力费用。"
+            "发现你牌库中的一张生物牌。你获得X点生命，"
+            "X为以此法发现之牌的法术力值。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

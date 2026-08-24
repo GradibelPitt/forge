@@ -95,8 +95,8 @@ class ButtonsContractTest(unittest.TestCase):
         self.assertIn("传奇生物～灵俑／祭师", line)
         self.assertIn("敲诈", line)
         self.assertIn("磨五张牌", line)
-        self.assertIn("以此法所牺牲生物之颜色相同", line)
-        self.assertIn("于本回合中，你可以免费施放该牌", line)
+        self.assertIn("该牌须与以此法牺牲之生物颜色相同", line)
+        self.assertIn("于本回合中，你可以施放该牌，且不需支付其法术力费用", line)
 
         self.assertTrue(ART_BACKUP.is_file())
         self.assertTrue(ART.is_file())

@@ -3,7 +3,7 @@ ManaCost:3 U G
 Types:Legendary Creature Elf Druid
 PT:5/5
 K:Partner:探险者协会
-T:Mode$ SpellCast | ValidCard$ Card.Self | TriggerZones$ Stack | Execute$ TrigConjure | TriggerDescription$ 当你施放启迪者伊利斯时，如果你起始套牌中每张非地牌的名称均不相同，化生你手牌中每一张牌的复制并置入你手中。
+T:Mode$ SpellCast | ValidCard$ Card.Self | TriggerZones$ Stack | Execute$ TrigConjure | TriggerDescription$ 当你施放启迪者伊利斯时，如果你起始套牌中每张非地牌的名称均不相同，将你手牌中每张牌的复制品各一张化生到你手上。
 SVar:TrigConjure:DB$ MakeCard | Defined$ You | Conjure$ True | DefinedName$ ValidHand Card.YouCtrl | Zone$ Hand | ConditionCheckSVar$ StartingDeckDuplicateNonlandNames | ConditionSVarCompare$ EQ0
 SVar:StartingDeckDuplicateNonlandNames:Count$StartingDeckDuplicateNonlandNames
-Oracle:当你施放启迪者伊利斯时，如果你起始套牌中每张非地牌的名称均不相同，化生你手牌中每一张牌的复制并置入你手中。\n探险者协会（你可以将两个来自探险者协会的角色共同用作指挥官）
+Oracle:探险者协会（你可以将两个来自探险者协会的角色共同用作指挥官。）\n当你施放启迪者伊利斯时，如果你起始套牌中每张非地牌的名称均不相同，将你手牌中每张牌的复制品各一张化生到你手上。

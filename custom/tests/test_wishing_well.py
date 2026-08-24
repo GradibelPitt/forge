@@ -53,7 +53,7 @@ class WishingWellContractTest(unittest.TestCase):
         localization = ZH_CN.read_text(encoding="utf-8").splitlines()
         self.assertIn(
             "许愿井|许愿井|神器生物～墙|"
-            "每当你牺牲一个珍宝衍生物时，发现一张具有传奇类别的生物牌并置入你手中，"
+            "每当你牺牲一个珍宝衍生物时，发现一张传奇生物牌并置入你手中，"
             "且其法术力费用永久变为{1}。",
             localization,
         )

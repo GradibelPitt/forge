@@ -32,7 +32,11 @@ $ForgeTokenPictures = Join-Path $env:LOCALAPPDATA "Forge\Cache\pics\tokens"
 # code points because Windows PowerShell 5.1 reads UTF-8 files without a BOM
 # using the active ANSI code page.
 $HearthstoneCardName = -join ([char[]](0x7089, 0x77F3, 0x4F20, 0x8BF4))
-$RetiredCardPaths = @("colorless\$HearthstoneCardName.txt")
+$RetiredCardPaths = @(
+    "colorless\$HearthstoneCardName.txt",
+    "colorless\gigantic_spright.txt"
+)
+$RetiredCardPicturePaths = @("PH01\Gigantic Spright.artcrop.jpg")
 
 function Remove-RetiredHearthstoneCardFromDecks {
     if (-not (Test-Path -LiteralPath $ForgeConstructedDecks -PathType Container)) {
@@ -160,6 +164,13 @@ foreach ($relPath in $RetiredCardPaths) {
     if (Test-Path -LiteralPath $retiredTarget) {
         Remove-Item -LiteralPath $retiredTarget -Force
         Write-Host "Removed Retired Card: $relPath" -ForegroundColor DarkGray
+    }
+}
+foreach ($relPath in $RetiredCardPicturePaths) {
+    $retiredTarget = Join-Path $ForgeCardPictures $relPath
+    if (Test-Path -LiteralPath $retiredTarget) {
+        Remove-Item -LiteralPath $retiredTarget -Force
+        Write-Host "Removed Retired Card Picture: $relPath" -ForegroundColor DarkGray
     }
 }
 $migratedDecks = 0

@@ -12,7 +12,6 @@ Type=Custom_Set
 11 M 突牙 @Custom
 15 C 空中悍匪 @Custom
 16 C 空降歹徒 @Custom
-17 M Gigantic Spright @Custom
 18 R 战斗号角 @Custom
 19 C 尼鲁巴蛛网领主 @Custom
 20 C 农夫 @Custom

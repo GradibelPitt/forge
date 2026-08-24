@@ -2,6 +2,6 @@ Name:要塞指挥官
 ManaCost:2
 Types:Creature Human Soldier
 PT:2/3
-A:AB$ Effect | Cost$ 2 T | ValidTgts$ Planeswalker.YouCtrl | TgtPrompt$ 选择目标由你控制的鹏洛客 | RememberObjects$ Targeted | ExileOnMoved$ Battlefield | StaticAbilities$ PWTwice | SpellDescription$ 选择目标由你控制的鹏洛客，本回合中，你可以启动该鹏洛客的忠诚异能两次，而不是只能启动一次。
-SVar:PWTwice:Mode$ NumLoyaltyAct | ValidCard$ Card.IsRemembered | Twice$ True | Description$ 本回合中，你可以启动该鹏洛客的忠诚异能两次，而不是只能启动一次。
-Oracle:{2}，{T}：选择目标由你控制的鹏洛客，本回合中，你可以启动该鹏洛客的忠诚异能两次，而不是只能启动一次。
+A:AB$ Effect | Cost$ 2 T | ValidTgts$ Planeswalker.YouCtrl | TgtPrompt$ 选择目标由你操控的鹏洛客 | RememberObjects$ Targeted | ExileOnMoved$ Battlefield | StaticAbilities$ PWTwice | SpellDescription$ 选择目标由你操控的鹏洛客。本回合中，你可以起动该鹏洛客的忠诚异能两次，而不是只能起动一次。
+SVar:PWTwice:Mode$ NumLoyaltyAct | ValidCard$ Card.IsRemembered | Twice$ True | Description$ 本回合中，你可以起动该鹏洛客的忠诚异能两次，而不是只能起动一次。
+Oracle:{2}，{T}：选择目标由你操控的鹏洛客。本回合中，你可以起动该鹏洛客的忠诚异能两次，而不是只能起动一次。

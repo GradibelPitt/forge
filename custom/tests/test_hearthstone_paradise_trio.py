@@ -147,9 +147,9 @@ class HearthstoneParadiseTrioContractTest(unittest.TestCase):
         cookie_line = next(line for line in localization if line.startswith("悠闲的曲奇|悠闲的曲奇|"))
         self.assertNotIn("???", cookie_line)
         self.assertIn("{G}：悠闲的曲奇和目标本回合进场的生物", cookie_line)
-        self.assertIn("得+X/+X和践踏直到回合结束", cookie_line)
-        self.assertIn("X等同于目标生物之总法术力费用", cookie_line)
-        self.assertIn("此异能每回合只能起动一次", cookie_line)
+        self.assertIn("各得+X/+X且获得践踏异能直到回合结束", cookie_line)
+        self.assertIn("X为该目标生物的法术力值", cookie_line)
+        self.assertIn("每回合只能起动一次", cookie_line)
         self.assertNotIn("牺牲", cookie_line)
 
         for backup, crop in ART_CASES:

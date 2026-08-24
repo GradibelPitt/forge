@@ -29,7 +29,7 @@ class PrismaticBeamContractTest(unittest.TestCase):
         self.assertIn("25 R 棱彩光束 @Custom", EDITION.read_text(encoding="utf-8"))
         self.assertTrue(ART.is_file())
         self.assertTrue(BACKUP.is_file())
-        expected = "棱彩光束|棱彩光束|法术|对目标对手以及他操控的每个生物和鹏洛客各造成3点伤害。目标对手每操控一个生物或鹏洛客，本牌的法术力费用减少1"
+        expected = "棱彩光束|棱彩光束|法术|棱彩光束对目标对手以及该牌手操控的每个生物和鹏洛客各造成3点伤害。该牌手每操控一个生物或鹏洛客，此咒语便减少{1}来施放。"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
     def test_art_is_rgb_landscape_crop(self):

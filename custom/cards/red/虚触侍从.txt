@@ -5,4 +5,4 @@ PT:1/3
 R:Event$ DamageDone | ActiveZones$ Battlefield | ValidTarget$ Player | ReplaceWith$ DmgPlus1 | Description$ If a player would be dealt damage, that damage is increased by 1 instead.
 SVar:DmgPlus1:DB$ ReplaceEffect | VarName$ DamageAmount | VarValue$ X
 SVar:X:ReplaceCount$DamageAmount/Plus.1
-Oracle:每位牌手受到的所有伤害增加1点。
+Oracle:如果将对一位牌手造成伤害，改为对该牌手造成该伤害加1点的伤害。

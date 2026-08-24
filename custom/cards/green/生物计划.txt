@@ -1,5 +1,5 @@
 Name:生物计划
 ManaCost:G
 Types:Sorcery
-A:SP$ ChangeZone | Origin$ Library | Destination$ Battlefield | ChangeType$ Land.Basic | ChangeTypeDesc$ basic land | DefinedPlayer$ Player | ChangeNum$ 2 | Tapped$ True | NoShuffle$ True | SpellDescription$ 每位牌手从牌库中搜寻两张基本地牌，并将它们横置放入战场
-Oracle:每位牌手从牌库中搜寻两张基本地牌，并将它们横置放入战场
+A:SP$ ChangeZone | Origin$ Library | Destination$ Battlefield | ChangeType$ Land.Basic | ChangeTypeDesc$ basic land | DefinedPlayer$ Player | ChangeNum$ 2 | Tapped$ True | NoShuffle$ True | SpellDescription$ 每位牌手各从自己的牌库中搜寻两张基本地牌，并将它们横置放进战场。
+Oracle:每位牌手各从自己的牌库中搜寻两张基本地牌，并将它们横置放进战场。
