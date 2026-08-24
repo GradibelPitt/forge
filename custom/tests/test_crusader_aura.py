@@ -34,10 +34,10 @@ class CrusaderAuraContractTest(unittest.TestCase):
         )
 
     def test_card_uses_the_requested_chinese_wording(self):
-        oracle = "Oracle:你操控的生物具有“每当该生物攻击时，它永久获得+2/+1。”"
+        oracle = "Oracle:你操控的生物具有「每当该生物攻击时，它永久获得+2/+1。」"
         self.assertIn(oracle, CARD.read_text(encoding="utf-8"))
 
-        expected = "十字军光环|十字军光环|结界|你操控的生物具有“每当该生物攻击时，它永久获得+2/+1。”"
+        expected = "十字军光环|十字军光环|结界|你操控的生物具有「每当该生物攻击时，它永久获得+2/+1。」"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
     def test_card_is_registered_with_standard_crop_art(self):

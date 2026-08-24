@@ -36,7 +36,7 @@ class FarWatchPostContractTest(unittest.TestCase):
         self.assertIn("26 R 前沿哨所 @Custom", EDITION.read_text(encoding="utf-8"))
         self.assertTrue(ART.is_file())
         self.assertTrue(BACKUP.is_file())
-        expected = "前沿哨所|前沿哨所|生物～墙|守军\\n每当一张非地牌从任何区域置入对手的手牌时，该牌永久获得“施放此牌的费用增加{1}。”"
+        expected = "前沿哨所|前沿哨所|生物～墙|守军\\n每当一张非地牌从任何区域置入对手的手牌时，该牌永久获得「施放此牌的费用增加{1}。」"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
     def test_art_is_rgb_landscape_crop(self):

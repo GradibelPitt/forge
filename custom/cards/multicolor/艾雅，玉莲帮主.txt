@@ -5,9 +5,9 @@ PT:5/3
 T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ CreateTreasures | TriggerZones$ Battlefield | TriggerDescription$ 当艾雅进战场时，派出三个珍宝衍生物，从以下三项中选择之前未选择过的一项，然后你获得具有该选项文本的徽记。
 SVar:CreateTreasures:DB$ Token | TokenAmount$ 3 | TokenScript$ c_a_treasure_sac | TokenOwner$ You | SubAbility$ ChooseEmblem
 SVar:ChooseEmblem:DB$ Charm | Choices$ CreateJadeEmblem,CreateDamageEmblem,CreateDrawEmblem | ChoiceRestriction$ ThisGame | CharmNum$ 1
-SVar:CreateJadeEmblem:DB$ Effect | Name$ Emblem — 艾雅的青玉财宝 | EffectOwner$ You | Triggers$ JadeTreasureTrigger | Duration$ Permanent | SpellDescription$ 你获得具有“每当你牺牲一个珍宝衍生物时，派出一个青玉魔像。”的徽记。
-SVar:CreateDamageEmblem:DB$ Effect | Name$ Emblem — 艾雅的爆裂财宝 | EffectOwner$ You | Triggers$ DamageTreasureTrigger | Duration$ Permanent | SpellDescription$ 你获得具有“每当你牺牲一个珍宝衍生物时，此徽记对一个随机选择，且不为你和你操纵的永久物之目标造成2点伤害。”的徽记。
-SVar:CreateDrawEmblem:DB$ Effect | Name$ Emblem — 艾雅的智谋财宝 | EffectOwner$ You | Triggers$ DrawTreasureTrigger | Duration$ Permanent | SpellDescription$ 你获得具有“每当你牺牲一个珍宝衍生物时，抓一张牌。”的徽记。
+SVar:CreateJadeEmblem:DB$ Effect | Name$ Emblem — 艾雅的青玉财宝 | EffectOwner$ You | Triggers$ JadeTreasureTrigger | Duration$ Permanent | SpellDescription$ 你获得具有「每当你牺牲一个珍宝衍生物时，派出一个青玉魔像。」的徽记。
+SVar:CreateDamageEmblem:DB$ Effect | Name$ Emblem — 艾雅的爆裂财宝 | EffectOwner$ You | Triggers$ DamageTreasureTrigger | Duration$ Permanent | SpellDescription$ 你获得具有「每当你牺牲一个珍宝衍生物时，此徽记对一个随机选择，且不为你和你操纵的永久物之目标造成2点伤害。」的徽记。
+SVar:CreateDrawEmblem:DB$ Effect | Name$ Emblem — 艾雅的智谋财宝 | EffectOwner$ You | Triggers$ DrawTreasureTrigger | Duration$ Permanent | SpellDescription$ 你获得具有「每当你牺牲一个珍宝衍生物时，抓一张牌。」的徽记。
 SVar:JadeTreasureTrigger:Mode$ Sacrificed | ValidCard$ Treasure.token+YouCtrl | TriggerZones$ Command | Execute$ CreateJadeGolem | TriggerDescription$ 每当你牺牲一个珍宝衍生物时，派出一个青玉魔像。
 SVar:CreateJadeGolem:DB$ MakeCard | Defined$ You | Conjure$ True | Name$ 青玉魔像 | Amount$ 1 | Zone$ Battlefield
 SVar:DamageTreasureTrigger:Mode$ Sacrificed | ValidCard$ Treasure.token+YouCtrl | TriggerZones$ Command | Execute$ DealRandomDamage | TriggerDescription$ 每当你牺牲一个珍宝衍生物时，此徽记对一个随机选择，且不为你和你操纵的永久物之目标造成2点伤害。

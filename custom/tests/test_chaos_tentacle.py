@@ -68,7 +68,7 @@ class ChaosTentacleContractTest(unittest.TestCase):
         expected = (
             "混乱触须|混乱触须|神器|"
             "{T}，牺牲混乱触须：发现一张法术力值为X的法术牌，然后不支付其法术力费用并为其随机选择目标来施放之。"
-            "X为你坟墓场中名为“混乱触须”的牌数量，且最高为10。"
+            "X为你坟墓场中名为「混乱触须」的牌数量，且最高为10。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

@@ -40,7 +40,7 @@ class ShowdownContractTest(unittest.TestCase):
         self.assertIn("SVar:TrigSacrifice:DB$ SacrificeAll | Defined$ DelayTriggerRememberedLKI", text)
         self.assertIn("SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True", text)
         self.assertIn(
-            "Oracle:每位牌手各派出三个名为“歹徒”的3/3红色衍生生物，且它们具有敏捷异能。在你的下一个维持开始时，牺牲这些衍生物。",
+            "Oracle:每位牌手各派出三个名为「歹徒」的3/3红色衍生生物，且它们具有敏捷异能。在你的下一个维持开始时，牺牲这些衍生物。",
             text,
         )
 
@@ -81,7 +81,7 @@ class ShowdownContractTest(unittest.TestCase):
     def test_zh_cn_uses_standard_wording(self):
         expected = (
             "决战|决战！|法术|"
-            "每位牌手各派出三个名为“歹徒”的3/3红色衍生生物，且它们具有敏捷异能。在你的下一个维持开始时，牺牲这些衍生物。"
+            "每位牌手各派出三个名为「歹徒」的3/3红色衍生生物，且它们具有敏捷异能。在你的下一个维持开始时，牺牲这些衍生物。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
