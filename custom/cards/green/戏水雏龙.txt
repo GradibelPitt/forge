@@ -1,0 +1,9 @@
+Name:戏水雏龙
+ManaCost:1 G
+Types:Creature Dragon
+PT:2/1
+S:Mode$ OptionalCost | EffectZone$ All | ValidCard$ Card.Self | ValidSA$ Spell | Cost$ Behold<1/Dragon> | Description$ 作为施放此咒语的额外费用，你可以请援龙。（你可以选择一个由你操控的龙，或从你手上展示一张龙牌。）
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | CheckSVar$ CastSA>Count$OptionalGenericCostPaid.1.0 | NoResolvingCheck$ True | Execute$ TrigLand | TriggerDescription$ 当戏水雏龙进战场时，若你施放此咒语时请援了龙，则从你的牌库中搜寻一张基本地牌，将该牌横置放进战场，然后洗牌。
+SVar:TrigLand:DB$ ChangeZone | Origin$ Library | Destination$ Battlefield | ChangeType$ Land.Basic | ChangeTypeDesc$ basic land | ChangeNum$ 1 | Tapped$ True
+DeckHints:Type$Dragon
+Oracle:作为施放此咒语的额外费用，你可以请援龙。（你可以选择一个由你操控的龙，或从你手上展示一张龙牌。）\n当戏水雏龙进战场时，若你施放此咒语时请援了龙，则从你的牌库中搜寻一张基本地牌，将该牌横置放进战场，然后洗牌。
