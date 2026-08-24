@@ -1,0 +1,10 @@
+Name:黑心票贩
+ManaCost:2 U R
+Types:Creature Pirate
+PT:5/3
+S:Mode$ Continuous | Affected$ Card.Self | AddKeyword$ Haste & Provoke | IsPresent$ Pirate.Other+YouCtrl | Description$ 只要你操控另一个海盗，黑心票贩便具有敏捷和挑拨。
+T:Mode$ DamageDone | ValidSource$ Card.Self | ValidTarget$ Creature.wasDealtExcessDamageThisTurn | CombatDamage$ True | Execute$ TrigDraw | TriggerZones$ Battlefield | TriggerDescription$ 每当黑心票贩因攻击造成过量伤害时，抓两张牌。
+SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 2
+DeckHas:Ability$Draw
+DeckHints:Type$Pirate
+Oracle:只要你操控另一个海盗，黑心票贩便具有敏捷和挑拨。\n每当黑心票贩因攻击造成过量伤害时，抓两张牌。
