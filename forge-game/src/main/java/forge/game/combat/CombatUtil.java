@@ -204,6 +204,11 @@ public class CombatUtil {
     private static boolean canAttack(final Card attacker, final GameEntity defender, final boolean forNextTurn) {
         final Game game = attacker.getGame();
 
+        if (!forNextTurn && game.getPhaseHandler().isWindfuryCombat()
+                && !attacker.hasKeyword(Keyword.WINDFURY)) {
+            return false;
+        }
+
         if (attacker.isBattle()) {
             return false;
         }

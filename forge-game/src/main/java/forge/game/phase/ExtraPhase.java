@@ -9,6 +9,7 @@ import forge.game.trigger.Trigger;
 public class ExtraPhase {
     private final PhaseType phase;
     private List<Trigger> delTrig = Collections.synchronizedList(new ArrayList<>());
+    private boolean windfuryCombat;
 
     public ExtraPhase(PhaseType phase) {
         this.phase = phase;
@@ -24,6 +25,14 @@ public class ExtraPhase {
 
     public List<Trigger> getDelayedTriggers() {
         return delTrig;
+    }
+
+    public boolean isWindfuryCombat() {
+        return windfuryCombat;
+    }
+
+    public void setWindfuryCombat(final boolean windfuryCombat0) {
+        windfuryCombat = windfuryCombat0;
     }
 
 }

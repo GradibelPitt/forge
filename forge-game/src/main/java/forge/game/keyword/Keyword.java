@@ -214,6 +214,7 @@ public enum Keyword {
     WARD("Ward", Ward.class, false, "Whenever this permanent becomes the target of a spell or ability an opponent controls, counter it unless that player %s."),
     WARP("Warp", KeywordWithCost.class, false, "You may cast this card from your hand for its warp cost. Exile this creature at the beginning of the next end step, then you may cast it from exile on a later turn."),
     WEB_SLINGING("Web-slinging", KeywordWithCost.class, false, "You may cast this spell for %s if you also return a tapped creature you control to its owner’s hand."),
+    WINDFURY("Windfury", SimpleKeyword.class, true, "After the first combat phase on your turn, there is an additional combat phase. Only creatures with windfury can attack during it."),
     WITHER("Wither", SimpleKeyword.class, true, "This deals damage to creatures in the form of -1/-1 counters."),
 
     // mayflash additional cast

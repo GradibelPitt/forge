@@ -1,0 +1,7 @@
+Name:尘魔
+ManaCost:R
+Types:Creature Elemental
+PT:3/1
+K:Windfury
+S:Mode$ RaiseCost | ValidCard$ Card.Self | Type$ Spell | Cost$ Exert<1/Land/land> | EffectZone$ All | Description$ 作为施放此咒语的额外费用，选择一个由你操控的地，其在下个重置步骤不能被重置。
+Oracle:作为施放此咒语的额外费用，选择一个由你操控的地，其在下个重置步骤不能被重置。\n风怒（在战斗阶段结束后，具有风怒的生物共同执行一个额外的战斗阶段）

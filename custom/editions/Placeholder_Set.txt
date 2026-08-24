@@ -120,3 +120,4 @@ Type=Custom_Set
 123 M 酸喉 @Andrew Hou
 124 M 恐鳞 @Zoltan Boros
 125 M 极限追逐者阿兰娜 @Zoltan Boros
+126 R 尘魔 @Raymond Swanland

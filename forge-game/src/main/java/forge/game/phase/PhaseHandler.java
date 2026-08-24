@@ -33,6 +33,7 @@ import forge.game.combat.CombatUtil;
 import forge.game.cost.CostEnlist;
 import forge.game.cost.CostExert;
 import forge.game.event.*;
+import forge.game.keyword.Keyword;
 import forge.game.player.Player;
 import forge.game.player.PlayerView;
 import forge.game.replacement.ReplacementResult;
@@ -89,6 +90,8 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
     private transient Combat combat = null;
     private boolean skipDamageSteps = false;
     private boolean bRepeatCleanup = false;
+    private boolean windfuryCombat = false;
+    private boolean windfuryCombatScheduledThisTurn = false;
 
     /** The need to next phase. */
     private boolean givePriorityToPlayer = false;
@@ -205,6 +208,9 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
             }
 
             if (extraPhase != null) {
+                if (extraPhase.isWindfuryCombat()) {
+                    beginWindfuryCombat();
+                }
                 for (Trigger deltrig : extraPhase.getDelayedTriggers()) {
                     game.getTriggerHandler().registerThisTurnDelayedTrigger(deltrig);
                 }
@@ -411,6 +417,8 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
                     nCombatsThisTurn = 0;
                     nMainsThisTurn = 0;
                     nEndOfTurnsThisTurn = 0;
+                    windfuryCombat = false;
+                    windfuryCombatScheduledThisTurn = false;
                     game.getStack().resetMaxDistinctSources();
 
                     // CR 514.3
@@ -492,6 +500,8 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
                     List<Card> blockers = combat.getAllBlockers();
                     eventEndCombat = GameEventCombatEnded.fromCards(attackers, blockers);
                 }
+                scheduleWindfuryCombatIfNeeded();
+                endWindfuryCombat();
                 endCombat();
 
                 if (eventEndCombat != null) {
@@ -825,6 +835,8 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
     public void restart() {
         extraPhases.clear();
         extraTurns.clear();
+        windfuryCombat = false;
+        windfuryCombatScheduledThisTurn = false;
         turn = 0;
     }
 
@@ -963,6 +975,52 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
     public final boolean hasExtraPhaseAfter(final PhaseType afterPhase, final PhaseType extraPhase) {
         final Stack<ExtraPhase> phases = extraPhases.get(afterPhase);
         return phases != null && !phases.isEmpty() && phases.peek().getPhase() == extraPhase;
+    }
+
+    ExtraPhase scheduleWindfuryCombatIfNeeded() {
+        if (phase != PhaseType.COMBAT_END || !isFirstCombat()
+                || windfuryCombatScheduledThisTurn || playerTurn == null) {
+            return null;
+        }
+
+        final boolean hasWindfuryCreature = playerTurn.getCreaturesInPlay().stream()
+                .anyMatch(card -> card.hasKeyword(Keyword.WINDFURY));
+        if (!hasWindfuryCreature) {
+            return null;
+        }
+
+        final List<PhaseType> combatPhases = new ArrayList<>(PhaseType.PHASE_GROUPS.get(2));
+        final PhaseType nextPhase = PhaseType.getNext(PhaseType.COMBAT_END,
+                playerTurn.isPhasesReversed());
+        final ExtraPhase extraPhase = addExtraPhase(PhaseType.COMBAT_END, combatPhases, nextPhase);
+        extraPhase.setWindfuryCombat(true);
+        windfuryCombatScheduledThisTurn = true;
+        return extraPhase;
+    }
+
+    void beginWindfuryCombat() {
+        windfuryCombat = true;
+        final CardCollection untapped = new CardCollection();
+        for (final Card card : playerTurn.getCreaturesInPlay()) {
+            if (card.hasKeyword(Keyword.WINDFURY) && card.untap()) {
+                untapped.add(card);
+            }
+        }
+        if (!untapped.isEmpty()) {
+            final Map<Player, CardCollection> untapMap = Maps.newHashMap();
+            untapMap.put(playerTurn, untapped);
+            final Map<AbilityKey, Object> runParams = AbilityKey.newMap();
+            runParams.put(AbilityKey.Map, untapMap);
+            game.getTriggerHandler().runTrigger(TriggerType.UntapAll, runParams, false);
+        }
+    }
+
+    void endWindfuryCombat() {
+        windfuryCombat = false;
+    }
+
+    public boolean isWindfuryCombat() {
+        return windfuryCombat;
     }
 
     public final boolean isFirstCombat() {
@@ -1223,11 +1281,15 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
         endCombat();
         game.getAction().checkStateEffects(true);
         setPhase(PhaseType.COMBAT_END);
+        scheduleWindfuryCombatIfNeeded();
+        endWindfuryCombat();
         advanceToNextPhase();
     }
 
     public final void endTurnByEffect() {
         extraPhases.clear();
+        windfuryCombat = false;
+        windfuryCombatScheduledThisTurn = false;
         setPhase(PhaseType.CLEANUP);
         game.fireEvent(new GameEventTurnPhase(playerTurn, phase, ""));
         onPhaseBegin();

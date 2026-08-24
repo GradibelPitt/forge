@@ -1,5 +1,13 @@
 # Forge DIY Keywords and Engine APIs
 
+## Windfury（风怒）
+
+- **Status:** 已实现为共享额外战斗关键词。
+- **DSL:** `K:Windfury`。
+- **Semantics:** 主动牌手的第一次战斗阶段结束后，若其操控至少一个具有风怒的生物，则在该回合共同执行恰好一次额外战斗阶段。该额外战斗开始时重置由主动牌手操控的全部风怒生物；只有具有风怒的生物能在其中攻击。多个风怒生物不会各自创建额外战斗，对手的风怒生物也不会为主动牌手创建额外战斗。
+- **Java implementation:** `Keyword.java` 注册；`PhaseHandler` 安排并标记完整额外战斗阶段组；`ExtraPhase` 携带风怒战斗元数据；`CombatUtil.canAttack` 执行攻击者限制。
+- **Tests:** `WindfuryTest` 覆盖关键词注册、多个风怒生物只创建一次额外战斗、仅重置风怒生物，以及额外战斗的攻击资格。
+
 ## CanBeAttacked（牌张可作为攻击目标）
 
 - **Status:** 已实现为通用静止式异能，复用鹏洛客／战役的 `Card` defender 战斗管线。
