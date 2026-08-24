@@ -27,10 +27,12 @@ class PilferedPowerContractTest(unittest.TestCase):
         search = next(line for line in lines if line.startswith("SVar:SearchLands:"))
         self.assertIn("DB$ ChangeZone", search)
         self.assertIn("Origin$ Library", search)
-        self.assertIn("Destination$ Hand", search)
+        self.assertIn("Destination$ Battlefield", search)
         self.assertIn("ChangeType$ Swamp,Mountain", search)
         self.assertIn("ChangeNum$ X", search)
-        self.assertIn("Reveal$ True", search)
+        self.assertIn("Tapped$ True", search)
+        self.assertNotIn("Destination$ Hand", search)
+        self.assertNotIn("Reveal$ True", search)
         self.assertEqual(
             1,
             sum("Origin$ Library" in line and "ChangeNum$ X" in line for line in lines),
@@ -58,7 +60,7 @@ class PilferedPowerContractTest(unittest.TestCase):
         )
         self.assertIn(
             "妙手空空|妙手空空|法术|选择一项 —\\n"
-            "• 从你的牌库中搜寻总计至多X张沼泽牌和／或山脉牌，展示这些牌，将它们置于你手上，然后洗牌。X为由你操控的生物数量。\\n"
+            "• 从你的牌库中搜寻总计至多X张沼泽牌和／或山脉牌，将它们横置放进战场，然后洗牌。X为由你操控的生物数量。\\n"
             "• 在你的下一个维持开始时，派出X个珍宝衍生物。X为由你操控的生物数量。",
             ZH_CN.read_text(encoding="utf-8").splitlines(),
         )
