@@ -58,7 +58,7 @@ public class BoundlessEmptyUniverseTest {
     }
 
     @Test
-    public void realScriptTracksZoneEntriesAndExilesOnlyUncontrolledPermanents() throws Exception {
+    public void realScriptTracksZoneEntriesAndExilesAllNonlandPermanents() throws Exception {
         final GameRules rules = new GameRules(GameType.Constructed);
         final Game game = new Game(Collections.emptyList(), rules,
                 new Match(rules, Collections.emptyList(), "Boundless Empty Universe test"));
@@ -130,34 +130,51 @@ public class BoundlessEmptyUniverseTest {
                 game, controller, controller, ZoneType.Battlefield, "Controlled permanent");
         final Card uncontrolledPermanent = addVanillaCard(
                 game, opponent, opponent, ZoneType.Battlefield, "Uncontrolled permanent");
+        final Card controlledLand = addVanillaPermanent(
+                game, controller, controller, ZoneType.Battlefield, "Controlled land", "Land");
         final SpellAbility exile = AbilityFactory.getAbility(
-                universe.getSVar("ExileUncontrolledPermanents"), universe);
+                universe.getSVar("ExileNonlandPermanents"), universe);
         exile.setActivatingPlayer(controller);
-        Assert.assertEquals(exile.getParam("ChangeType"), "Permanent.YouDontCtrl");
+        Assert.assertEquals(exile.getParam("ChangeType"), "Permanent.nonLand");
         Assert.assertEquals(exile.getParam("Origin"), "Battlefield");
         Assert.assertEquals(exile.getParam("Destination"), "Exile");
-        Assert.assertFalse(controlledPermanent.isValid(
+        Assert.assertTrue(controlledPermanent.isValid(
                         exile.getParam("ChangeType"), controller, universe, exile),
-                "the controller's permanent must not match the exile selector");
+                "the caster's nonland permanent must match the exile selector");
         Assert.assertTrue(uncontrolledPermanent.isValid(
                         exile.getParam("ChangeType"), controller, universe, exile),
-                "a permanent the caster does not control must match the exile selector");
+                "an opponent's nonland permanent must match the exile selector");
+        Assert.assertFalse(controlledLand.isValid(
+                        exile.getParam("ChangeType"), controller, universe, exile),
+                "lands must not match the exile selector");
     }
 
     private static Card addVanillaCard(final Game game, final Player owner,
                                        final Player controller, final ZoneType zone,
                                        final String name) {
-        final Card card = vanillaCard(game, owner, controller, name);
+        return addVanillaPermanent(game, owner, controller, zone, name, "Artifact");
+    }
+
+    private static Card addVanillaPermanent(final Game game, final Player owner,
+                                            final Player controller, final ZoneType zone,
+                                            final String name, final String type) {
+        final Card card = vanillaCard(game, owner, controller, name, type);
         game.getAction().moveTo(zone, card, null, null);
         return card;
     }
 
     private static Card vanillaCard(final Game game, final Player owner,
                                     final Player controller, final String name) {
+        return vanillaCard(game, owner, controller, name, "Artifact");
+    }
+
+    private static Card vanillaCard(final Game game, final Player owner,
+                                    final Player controller, final String name,
+                                    final String type) {
         final CardRules rules = CardRules.fromScript(Arrays.asList(
                 "Name:" + name,
                 "ManaCost:1",
-                "Types:Artifact",
+                "Types:" + type,
                 "Oracle:Test card."));
         final Card card = CardFactory.getCard(
                 new PaperCard(rules, "TST", CardRarity.Common), owner, game);

@@ -23,7 +23,7 @@ ZH_ORACLE = (
     "飞行，不灭，反一切保护。\\n"
     "每当一张牌进入手中、战场、坟墓场或放逐区时，无界空宇永久减少{1}来施放。\\n"
     "当你从手上施放无界空宇且它是你本回合中施放的第一个咒语时，"
-    "放逐所有不由你操控的永久物。"
+    "放逐所有非地永久物。"
 )
 
 
@@ -78,14 +78,14 @@ class BoundlessEmptyUniverseContractTest(unittest.TestCase):
         )
         self.assertNotIn("OpeningHandCount", text)
 
-    def test_first_spell_from_hand_exiles_uncontrolled_permanents(self):
+    def test_first_spell_from_hand_exiles_all_nonland_permanents(self):
         text = CARD.read_text(encoding="utf-8")
 
         self.assertIn(
             "T:Mode$ SpellCast | ValidCard$ Card.Self+wasCastFromYourHandByYou | "
             "ValidActivatingPlayer$ You | TriggerZones$ Stack | "
             "CheckSVar$ FirstSpellThisTurn | SVarCompare$ EQ1 | "
-            "Execute$ ExileUncontrolledPermanents",
+            "Execute$ ExileNonlandPermanents",
             text,
         )
         self.assertIn(
@@ -93,8 +93,8 @@ class BoundlessEmptyUniverseContractTest(unittest.TestCase):
             text,
         )
         self.assertIn(
-            "SVar:ExileUncontrolledPermanents:DB$ ChangeZoneAll | "
-            "ChangeType$ Permanent.YouDontCtrl | Origin$ Battlefield | "
+            "SVar:ExileNonlandPermanents:DB$ ChangeZoneAll | "
+            "ChangeType$ Permanent.nonLand | Origin$ Battlefield | "
             "Destination$ Exile",
             text,
         )

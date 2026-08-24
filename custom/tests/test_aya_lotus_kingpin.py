@@ -98,7 +98,8 @@ class AyaLotusKingpinContractTest(unittest.TestCase):
         self.assertIn("NumDmg$ 2", damage)
 
         draw = next(line for line in lines if line.startswith("SVar:DrawCard:"))
-        self.assertIn("DB$ Draw", draw)
+        self.assertIn("AB$ Draw", draw)
+        self.assertIn("Cost$ 1", draw)
         self.assertIn("Defined$ You", draw)
         self.assertIn("NumCards$ 1", draw)
 
@@ -123,7 +124,7 @@ class AyaLotusKingpinContractTest(unittest.TestCase):
                 and "此前未选择过的选项中选择一项" in line
                 and "派出一个青玉魔像" in line
                 and "随机选择" in line
-                and "抓一张牌" in line
+                and "你可以支付{1}。若如此作，抓一张牌" in line
                 for line in localization
             )
         )

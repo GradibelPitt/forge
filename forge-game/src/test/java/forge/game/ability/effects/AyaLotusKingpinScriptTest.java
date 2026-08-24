@@ -143,6 +143,8 @@ public class AyaLotusKingpinScriptTest {
         } else if (expectedApi == ApiType.Draw) {
             Assert.assertEquals(effect.getParam("Defined"), "You");
             Assert.assertEquals(effect.getParam("NumCards"), "1");
+            Assert.assertEquals(effect.getPayCosts().getTotalMana().getCMC(), 1,
+                    "the draw emblem must require a {1} payment");
         }
 
     }
