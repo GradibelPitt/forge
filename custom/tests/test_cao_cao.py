@@ -7,7 +7,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 FORGE_ROOT = ROOT.parent
-CARD = ROOT / "cards" / "multicolor" / "超世之杰曹操.txt"
+CARD = ROOT / "cards" / "multicolor" / "神曹操.txt"
 EDITION = ROOT / "editions" / "BoTu_Three_Kingdoms_New_Chapter.txt"
 ART_ORIGINAL = (
     ROOT
@@ -18,11 +18,11 @@ ART_ORIGINAL = (
 ART_OUTPAINT = (
     ROOT / "tools" / "card-artwork" / "超世之杰曹操-imagegen-outpaint-20260807.png"
 )
-ART = ROOT / "cards" / "pictures" / "BT3K" / "超世之杰曹操.artcrop.jpg"
+ART = ROOT / "cards" / "pictures" / "BT3K" / "神曹操.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "如果一个由对手操控的来源将对你或超世之杰曹操造成伤害，"
+    "抵受1。如果一个由对手操控的来源将对你造成伤害，"
     "除非该来源的操控者支付{1}，否则防止该伤害。\\n"
     "每当一个由对手操控的来源对你造成伤害时，该来源的操控者选择一项——\\n"
     "• 选择一个由其操控的永久物。你获得该永久物的操控权。\\n"
@@ -34,16 +34,18 @@ class CaoCaoContractTest(unittest.TestCase):
     def test_characteristics_and_damage_tax(self):
         lines = CARD.read_text(encoding="utf-8").splitlines()
 
-        self.assertIn("Name:超世之杰曹操", lines)
+        self.assertIn("Name:神曹操", lines)
         self.assertIn("ManaCost:W U B", lines)
         self.assertIn("Types:Legendary Creature Human Noble", lines)
-        self.assertIn("PT:3/4", lines)
+        self.assertIn("PT:1/3", lines)
 
         replacement = next(line for line in lines if line.startswith("R:Event$ DamageDone"))
         self.assertIn("ValidSource$ Card.OppCtrl,Emblem.OppCtrl", replacement)
-        self.assertIn("ValidTarget$ You,Card.Self", replacement)
+        self.assertIn("ValidTarget$ You", replacement)
+        self.assertNotIn("Card.Self", replacement)
         self.assertIn("ReplaceWith$ TaxedPrevention", replacement)
         self.assertIn("PreventionEffect$ True", replacement)
+        self.assertIn("Description$ 抵受1。", replacement)
 
         prevention = next(
             line for line in lines if line.startswith("SVar:TaxedPrevention:")
@@ -87,14 +89,14 @@ class CaoCaoContractTest(unittest.TestCase):
         edition = EDITION.read_text(encoding="utf-8")
         self.assertIn("Code=BT3K", edition)
         self.assertIn("Name=博图三国新篇", edition)
-        self.assertIn("2 M 超世之杰曹操 @Custom", edition)
+        self.assertIn("2 M 神曹操 @Custom", edition)
 
         self.assertIn(
-            f"超世之杰曹操|超世之杰曹操|传奇生物～人类／贵族|{ORACLE}",
+            f"神曹操|神曹操|传奇生物～人类／贵族|{ORACLE}",
             ZH_CN.read_text(encoding="utf-8").splitlines(),
         )
         self.assertIn(
-            "| 超世之杰曹操 | `{W}{U}{B}` 3/4 传奇生物～人类／贵族 |",
+            "| 神曹操 | `{W}{U}{B}` 1/3 传奇生物～人类／贵族 |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
 

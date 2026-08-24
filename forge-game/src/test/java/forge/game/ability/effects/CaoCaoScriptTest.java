@@ -38,10 +38,10 @@ public class CaoCaoScriptTest {
     public void realScriptParsesDamageTaxAndOpponentChoiceChains()
             throws Exception {
         final Path script = Paths.get("..", "custom", "cards", "multicolor",
-                "超世之杰曹操.txt").toAbsolutePath().normalize();
+                "神曹操.txt").toAbsolutePath().normalize();
         final CardRules cardRules = new CardRules.Reader().readCard(
                 Files.readAllLines(script, StandardCharsets.UTF_8),
-                "超世之杰曹操");
+                "神曹操");
 
         final GameRules rules = new GameRules(GameType.Constructed);
         final Game game = new Game(Collections.emptyList(), rules,
@@ -59,14 +59,14 @@ public class CaoCaoScriptTest {
                 controller, game);
 
         Assert.assertEquals(caoCao.getManaCost().getCMC(), 3);
-        Assert.assertEquals(caoCao.getNetPower(), 3);
-        Assert.assertEquals(caoCao.getNetToughness(), 4);
+        Assert.assertEquals(caoCao.getNetPower(), 1);
+        Assert.assertEquals(caoCao.getNetToughness(), 3);
 
         Assert.assertEquals(caoCao.getReplacementEffects().size(), 1);
         final ReplacementEffect prevention = caoCao.getReplacementEffects().get(0);
         Assert.assertEquals(prevention.getParam("ValidSource"),
                 "Card.OppCtrl,Emblem.OppCtrl");
-        Assert.assertEquals(prevention.getParam("ValidTarget"), "You,Card.Self");
+        Assert.assertEquals(prevention.getParam("ValidTarget"), "You");
         Assert.assertTrue(prevention.hasParam("PreventionEffect"));
         final SpellAbility taxedPrevention = prevention.getOverridingAbility();
         Assert.assertEquals(taxedPrevention.getApi(), ApiType.ReplaceDamage);
