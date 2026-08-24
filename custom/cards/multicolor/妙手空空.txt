@@ -1,0 +1,10 @@
+Name:妙手空空
+ManaCost:1 B R
+Types:Sorcery
+A:SP$ Charm | Choices$ SearchLands,DelayTreasures | SpellDescription$ 选择一项 —\n• 从你的牌库中搜寻总计至多X张沼泽牌和／或山脉牌，展示这些牌，将它们置于你手上，然后洗牌。X为由你操控的生物数量。\n• 在你的下一个维持开始时，派出X个珍宝衍生物。X为由你操控的生物数量。
+SVar:SearchLands:DB$ ChangeZone | Origin$ Library | Destination$ Hand | ChangeType$ Swamp,Mountain | ChangeNum$ X | Reveal$ True | SpellDescription$ 从你的牌库中搜寻总计至多X张沼泽牌和／或山脉牌，展示这些牌，将它们置于你手上，然后洗牌。X为由你操控的生物数量。
+SVar:DelayTreasures:DB$ DelayedTrigger | Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ CreateTreasures | TriggerDescription$ 在你的下一个维持开始时，派出X个珍宝衍生物。X为由你操控的生物数量。
+SVar:CreateTreasures:DB$ Token | TokenAmount$ X | TokenScript$ c_a_treasure_sac | TokenOwner$ You
+SVar:X:Count$Valid Creature.YouCtrl
+DeckHas:Ability$Token & Type$Treasure
+Oracle:选择一项 —\n• 从你的牌库中搜寻总计至多X张沼泽牌和／或山脉牌，展示这些牌，将它们置于你手上，然后洗牌。X为由你操控的生物数量。\n• 在你的下一个维持开始时，派出X个珍宝衍生物。X为由你操控的生物数量。
