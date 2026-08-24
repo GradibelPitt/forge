@@ -18,6 +18,7 @@ ART_BACKUP = (
 )
 ART = ROOT / "cards" / "pictures" / "PH01" / "野性之心古夫.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
+INSTALLER = ROOT / "tools" / "install_to_forge.ps1"
 
 ETB = (
     "当古夫进战场时，占卜3，然后抓一张牌。你可以从你的牌库中搜寻一张基本地牌，将它放进战场，"
@@ -28,7 +29,7 @@ ULTIMATE = (
     "然后将你的牌库洗牌。」的徽记。"
 )
 ORACLE = (
-    f"{ETB}\\n+1：抓一张牌。\\n+0：从你的牌库中搜寻一张基本地牌，将它横置放进战场，"
+    f"{ETB}\\n+1：抓一张牌。\\n+1：从你的牌库中搜寻一张基本地牌，将它横置放进战场，"
     f"然后将你的牌库洗牌。\\n-5：{ULTIMATE}\\n野性之心古夫可以作为你的指挥官。"
 )
 SOURCE_ART_SHA256 = "3017D7405852A087901DC20AE20D01B90566694D75818849704929CB317E2190"
@@ -41,7 +42,7 @@ class WildheartGuffContractTest(unittest.TestCase):
         self.assertIn("Name:野性之心古夫", lines)
         self.assertIn("ManaCost:3 G U", lines)
         self.assertIn("Types:Legendary Planeswalker Guff", lines)
-        self.assertIn("Loyalty:3", lines)
+        self.assertIn("Loyalty:4", lines)
         self.assertIn("K:CARDNAME can be your commander.", lines)
 
         trigger = next(line for line in lines if line.startswith("T:Mode$ ChangesZone"))
@@ -85,17 +86,17 @@ class WildheartGuffContractTest(unittest.TestCase):
         self.assertIn("NumCards$ 1", plus_one)
         self.assertIn("SpellDescription$ 抓一张牌", plus_one)
 
-        zero = next(
+        land_plus_one = next(
             line
             for line in lines
-            if line.startswith("A:AB$ ChangeZone | Cost$ AddCounter<0/LOYALTY>")
+            if line.startswith("A:AB$ ChangeZone | Cost$ AddCounter<1/LOYALTY>")
         )
-        self.assertIn("Origin$ Library", zero)
-        self.assertIn("Destination$ Battlefield", zero)
-        self.assertIn("ChangeType$ Land.Basic", zero)
-        self.assertIn("ChangeNum$ 1", zero)
-        self.assertIn("Tapped$ True", zero)
-        self.assertIn("Shuffle$ True", zero)
+        self.assertIn("Origin$ Library", land_plus_one)
+        self.assertIn("Destination$ Battlefield", land_plus_one)
+        self.assertIn("ChangeType$ Land.Basic", land_plus_one)
+        self.assertIn("ChangeNum$ 1", land_plus_one)
+        self.assertIn("Tapped$ True", land_plus_one)
+        self.assertIn("Shuffle$ True", land_plus_one)
 
         ultimate = next(
             line
@@ -145,11 +146,17 @@ class WildheartGuffContractTest(unittest.TestCase):
             ZH_CN.read_text(encoding="utf-8").splitlines(),
         )
         self.assertIn(
-            "| 野性之心古夫 | `{3}{G}{U}`，初始忠诚 3 的传奇鹏洛客～古夫 | "
+            "| 野性之心古夫 | `{3}{G}{U}`，初始忠诚 4 的传奇鹏洛客～古夫 | "
             "`cards/multicolor/野性之心古夫.txt` | 110 |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
         self.assertFalse(OLD_CARD.exists())
+        installer = INSTALLER.read_text(encoding="utf-8-sig")
+        self.assertIn(
+            "$WildheartGuffName = -join ([char[]](0x91CE, 0x6027, 0x4E4B, 0x5FC3, 0x53E4, 0x592B))",
+            installer,
+        )
+        self.assertIn('"green\\$WildheartGuffName.txt"', installer)
 
         self.assertTrue(ART_BACKUP.is_file())
         self.assertEqual(

@@ -32,9 +32,11 @@ $ForgeTokenPictures = Join-Path $env:LOCALAPPDATA "Forge\Cache\pics\tokens"
 # code points because Windows PowerShell 5.1 reads UTF-8 files without a BOM
 # using the active ANSI code page.
 $HearthstoneCardName = -join ([char[]](0x7089, 0x77F3, 0x4F20, 0x8BF4))
+$WildheartGuffName = -join ([char[]](0x91CE, 0x6027, 0x4E4B, 0x5FC3, 0x53E4, 0x592B))
 $RetiredCardPaths = @(
     "colorless\$HearthstoneCardName.txt",
-    "colorless\gigantic_spright.txt"
+    "colorless\gigantic_spright.txt",
+    "green\$WildheartGuffName.txt"
 )
 $RetiredCardPicturePaths = @("PH01\Gigantic Spright.artcrop.jpg")
 
