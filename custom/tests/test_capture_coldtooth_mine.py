@@ -16,7 +16,8 @@ ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 ZH_ORACLE = (
     "选择一项—\\n"
     "• 将你牌库中一张具有最高法术力值的牌置于你手上。\\n"
-    "• 将你牌库中一张具有最低法术力值的牌置于你手上。"
+    "• 将你牌库中一张具有最低法术力值的牌置于你手上。\\n"
+    "打包{2}(若你支付打包费用，则两项都选择。)"
 )
 
 
@@ -27,6 +28,8 @@ class CaptureColdtoothMineContractTest(unittest.TestCase):
         self.assertIn("Name:占领冷齿矿洞", text)
         self.assertIn("ManaCost:U G", text)
         self.assertIn("Types:Sorcery", text)
+        self.assertIn("K:Entwine:2", text)
+        self.assertNotIn("K:Entwine:2 U G", text)
         self.assertIn("A:SP$ Charm | Choices$ DBHighest,DBLowest", text)
         self.assertIn(
             "SVar:DBHighest:DB$ Seek | Type$ Card.cmcEQX | "
@@ -51,6 +54,10 @@ class CaptureColdtoothMineContractTest(unittest.TestCase):
         self.assertNotIn("ChooseCard", text)
         self.assertNotIn("CardDiscover", text)
         self.assertNotIn("ChangeZone", text)
+        self.assertIn(
+            "Entwine {2} (Choose both if you pay the entwine cost.)",
+            text,
+        )
 
     def test_registration_localization_and_original_art_crop(self):
         self.assertIn("81 R 占领冷齿矿洞 @Custom", EDITION.read_text(encoding="utf-8"))
