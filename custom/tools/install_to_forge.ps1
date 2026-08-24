@@ -12,6 +12,7 @@ $ErrorActionPreference = "Stop"
 # Define Paths
 $AppData = [System.Environment]::GetFolderPath('ApplicationData')
 $ForgeCustomDir = Join-Path $AppData "Forge\custom"
+$ForgePreferences = Join-Path $AppData "Forge\preferences\forge.preferences"
 
 $WorkspaceRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $WorkspaceCards = Join-Path $WorkspaceRoot "cards"
@@ -70,6 +71,52 @@ function Remove-RetiredHearthstoneCardFromDecks {
         }
     }
     return $script:migratedDecks
+}
+
+function Set-ManagedPreferences([string]$PreferencesFile) {
+    New-Item -ItemType Directory -Path (Split-Path $PreferencesFile -Parent) -Force | Out-Null
+    $lines = if (Test-Path -LiteralPath $PreferencesFile -PathType Leaf) {
+        @(Get-Content -LiteralPath $PreferencesFile -Encoding UTF8)
+    } else {
+        @()
+    }
+
+    $managed = [ordered]@{
+        UI_CARD_ART_FORMAT = 'Crop'
+        UI_SKIN = 'Warmwood'
+        UI_ENABLE_MUSIC = 'true'
+        UI_VOL_MUSIC = '100'
+        UI_CURRENT_MUSIC_SET = 'Pull Up a Chair'
+    }
+
+    $updated = New-Object 'System.Collections.Generic.List[string]'
+    $found = @{}
+    foreach ($line in $lines) {
+        $key = if ($line -match '^([^=]+)=') { $Matches[1] } else { $null }
+        if ($key -and $managed.Contains($key)) {
+            if (-not $found.ContainsKey($key)) {
+                $updated.Add("$key=$($managed[$key])")
+                $found[$key] = $true
+            }
+        } else {
+            $updated.Add($line)
+        }
+    }
+    foreach ($key in $managed.Keys) {
+        if (-not $found.ContainsKey($key)) {
+            $updated.Add("$key=$($managed[$key])")
+        }
+    }
+
+    [IO.File]::WriteAllLines($PreferencesFile, $updated, [Text.UTF8Encoding]::new($false))
+    $savedLines = @(Get-Content -LiteralPath $PreferencesFile -Encoding UTF8)
+    foreach ($key in $managed.Keys) {
+        $saved = @($savedLines | Where-Object { $_ -match "^$([regex]::Escape($key))=" })
+        $expected = "$key=$($managed[$key])"
+        if ($saved.Count -ne 1 -or $saved[0] -ne $expected) {
+            throw "Failed to set $expected"
+        }
+    }
 }
 
 if ($Uninstall) {
@@ -260,6 +307,11 @@ if (Test-Path $WorkspaceTokenPictures) {
         Write-Host "Synced Token Picture: $relPath" -ForegroundColor Gray
     }
 }
+
+# These friend-facing defaults are intentionally managed on every install/sync.
+# Other Forge preferences are preserved verbatim.
+Set-ManagedPreferences $ForgePreferences
+Write-Host "Applied UI and music defaults: Warmwood / Pull Up a Chair" -ForegroundColor Gray
 
 Write-Host "Sync complete! Custom cards and music are ready to play in Forge." -ForegroundColor Green
 Write-Host "Remember to restart Forge (or reload via Developer Mode) to see the changes." -ForegroundColor Yellow

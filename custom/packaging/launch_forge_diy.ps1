@@ -80,10 +80,20 @@ try {
         $java = $PrivateJava
     }
 
+    $overlayRoot = Join-Path $AppRoot "overlays"
+    $overlayJars = @()
+    if (Test-Path -LiteralPath $overlayRoot -PathType Container) {
+        $overlayJars = @(Get-ChildItem -LiteralPath $overlayRoot -Filter "*.jar" -File |
+            Sort-Object Name | Select-Object -ExpandProperty FullName)
+    }
+    $classPathEntries = @($overlayJars) + @($JarPath)
+    $classPath = [string]::Join([IO.Path]::PathSeparator, $classPathEntries)
+
     if ($VerifyOnly) {
         Write-Output "JAVA=$java"
         Write-Output "JAVA_MAJOR=$(Get-JavaMajor $java)"
         Write-Output "BUILD_ID=$(Get-Content (Join-Path $AppRoot 'BUILD-ID.txt') -Raw)"
+        Write-Output "CLASSPATH=$classPath"
         exit 0
     }
 
@@ -91,7 +101,7 @@ try {
         '-Xmx4096m',
         '-Dio.netty.tryReflectionSetAccessible=true',
         '-Dfile.encoding=UTF-8',
-        '-cp', $JarPath,
+        '-cp', $classPath,
         'forge.view.Main'
     )
     Start-Process -FilePath $java -ArgumentList $arguments -WorkingDirectory $AppRoot
@@ -99,4 +109,3 @@ try {
     Show-FatalError $_.Exception.Message
     exit 1
 }
-

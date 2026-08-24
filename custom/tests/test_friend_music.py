@@ -26,6 +26,19 @@ class FriendMusicContractTest(unittest.TestCase):
         self.assertIn('Get-ChildItem -Path $WorkspaceMusic -Recurse -File', installer)
         self.assertIn('Write-Host "Synced Music: $relPath"', installer)
 
+    def test_local_installer_reapplies_managed_ui_and_music_preferences(self):
+        installer = (ROOT / "tools" / "install_to_forge.ps1").read_text(encoding="utf-8-sig")
+        self.assertIn('$ForgePreferences = Join-Path $AppData "Forge\\preferences\\forge.preferences"', installer)
+        self.assertIn('function Set-ManagedPreferences', installer)
+        for required in (
+            "UI_SKIN = 'Warmwood'",
+            "UI_ENABLE_MUSIC = 'true'",
+            "UI_VOL_MUSIC = '100'",
+            "UI_CURRENT_MUSIC_SET = 'Pull Up a Chair'",
+        ):
+            self.assertIn(required, installer)
+        self.assertIn('Set-ManagedPreferences $ForgePreferences', installer)
+
 
 if __name__ == "__main__":
     unittest.main()

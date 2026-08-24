@@ -41,6 +41,13 @@ class WindowsInstallerPackageContractTest(unittest.TestCase):
         self.assertIn("[switch]$VerifyOnly", text)
         self.assertIn("[switch]$IgnoreSystemJava", text)
 
+    def test_launcher_prepends_optional_module_overlays(self):
+        text = LAUNCHER.read_text(encoding="utf-8")
+        self.assertIn('Join-Path $AppRoot "overlays"', text)
+        self.assertIn("[IO.Path]::PathSeparator", text)
+        self.assertIn("$classPathEntries", text)
+        self.assertIn("'-cp', $classPath", text)
+
     def test_inno_is_per_user_chinese_and_creates_shortcuts(self):
         text = INNO.read_text(encoding="utf-8")
         self.assertIn("PrivilegesRequired=lowest", text)
