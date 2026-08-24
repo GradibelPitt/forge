@@ -1,0 +1,14 @@
+Name:极限追逐者阿兰娜
+ManaCost:3 W W
+Types:Legendary Creature Druid Scout
+PT:5/6
+DeckHas:Ability$Counters
+R:Event$ DamageDone | ActiveZones$ Battlefield | ValidTarget$ You | ReplaceWith$ PreventDamage | PreventionEffect$ True | AlwaysReplace$ True | Description$ 如果你将要承受伤害，则防止该伤害。每以此法防止一点伤害，便在CARDNAME上放置一个追逐指示物。
+SVar:PreventDamage:DB$ ReplaceDamage | Amount$ DamageToPrevent | SubAbility$ AddPursuit
+SVar:DamageToPrevent:ReplaceCount$DamageAmount
+SVar:AddPursuit:DB$ PutCounter | Defined$ Self | CounterType$ PURSUIT | CounterNum$ PreventedDamage
+A:AB$ DealDamage | Cost$ R T | ValidTgts$ Any | TgtPrompt$ Select any number of targets to distribute damage to | NumDmg$ X | TargetMin$ 0 | TargetMax$ MaxTgts | DividedAsYouChoose$ X | SpellDescription$ CARDNAME deals X damage divided as you choose among any number of targets, where X is the number of pursuit counters on it.
+SVar:X:Count$CardCounters.PURSUIT
+T:Mode$ Phase | Phase$ End of Turn | TriggerZones$ Battlefield | Execute$ TrigClearPursuit | TriggerDescription$ At the beginning of each end step, remove all pursuit counters from CARDNAME.
+SVar:TrigClearPursuit:DB$ RemoveCounter | Defined$ Self | CounterType$ PURSUIT | CounterNum$ All
+Oracle:如果你将要承受伤害，则防止该伤害。每以此法防止一点伤害，便在极限追逐者阿兰娜上放置一个追逐指示物。\n{R}，{T}：极限追逐者阿兰娜对任意数量的目标造成共X点伤害，由你决定分配方式，X为其上的追逐指示物数量。\n在每个结束步骤开始时，移去极限追逐者阿兰娜上的所有追逐指示物。
