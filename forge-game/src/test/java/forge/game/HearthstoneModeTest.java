@@ -118,7 +118,7 @@ public class HearthstoneModeTest {
     }
 
     @Test
-    public void attackableDefendersDoNotReverseFlyingOrHorsemanship() {
+    public void creatureTargetsMirrorPairwiseBlockingRestrictions() {
         final Fixture fixture = new Fixture(true);
         final Player defender = fixture.addPlayer("Defender", 2, 2);
         final Card attacker = fixture.creature("Ordinary attacker", 3, 3);
@@ -127,16 +127,45 @@ public class HearthstoneModeTest {
         flyingTarget.addIntrinsicKeyword("Flying");
         final Card horsemanshipTarget = fixture.creature(defender, "Horsemanship target", 2, 2);
         horsemanshipTarget.addIntrinsicKeyword("Horsemanship");
+        final Card shadowTarget = fixture.creature(defender, "Shadow target", 2, 2);
+        shadowTarget.addIntrinsicKeyword("Shadow");
+        final Card skulkTarget = fixture.creature(defender, "Skulk target", 2, 2);
+        skulkTarget.addIntrinsicKeyword("Skulk");
+        final Card menaceTarget = fixture.creature(defender, "Menace target", 2, 2);
+        menaceTarget.addIntrinsicKeyword("Menace");
         final Card flyingAttacker = fixture.creature("Flying attacker", 3, 3);
         flyingAttacker.addIntrinsicKeyword("Flying");
+        flyingAttacker.addIntrinsicKeyword("Haste");
+        final Card reachAttacker = fixture.creature("Reach attacker", 3, 3);
+        reachAttacker.addIntrinsicKeyword("Reach");
+        reachAttacker.addIntrinsicKeyword("Haste");
         final Card horsemanshipAttacker = fixture.creature("Horsemanship attacker", 3, 3);
         horsemanshipAttacker.addIntrinsicKeyword("Horsemanship");
-        final Card groundBlocker = fixture.creature(defender, "Ground blocker", 2, 2);
+        horsemanshipAttacker.addIntrinsicKeyword("Haste");
+        final Card shadowAttacker = fixture.creature("Shadow attacker", 3, 3);
+        shadowAttacker.addIntrinsicKeyword("Shadow");
+        shadowAttacker.addIntrinsicKeyword("Haste");
+        final Card cannotBlockAttacker = fixture.creature("Cannot block attacker", 3, 3);
+        cannotBlockAttacker.addIntrinsicKeyword("CARDNAME can't block.");
+        cannotBlockAttacker.addIntrinsicKeyword("Haste");
+        final Card weakAttacker = fixture.creature("Weak attacker", 2, 2);
+        weakAttacker.addIntrinsicKeyword("Haste");
+        final Card ordinaryTarget = fixture.creature(defender, "Ordinary target", 2, 2);
 
-        Assert.assertTrue(CombatUtil.canAttack(attacker, flyingTarget));
-        Assert.assertTrue(CombatUtil.canAttack(attacker, horsemanshipTarget));
-        Assert.assertFalse(CombatUtil.canBlock(flyingAttacker, groundBlocker));
-        Assert.assertFalse(CombatUtil.canBlock(horsemanshipAttacker, groundBlocker));
+        Assert.assertFalse(CombatUtil.canAttack(attacker, flyingTarget));
+        Assert.assertTrue(CombatUtil.canAttack(flyingAttacker, flyingTarget));
+        Assert.assertTrue(CombatUtil.canAttack(reachAttacker, flyingTarget));
+        Assert.assertFalse(CombatUtil.canAttack(attacker, horsemanshipTarget));
+        Assert.assertTrue(CombatUtil.canAttack(horsemanshipAttacker, horsemanshipTarget));
+        Assert.assertFalse(CombatUtil.canAttack(attacker, shadowTarget));
+        Assert.assertTrue(CombatUtil.canAttack(shadowAttacker, shadowTarget));
+        Assert.assertFalse(CombatUtil.canAttack(shadowAttacker, ordinaryTarget));
+        Assert.assertFalse(CombatUtil.canAttack(attacker, skulkTarget));
+        Assert.assertTrue(CombatUtil.canAttack(weakAttacker, skulkTarget));
+        Assert.assertTrue(CombatUtil.canAttack(attacker, menaceTarget),
+                "minimum blocker counts do not make each individual blocker illegal");
+        Assert.assertTrue(CombatUtil.canAttack(cannotBlockAttacker, ordinaryTarget),
+                "the target's pairwise evasion matters, not the attacker's general readiness to block");
     }
 
     @Test

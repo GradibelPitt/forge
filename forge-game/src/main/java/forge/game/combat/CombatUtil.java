@@ -1026,6 +1026,24 @@ public class CombatUtil {
             return false;
         }
 
+        return canBlockByRestrictions(attacker, blocker, canUseSuperreach);
+    }
+
+    /**
+     * Checks only restrictions that relate this attacker/blocker pair, without
+     * considering whether the blocker is currently tapped or generally unable
+     * to block. Hearthstone creature targets reuse this relation in reverse.
+     */
+    public static boolean canBlockByRestrictions(final Card attacker, final Card blocker) {
+        if (attacker == null || blocker == null || !blocker.isCreature()) {
+            return false;
+        }
+        return canBlockByRestrictions(attacker, blocker, superreachApplies(attacker, blocker));
+    }
+
+    private static boolean canBlockByRestrictions(final Card attacker, final Card blocker,
+            final boolean canUseSuperreach) {
+
         // Shadow on the blocker is its own restriction, not the attacker's.
         if (canUseSuperreach && blocker.hasKeyword(Keyword.SHADOW)
                 && !attacker.hasKeyword(Keyword.SHADOW)) {

@@ -111,6 +111,13 @@ class HearthstoneModeContractTest(unittest.TestCase):
             "attacker.getController().isOpponentOf(defender.getController())",
             can_be_attacked,
         )
+        self.assertIn(
+            "CombatUtil.canBlockByRestrictions(defender, attacker)",
+            can_be_attacked,
+        )
+        self.assertIn(
+            "public static boolean canBlockByRestrictions", combat_util
+        )
         for retired_name in (
             "canHearthstoneForceBlock",
             "chooseForcedBlockers",

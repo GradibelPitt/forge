@@ -22,9 +22,9 @@
 
 - **Status:** 已实现为通用静止式异能，复用鹏洛客／战役的 `Card` defender 战斗管线。
 - **DSL:** `S:Mode$ CanBeAttacked | ValidDefender$ Card.Self | ValidAttacker$ Creature.OppCtrl`。
-- **Semantics:** 符合 `ValidAttacker$` 的生物可在宣告攻击者时选择符合 `ValidDefender$` 的牌张作为攻击目标；攻击箭头、阻挡、战斗伤害和防御牌手解析均继续使用现有 `Combat` 逻辑。它不是强制阻挡，也不改变召唤失调、飞行、马术、威慑等规则。炉石模式下，每个生物都由模式规则自动获得相同的攻击目标资格，不要求牌张脚本逐张写此静止式异能。
-- **Java implementation:** `StaticAbilityCanBeAttacked` 将显式合格牌张及炉石模式下的所有对方生物加入 `CombatUtil.getAllPossibleDefenders`，并由 `CombatUtil.canAttack` 对具体攻击者再次校验。
-- **Tests:** `AttackableCreatureTest` 覆盖显式词条的对手生物可攻击、己方生物不可攻击、普通模式下普通生物不进入 defender 列表，以及 `Combat` 保存牌张攻击目标；`HearthstoneModeTest` 覆盖模式自动资格、普通模式隔离和飞行／马术不参与攻击目标过滤。
+- **Semantics:** 符合 `ValidAttacker$` 的生物可在宣告攻击者时选择符合 `ValidDefender$` 的牌张作为攻击目标；攻击箭头、阻挡、战斗伤害和防御牌手解析均继续使用现有 `Combat` 逻辑。它不是强制阻挡，也不改变召唤失调。炉石模式下，每个生物都由模式规则自动获得相同的攻击目标资格，不要求牌张脚本逐张写此静止式异能；但具体攻击者只有在普通成对阻挡规则下能够阻挡该目标时才可选择它。
+- **Java implementation:** `StaticAbilityCanBeAttacked` 将显式合格牌张及炉石模式下的所有对方生物加入 `CombatUtil.getAllPossibleDefenders`，并由 `CombatUtil.canAttack` 对具体攻击者再次校验。炉石分支反向调用 `CombatUtil.canBlockByRestrictions(target, attacker)`，统一继承 `CantBlockBy`、影遁和 Superreach 等成对规则，而不把攻击者是否横置或一般“不能阻挡”状态误作目标限制。
+- **Tests:** `AttackableCreatureTest` 覆盖显式词条的对手生物可攻击、己方生物不可攻击、普通模式下普通生物不进入 defender 列表，以及 `Combat` 保存牌张攻击目标；`HearthstoneModeTest` 覆盖模式自动资格、普通模式隔离、飞行／延势、马术、影遁与攻击者一般“不能阻挡”状态的边界。
 
 ## printedNamed（原始牌名筛选）
 
