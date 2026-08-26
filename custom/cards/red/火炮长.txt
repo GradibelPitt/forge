@@ -1,0 +1,9 @@
+Name:火炮长
+ManaCost:R
+Types:Creature Pirate
+PT:3/1
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigToken | TriggerZones$ Battlefield | TriggerDescription$ 当CARDNAME进战场时，你可以支付{R}。若如此做，派出一个火炮手。
+SVar:TrigToken:AB$ Token | Cost$ R | TokenScript$ r_1_1_pirate_cannoneer | TokenAmount$ 1 | TokenOwner$ You
+DeckHas:Ability$Token
+DeckHints:Type$Pirate
+Oracle:当火炮长进战场时，你可以支付{R}。若如此做，派出一个火炮手。

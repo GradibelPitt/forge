@@ -1,0 +1,7 @@
+Name:宝藏经销商
+ManaCost:R
+Types:Creature Pirate
+PT:1/1
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.Pirate+Other+YouCtrl | TriggerZones$ Battlefield | Execute$ TrigPump | TriggerDescription$ 在你召唤一个海盗后，使其永久获得+1攻击力。
+SVar:TrigPump:DB$ Pump | Defined$ TriggeredCardLKICopy | NumAtt$ +1 | Duration$ Perpetual
+Oracle:在你召唤一个海盗后，使其永久获得+1攻击力。

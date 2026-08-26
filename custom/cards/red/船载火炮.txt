@@ -1,0 +1,9 @@
+Name:船载火炮
+ManaCost:R R
+Types:Artifact Creature Construct
+PT:2/3
+K:Defender
+S:Mode$ MustBlock | ValidCreature$ Card.Self | Description$ CARDNAME blocks each combat if able.
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.Pirate+YouCtrl | TriggerZones$ Battlefield | Execute$ TrigDamage | TriggerDescription$ Whenever a Pirate enters the battlefield under your control, CARDNAME deals 2 damage to any target.
+SVar:TrigDamage:DB$ DealDamage | ValidTgts$ Any | NumDmg$ 2
+Oracle:守军\n只要船载火炮能阻挡，则必须阻挡。\n每当你召唤一个海盗，船载火炮对任一目标造成2点伤害。

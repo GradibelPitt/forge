@@ -1,0 +1,7 @@
+Name:钩手拖曳
+ManaCost:U R
+Types:Sorcery
+A:SP$ Draw | Defined$ You | NumCards$ 1 | SubAbility$ DBToken | SpellDescription$ 抓一张牌，派出两个火炮手。
+SVar:DBToken:DB$ Token | TokenScript$ r_1_1_pirate_cannoneer | TokenAmount$ 2 | TokenOwner$ You
+DeckHas:Ability$Draw|Token
+Oracle:抓一张牌，派出两个火炮手。

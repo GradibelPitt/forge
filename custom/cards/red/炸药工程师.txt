@@ -1,0 +1,8 @@
+Name:炸药工程师
+ManaCost:R R
+Types:Creature Pirate
+PT:2/3
+R:Event$ DamageDone | ActiveZones$ Battlefield | ValidSource$ Creature.Pirate+YouCtrl | PlayerTurn$ True | ReplaceWith$ DmgPlusOne | Description$ 在你的回合中，由你操控的海盗造成的伤害增加1点。
+SVar:DmgPlusOne:DB$ ReplaceEffect | VarName$ DamageAmount | VarValue$ X
+SVar:X:ReplaceCount$DamageAmount/Plus.1
+Oracle:在你的回合中，由你操控的海盗造成的伤害增加1点。

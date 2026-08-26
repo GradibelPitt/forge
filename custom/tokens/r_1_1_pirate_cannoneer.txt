@@ -1,0 +1,9 @@
+Name:火炮手
+ManaCost:no cost
+Colors:red
+Types:Creature Pirate
+PT:1/1
+S:Mode$ MustBlock | ValidCreature$ Card.Self | Description$ CARDNAME blocks each combat if able.
+T:Mode$ Phase | Phase$ End of Turn | ValidPlayer$ You | TriggerZones$ Battlefield | IsPresent$ Creature.Pirate+Other+YouCtrl | PresentCompare$ GE1 | Execute$ TrigDamage | TriggerDescription$ At the beginning of your end step, if you control another Pirate, CARDNAME deals 1 damage to any target.
+SVar:TrigDamage:DB$ DealDamage | ValidTgts$ Any | NumDmg$ 1
+Oracle:只要火炮手能阻挡，则必须阻挡。\n在你的回合结束时，如果你控制其他海盗，则火炮手对任一目标造成1点伤害。
