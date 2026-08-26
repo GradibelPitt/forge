@@ -338,7 +338,7 @@ public class FCardImageRenderer {
         //draw art box with Forge icon
         if (!isDungeon) {
             Color[] artBoxColors = tintColors(Color.DARK_GRAY, colors, NAME_BOX_TINT);
-            int artX = x + ART_INSET + (isSaga ? artWidth : 0);
+            int artX = x + ART_INSET + (isSaga || isQuest ? artWidth : 0);
             drawArt(g, artBoxColors, artX, artY, artWidth, artHeight, art);
         }
 
@@ -433,7 +433,7 @@ public class FCardImageRenderer {
         } else {
             //draw text box
             Color[] textBoxColors = tintColors(Color.WHITE, colors, TEXT_BOX_TINT);
-            int textX = x + ART_INSET + (isClass || isQuest ? artWidth : 0);
+            int textX = x + ART_INSET + (isClass ? artWidth : 0);
             drawTextBox(g, state, text, textBoxColors, textX, textY, artWidth, textBoxHeight, ptBoxHeight > 0 ? 1 : 0);
 
             //draw P/T box

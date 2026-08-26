@@ -355,6 +355,7 @@ Case
 Class
 Curse:Curses
 Plan:Plans
+Quest
 Role
 Room
 Rune

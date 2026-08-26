@@ -13,6 +13,7 @@ EMBLEM_ART_SOURCE = ROOT / "tools" / "card-artwork" / "The_Juggernaut_full_hswik
 CARD_ART = ROOT / "cards" / "pictures" / "PH01" / "开进码头.artcrop.jpg"
 EMBLEM_ART = ROOT / "tokens" / "pictures" / "emblem_destroyer_warship.png"
 TRANSLATIONS = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
+TYPE_LISTS = FORGE_ROOT / "forge-gui" / "res" / "lists" / "TypeLists.txt"
 RENDERER = FORGE_ROOT / "forge-gui-desktop" / "src" / "main" / "java" / "forge" / "toolbox" / "imaging" / "FCardImageRenderer.java"
 HUMAN_CONTROLLER = FORGE_ROOT / "forge-gui" / "src" / "main" / "java" / "forge" / "player" / "PlayerControllerHuman.java"
 
@@ -142,16 +143,19 @@ class RaidTheDocksContractTest(unittest.TestCase):
         self.assertNotIn("任务指示物", rows[0])
         self.assertIn("毁灭战舰", rows[0])
 
-    def test_quest_uses_the_class_visual_layout_without_class_rules(self):
+    def test_quest_uses_the_saga_visual_layout_without_saga_rules(self):
         text = self.read_card()
+        type_lists = TYPE_LISTS.read_text(encoding="utf-8")
         renderer = RENDERER.read_text(encoding="utf-8")
         self.assertIn("Types:Enchantment Quest", text)
         self.assertNotIn("Types:Enchantment Saga", text)
         self.assertNotIn("Types:Enchantment Class", text)
+        enchantment_types = type_lists.split("[EnchantmentTypes]", 1)[1].split("[ArtifactTypes]", 1)[0]
+        self.assertIn("Quest", enchantment_types.splitlines())
         self.assertIn('boolean isQuest = state.getType().hasSubtype("Quest");', renderer)
         self.assertIn("if (isSaga || isQuest || isClass || isDungeon)", renderer)
-        self.assertIn("(isSaga ? artWidth : 0)", renderer)
-        self.assertIn("(isClass || isQuest ? artWidth : 0)", renderer)
+        self.assertIn("(isSaga || isQuest ? artWidth : 0)", renderer)
+        self.assertIn("(isClass ? artWidth : 0)", renderer)
 
     def test_gui_trigger_bridge_uses_the_current_no_stack_signature(self):
         controller = HUMAN_CONTROLLER.read_text(encoding="utf-8")
