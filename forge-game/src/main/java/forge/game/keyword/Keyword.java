@@ -156,6 +156,7 @@ public enum Keyword {
     PROVOKE("Provoke", SimpleKeyword.class, false, "Whenever this creature attacks, you may have target creature defending player controls untap and block it if able."),
     PROWESS("Prowess", SimpleKeyword.class, false, "Whenever you cast a noncreature spell, this creature gets +1/+1 until end of turn."),
     PROWL("Prowl", KeywordWithCost.class, false, "You may pay %s rather than pay this spell's mana cost if a player was dealt combat damage this turn by a source that, at the time it dealt that damage, was under your control and had any of this spell's creature types."),
+    QUEST("Quest", Quest.class, true, "Before the game begins, you may reveal this card from your sideboard if your starting deck meets its Quest restriction and put it into your command zone."),
     RAMPAGE("Rampage", KeywordWithAmount.class, false, "Whenever this creature becomes blocked, it gets +%1$d/+%1$d until end of turn for each creature blocking it beyond the first."),
     RAVENOUS("Ravenous", SimpleKeyword.class, false, "This creature enters with X +1/+1 counters on it. If X is 5 or more, draw a card when it enters."),
     REACH("Reach", SimpleKeyword.class, true, "This creature can block creatures with flying."),

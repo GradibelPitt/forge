@@ -3283,6 +3283,72 @@ public class Player extends GameEntity implements Comparable<Player> {
         updateZoneForView(commandZone);
     }
 
+    public void assignQuest(final Game game, final PlayerController player) {
+        final List<Card> quests = Lists.newArrayList();
+        for (final Card card : getCardsIn(ZoneType.Sideboard)) {
+            if (card.getType().hasSubtype("Quest") && isQuestEligible(card)) {
+                quests.add(card);
+            }
+        }
+        if (quests.isEmpty()) {
+            return;
+        }
+
+        final CardCollectionView choices = CardCollection.getView(quests);
+        final SpellAbility choice = new SpellAbility.EmptySa(ApiType.CompanionChoose, quests.get(0), this);
+        final Card quest = player.chooseSingleEntityForEffect(choices, choice,
+                Localizer.getInstance().getMessage("lblChooseAQuest"), true, null);
+        if (quest != null) {
+            moveQuestToCommand(game, quest);
+        }
+    }
+
+    boolean isQuestEligible(final Card quest) {
+        for (final KeywordInterface keyword : quest.getKeywords(Keyword.QUEST)) {
+            if (!(keyword instanceof Quest questKeyword)) {
+                continue;
+            }
+            for (final String requirement : questKeyword.getDeckRequirements()) {
+                boolean found = false;
+                for (final Card card : getCardsIn(ZoneType.Library)) {
+                    if (card.isValid(requirement.split(","), this, quest, null)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    Card moveQuestToCommand(final Game game, final Card quest) {
+        prepareQuestAbilitiesForCommand(quest);
+        final Card moved = game.getAction().moveTo(ZoneType.Command, quest, null, AbilityKey.newMap());
+        if (moved == null) {
+            return null;
+        }
+        prepareQuestAbilitiesForCommand(moved);
+        game.getAction().checkStaticAbilities(false);
+        updateZoneForView(getZone(ZoneType.Command));
+        return moved;
+    }
+
+    private static void prepareQuestAbilitiesForCommand(final Card quest) {
+        for (final SpellAbility ability : quest.getSpellAbilities()) {
+            if (!ability.isSpell() && !ability.hasParam("ActivationZone")) {
+                ability.getRestrictions().setZone(ZoneType.Command);
+            }
+        }
+        for (final StaticAbility ability : quest.getStaticAbilities()) {
+            if (!ability.hasParam("EffectZone")) {
+                ability.setActiveZone(EnumSet.of(ZoneType.Command));
+            }
+        }
+    }
+
     public boolean deckMatchesDeckRestriction(Card source, String restriction) {
         for (final Card c : getCardsIn(ZoneType.Library)) {
             if (!c.isValid(restriction.split(","), this, source, null)) {

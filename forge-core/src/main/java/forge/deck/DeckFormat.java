@@ -261,6 +261,11 @@ public enum DeckFormat {
             return "is not selected";
         }
 
+        final String questProblem = getQuestCardConformanceProblem(deck);
+        if (questProblem != null) {
+            return questProblem;
+        }
+
         int deckSize = deck.getMain().countAll();
 
         final boolean ignoreDeckLimits = !hasCommander() && hasDeckLimitOverride(deck.getMain());
@@ -452,6 +457,25 @@ public enum DeckFormat {
                 : TextUtil.concatWithSpace("must have a sideboard of", String.valueOf(sbRange.getMinimum()), "to", String.valueOf(sbRange.getMaximum()), "cards or no sideboard at all");
         }
 
+        return null;
+    }
+
+    static String getQuestCardConformanceProblem(final Deck deck) {
+        int sideboardQuestCount = 0;
+        for (final Entry<DeckSection, CardPool> section : deck) {
+            for (final Entry<PaperCard, Integer> card : section.getValue()) {
+                if (!card.getKey().getRules().getType().hasSubtype("Quest")) {
+                    continue;
+                }
+                if (section.getKey() != DeckSection.Sideboard) {
+                    return "must keep Quest cards in its sideboard";
+                }
+                sideboardQuestCount += card.getValue();
+            }
+        }
+        if (sideboardQuestCount > 1) {
+            return "must not contain more than one Quest card in its sideboard";
+        }
         return null;
     }
 

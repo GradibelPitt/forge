@@ -318,6 +318,7 @@ public class Match {
                 preparePlayerZone(player, ZoneType.Sideboard, myDeck.getLeft().get(DeckSection.Sideboard), psc.useRandomFoil());
 
                 player.assignCompanion(game, person);
+                player.assignQuest(game, person);
             }
 
             player.initVariantsZones(psc);
