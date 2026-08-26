@@ -142,7 +142,7 @@ class RaidTheDocksContractTest(unittest.TestCase):
         self.assertNotIn("任务指示物", rows[0])
         self.assertIn("毁灭战舰", rows[0])
 
-    def test_quest_uses_the_saga_visual_layout_without_saga_rules(self):
+    def test_quest_uses_the_class_visual_layout_without_class_rules(self):
         text = self.read_card()
         renderer = RENDERER.read_text(encoding="utf-8")
         self.assertIn("Types:Enchantment Quest", text)
@@ -150,7 +150,8 @@ class RaidTheDocksContractTest(unittest.TestCase):
         self.assertNotIn("Types:Enchantment Class", text)
         self.assertIn('boolean isQuest = state.getType().hasSubtype("Quest");', renderer)
         self.assertIn("if (isSaga || isQuest || isClass || isDungeon)", renderer)
-        self.assertIn("(isSaga || isQuest ? artWidth : 0)", renderer)
+        self.assertIn("(isSaga ? artWidth : 0)", renderer)
+        self.assertIn("(isClass || isQuest ? artWidth : 0)", renderer)
 
     def test_gui_trigger_bridge_uses_the_current_no_stack_signature(self):
         controller = HUMAN_CONTROLLER.read_text(encoding="utf-8")
