@@ -6,6 +6,7 @@
 - **DSL:** 牌张类别写作 `Types:<主类别> Quest`；构筑限制以 `K:Quest:<需求1>;<需求2>:<牌面描述>` 声明，每项需求使用普通 `Card.isValid` 过滤器并且须在起始主牌中至少找到一张，例如 `K:Quest:Pirate;Equipment;Card.Historic:...`。任务牌只能放在备牌中，且一副牌至多携带一张；该数量限制是构筑规则，不写在牌面上。
 - **Player-facing behavior:** 若备牌中有任务且起始主牌满足它列出的每项构筑条件，游戏开始时牌手可以选择让它正面朝上进入自己的徽记区。同一张牌可以同时满足多项条件，例如武具作为神器也属于史迹。任务上未显式指定生效区域的静止式异能与未显式指定起动区域的起动式异能会改为从徽记区生效；任务本身的咒语异能仍只从手牌施放。
 - **Explicit zones:** 任务上的触发式异能仍须写 `TriggerZones$ Command`；若某个静止式或起动式能力显式填写 `EffectZone$`／`ActivationZone$`，引擎保留该显式区域。
+- **Rendering:** 桌面 `FCardImageRenderer` 将 `Quest` 使用 Saga 的纵向分栏布局（插画在右、规则文字在左），但不把任务类型改为 `Saga` 或 `Class`，因此不会获得 Saga 的章节／传记指示物规则或 Class 的等级规则。
 - **Java implementation:** `DeckFormat` 执行备牌与单张限制；`Quest` 关键字解析逐项构筑条件；`Match` 与 `Player.assignQuest` 检查起始主牌、处理开局选择、移至 `Command` 及默认异能区域。
 - **Tests:** `QuestDeckRuleTest`、`QuestCardTest` 与 `tests/test_raid_the_docks.py`。
 

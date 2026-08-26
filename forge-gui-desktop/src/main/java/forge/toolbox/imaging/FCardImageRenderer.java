@@ -322,9 +322,10 @@ public class FCardImageRenderer {
 
         // Adjust layout for Saga, Class, Case and Dungeon cards
         boolean isSaga = state.getType().hasSubtype("Saga");
+        boolean isQuest = state.getType().hasSubtype("Quest");
         boolean isClass = state.getType().hasSubtype("Class") || state.getType().hasSubtype("Case");
         boolean isDungeon = state.getType().isDungeon();
-        if (isSaga || isClass || isDungeon) {
+        if (isSaga || isQuest || isClass || isDungeon) {
             // Move type line to the bottom
             typeY = ptY - Math.round(typeBoxHeight * 1.2f);
             if (!isDungeon)
@@ -337,7 +338,7 @@ public class FCardImageRenderer {
         //draw art box with Forge icon
         if (!isDungeon) {
             Color[] artBoxColors = tintColors(Color.DARK_GRAY, colors, NAME_BOX_TINT);
-            int artX = x + ART_INSET + (isSaga ? artWidth : 0);
+            int artX = x + ART_INSET + (isSaga || isQuest ? artWidth : 0);
             drawArt(g, artBoxColors, artX, artY, artWidth, artHeight, art);
         }
 

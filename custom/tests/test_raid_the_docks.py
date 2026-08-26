@@ -13,6 +13,8 @@ EMBLEM_ART_SOURCE = ROOT / "tools" / "card-artwork" / "The_Juggernaut_full_hswik
 CARD_ART = ROOT / "cards" / "pictures" / "PH01" / "开进码头.artcrop.jpg"
 EMBLEM_ART = ROOT / "tokens" / "pictures" / "emblem_destroyer_warship.png"
 TRANSLATIONS = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
+RENDERER = FORGE_ROOT / "forge-gui-desktop" / "src" / "main" / "java" / "forge" / "toolbox" / "imaging" / "FCardImageRenderer.java"
+HUMAN_CONTROLLER = FORGE_ROOT / "forge-gui" / "src" / "main" / "java" / "forge" / "player" / "PlayerControllerHuman.java"
 
 
 def jpeg_size_and_components(path: Path):
@@ -136,7 +138,26 @@ class RaidTheDocksContractTest(unittest.TestCase):
         self.assertGreaterEqual(rows[0].count("|"), 3)
         self.assertIn("结界～任务", rows[0])
         self.assertIn("任务～你的起始套牌中包含海盗牌、武具牌和史迹牌。", rows[0])
+        self.assertIn("初始阶段为0，使用两张海盗牌后达到下一阶段，只能于法术时机如此做。", rows[0])
+        self.assertNotIn("任务指示物", rows[0])
         self.assertIn("毁灭战舰", rows[0])
+
+    def test_quest_uses_the_saga_visual_layout_without_saga_rules(self):
+        text = self.read_card()
+        renderer = RENDERER.read_text(encoding="utf-8")
+        self.assertIn("Types:Enchantment Quest", text)
+        self.assertNotIn("Types:Enchantment Saga", text)
+        self.assertNotIn("Types:Enchantment Class", text)
+        self.assertIn('boolean isQuest = state.getType().hasSubtype("Quest");', renderer)
+        self.assertIn("if (isSaga || isQuest || isClass || isDungeon)", renderer)
+        self.assertIn("(isSaga || isQuest ? artWidth : 0)", renderer)
+
+    def test_gui_trigger_bridge_uses_the_current_no_stack_signature(self):
+        controller = HUMAN_CONTROLLER.read_text(encoding="utf-8")
+        self.assertIn(
+            "return PlaySpellAbility.playSpellAbilityNoStack(this, player, wrapperAbility, false);",
+            controller,
+        )
 
 
 if __name__ == "__main__":
