@@ -34,12 +34,20 @@ $ForgeTokenPictures = Join-Path $env:LOCALAPPDATA "Forge\Cache\pics\tokens"
 # using the active ANSI code page.
 $HearthstoneCardName = -join ([char[]](0x7089, 0x77F3, 0x4F20, 0x8BF4))
 $WildheartGuffName = -join ([char[]](0x91CE, 0x6027, 0x4E4B, 0x5FC3, 0x53E4, 0x592B))
+$ChainbreakerHoggerName = -join ([char[]](0x7834, 0x94FE, 0x707E, 0x661F, 0x970D, 0x683C))
+$PatchesPirateName = -join ([char[]](0x6D77, 0x76D7, 0x5E15, 0x5947, 0x65AF))
 $RetiredCardPaths = @(
     "colorless\$HearthstoneCardName.txt",
     "colorless\gigantic_spright.txt",
     "green\$WildheartGuffName.txt"
 )
-$RetiredCardPicturePaths = @("PH01\Gigantic Spright.artcrop.jpg")
+$RetiredCardPicturePaths = @(
+    "PH01\Gigantic Spright.artcrop.jpg",
+    "PH01\$ChainbreakerHoggerName.full.jpg",
+    "PH01\$($ChainbreakerHoggerName)1.artcrop.jpg",
+    "PH01\$($ChainbreakerHoggerName)2.full.jpg",
+    "PH01\$PatchesPirateName.full.jpg"
+)
 
 function Remove-RetiredHearthstoneCardFromDecks {
     if (-not (Test-Path -LiteralPath $ForgeConstructedDecks -PathType Container)) {

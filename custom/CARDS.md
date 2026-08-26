@@ -27,8 +27,8 @@
 | Card | Cost / type / stats | Script | Set / # | Behavior summary |
 |---|---|---|---:|---|
 | 马克扎尔的小鬼 | `{B}{B}`，1/3 恶魔 | `cards/black/markzul_imp.txt` | 7 | 每当你弃一张牌，抓一张牌 |
-| 破链灾星霍格 | `{4}{R}{R}{R}{R}`，10/10 传奇豺狼人 | `cards/red/chainbreaker_hogger.txt` | 8、8a | Superreach；开局复制其他传奇永久物并授予传奇规则徽记；画面 1 为标准牌框，画面 2 为原始竖版扩画 |
-| 海盗帕奇斯 | `{R}`，1/1 传奇海盗／恶魔 | `cards/red/海盗帕奇斯.txt` | 10 | 敏捷；己方海盗进场时从手牌/牌库登场 |
+| 破链灾星霍格 | `{4}{R}{R}{R}{R}`，10/10 传奇豺狼人 | `cards/red/chainbreaker_hogger.txt` | 8 | Superreach；开局复制其他传奇永久物并授予传奇规则徽记；Hearthstone Wiki 原画裁切，使用游戏默认动态牌框 |
+| 海盗帕奇斯 | `{R}`，1/1 传奇海盗／恶魔 | `cards/red/海盗帕奇斯.txt` | 10 | 敏捷；己方海盗进场时从手牌/牌库登场；Hearthstone Wiki 原画裁切，使用游戏默认动态牌框 |
 | 突牙 | `{2}{R}{R}`，3/3 传奇野兽 | `cards/red/突牙.txt` | 11 | 敏捷；`Boarding:3` |
 | 裂魂者阿扎莉娜 | `{4}{U}{U}{U}` 传奇生物～人类／牧师／邪术师 | `cards/blue/裂魂者阿扎莉娜.txt` | 68 | `DeckMinimum:20`；开局自动复制对手起始套牌中的二十张非地牌，优先不同名；进场补牌至七张 |
 | 裂心者伊露希亚 | `{1}{U}{B}`，1/3 传奇生物～人类／牧师 | `cards/multicolor/裂心者伊露希亚.txt` | 70 | 进场时逐张化生对手当前手牌的复制品到己方手中；建立己方下一个结束步骤的延迟触发，跨区域放逐仍存在的这批化生牌。 |

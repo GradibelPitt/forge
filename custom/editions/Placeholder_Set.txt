@@ -7,8 +7,7 @@ Type=Custom_Set
 [cards]
 7 C 马克扎尔的小鬼
 8 M 破链灾星霍格 @Custom
-8a M 破链灾星霍格
-10 M 海盗帕奇斯
+10 M 海盗帕奇斯 @Custom
 11 M 突牙 @Custom
 15 C 空中悍匪 @Custom
 16 C 空降歹徒 @Custom
