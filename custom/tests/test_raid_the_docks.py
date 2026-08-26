@@ -52,11 +52,11 @@ class RaidTheDocksContractTest(unittest.TestCase):
         self.assertTrue(CARD.is_file(), CARD)
         return CARD.read_text(encoding="utf-8")
 
-    def test_card_is_a_one_mana_red_quest(self):
+    def test_card_is_a_one_mana_red_legendary_quest(self):
         text = self.read_card()
         self.assertIn("Name:开进码头", text)
         self.assertIn("ManaCost:R", text)
-        self.assertIn("Types:Enchantment Quest", text)
+        self.assertIn("Types:Legendary Enchantment Quest", text)
         self.assertIn(
             "K:Quest:Pirate;Equipment;Card.Historic:Your starting deck contains "
             "a Pirate card, an Equipment card, and a historic card.",
@@ -70,10 +70,12 @@ class RaidTheDocksContractTest(unittest.TestCase):
         self.assertIn("Card.Self+counters_LT6_QUEST", text)
         self.assertIn("CounterType$ QUEST | CounterNum$ 1", text)
 
-    def test_all_three_step_abilities_are_exhaust_and_sorcery_speed(self):
+    def test_all_three_step_abilities_are_exhaust_without_sorcery_timing(self):
         text = self.read_card()
         self.assertEqual(3, text.count("Exhaust$ True"))
-        self.assertEqual(3, text.count("SorcerySpeed$ True"))
+        self.assertNotIn("SorcerySpeed$ True", text)
+        self.assertNotIn("Activate only as a sorcery", text)
+        self.assertNotIn("Do this only as a sorcery", text)
         self.assertIn("counters_GE2_QUEST", text)
         self.assertIn("counters_GE4_QUEST", text)
         self.assertIn("counters_GE6_QUEST", text)
@@ -96,7 +98,7 @@ class RaidTheDocksContractTest(unittest.TestCase):
         text = self.read_card()
         self.assertIn(
             "A:AB$ Effect | Cost$ 5 | ActivationZone$ Command | "
-            "SorcerySpeed$ True",
+            "IsPresent$ Card.Self+counters_GE6_QUEST",
             text,
         )
         self.assertIn("Name$ Emblem — 毁灭战舰", text)
@@ -137,9 +139,10 @@ class RaidTheDocksContractTest(unittest.TestCase):
         ]
         self.assertEqual(1, len(rows))
         self.assertGreaterEqual(rows[0].count("|"), 3)
-        self.assertIn("结界～任务", rows[0])
+        self.assertIn("传奇结界～任务", rows[0])
         self.assertIn("任务～你的起始套牌中包含海盗牌、武具牌和史迹牌。", rows[0])
-        self.assertIn("初始阶段为0，使用两张海盗牌后达到下一阶段，只能于法术时机如此做。", rows[0])
+        self.assertIn("初始阶段为0，使用两张海盗牌后达到下一阶段。", rows[0])
+        self.assertNotIn("只能于法术时机", rows[0])
         self.assertNotIn("任务指示物", rows[0])
         self.assertIn("毁灭战舰", rows[0])
 
@@ -147,7 +150,7 @@ class RaidTheDocksContractTest(unittest.TestCase):
         text = self.read_card()
         type_lists = TYPE_LISTS.read_text(encoding="utf-8")
         renderer = RENDERER.read_text(encoding="utf-8")
-        self.assertIn("Types:Enchantment Quest", text)
+        self.assertIn("Types:Legendary Enchantment Quest", text)
         self.assertNotIn("Types:Enchantment Saga", text)
         self.assertNotIn("Types:Enchantment Class", text)
         enchantment_types = type_lists.split("[EnchantmentTypes]", 1)[1].split("[ArtifactTypes]", 1)[0]

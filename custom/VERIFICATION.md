@@ -1,5 +1,7 @@
 # Forge DIY Verification Status
 
+- 2026-08-26 调整 PH01 #128 `开进码头`：牌张类型改为 `{R}` 传奇结界～任务；删除阶段说明及三个阶段牌面中的全部“只能于法术时机”文字，并从三个起动式异能中删除对应的 `SorcerySpeed$ True`，因此它们现在可在一般起动式异能允许的时机起动，阶段门槛、竭绝限制与第三阶段 `{5}` 费用保持不变。TDD 红阶段按预期得到 5 项旧类型／旧时机限制失败；实现后目标 Python 契约 11/11、单卡 lint 与 `git diff --check` 通过。按用户要求未运行 Maven 测试。卡牌脚本已定向同步至本机 Forge profile，源码／profile SHA-256 均为 `EC9DA034503007ECC61D3322D466900D01ECF53BB026AFB57D455BC1E72F25DD`。
+
 - 2026-08-26 根据用户提供的两张 Saga 参考截图修复 PH01 #128 `开进码头` 牌框未变化：根因是 `Quest` 未登记于 `res/lists/TypeLists.txt` 的 `EnchantmentTypes`，完整类型清理会将该未知子类别移除，导致 `FCardImageRenderer` 的 `isQuest` 分支永远为假。现将 `Quest` 登记为合法结界子类别，并按 Saga 方向渲染为规则文字在左、插画在右；牌张仍不是 `Saga`，不会获得章节、传记指示物或牺牲规则。TDD 红阶段准确得到 `Quest` 不在结界子类别表的单项失败；实现后目标 Python 契约 11/11、单卡 lint 与 `git diff --check` 通过。按用户要求未运行 Maven 测试，只以 `maven.test.skip=true` 重新打包桌面模块；`forge-gui-desktop` JAR SHA-256 为 `6DEDAF5A751887E893F56BB0A90A6155D88F3C74C9403EA06676F1897F09F042`，并确认包含 `FCardImageRenderer.class`；`TypeLists.txt` SHA-256 为 `88F1B07F897A19AE5129F9F47F6EC43B636F65875EE4495A1B960C5C31F15AE2`。客户端必须随这两项载荷一起重启后才能显示正确牌框。
 
 - 2026-08-26 更正 PH01 #128 `开进码头` 的桌面任务牌框：此前误用 Saga 方向（插画右、文字左），现按用户指定改为 Class 方向（插画左、文字右）。`Quest` 仍只是渲染层条件，不改成 `Class` 类型，因而不引入等级、升级提示或其他职业规则。目标 Python 契约 11/11、单卡 lint 与 `git diff --check` 通过；按用户要求未运行 Maven 测试，只以 `maven.test.skip=true` 重新打包 `forge-gui-desktop`，JAR SHA-256 为 `144A7A5D6FFC30B19841323CF503C3240B0DDAFA15C03993758EC8AA67117D7A`，并确认包含 `FCardImageRenderer.class`。发布后必须重启客户端以载入本 overlay。
