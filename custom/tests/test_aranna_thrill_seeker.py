@@ -13,7 +13,7 @@ ART_BACKUP = ROOT / "tools" / "card-artwork" / "Aranna_Thrill_Seeker_full.jpg"
 ART = ROOT / "cards" / "pictures" / "PH01" / "极限追逐者阿兰娜.artcrop.jpg"
 
 ZH_ORACLE = (
-    "如果你将要承受伤害，则防止该伤害。每以此法防止一点伤害，便在极限追逐者阿兰娜上放置一个追逐指示物。\\n"
+    "如果你将要在你的回合承受伤害，则防止该伤害。每以此法防止一点伤害，便在极限追逐者阿兰娜上放置一个追逐指示物。\\n"
     "{R}，{T}：极限追逐者阿兰娜对任意数量的目标造成共X点伤害，由你决定分配方式，X为其上的追逐指示物数量。\\n"
     "在每个结束步骤开始时，移去极限追逐者阿兰娜上的所有追逐指示物。"
 )
@@ -31,6 +31,7 @@ class ArannaThrillSeekerContractTest(unittest.TestCase):
         replacement = next(line for line in lines if line.startswith("R:Event$ DamageDone"))
         self.assertIn("ActiveZones$ Battlefield", replacement)
         self.assertIn("ValidTarget$ You", replacement)
+        self.assertIn("PlayerTurn$ True", replacement)
         self.assertIn("ReplaceWith$ PreventDamage", replacement)
         self.assertIn("PreventionEffect$ True", replacement)
         self.assertIn("AlwaysReplace$ True", replacement)
