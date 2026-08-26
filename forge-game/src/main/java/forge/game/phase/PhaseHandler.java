@@ -653,8 +653,6 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
             CombatUtil.checkDeclaredAttacker(game, c, combat, true);
         }
 
-        HearthstoneMode.chooseForcedBlockers(combat);
-
         game.getTriggerHandler().resetActiveTriggers();
         game.updateCombatForView();
         game.fireEvent(new GameEventCombatChanged());
@@ -680,8 +678,6 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
                 }
             }
             else { continue; }
-
-            HearthstoneMode.applyForcedBlockers(combat, p);
 
             if (game.isGameOver()) { // they just like to close window at any moment
                 return;

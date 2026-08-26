@@ -8,6 +8,7 @@ import forge.game.card.Card;
 import forge.game.card.CardFactory;
 import forge.game.combat.Combat;
 import forge.game.combat.CombatUtil;
+import forge.game.phase.PhaseType;
 import forge.game.player.IGameEntitiesFactory;
 import forge.game.player.Player;
 import forge.game.player.PlayerController;
@@ -94,119 +95,60 @@ public class HearthstoneModeTest {
     }
 
     @Test
-    public void selectedCreatureIsForcedToBlockItsAttackerWhenLegal() {
+    public void everyOpposingCreatureIsAnAttackableDefender() {
         final Fixture fixture = new Fixture(true);
         final Player defender = fixture.addPlayer("Defender", 2, 2);
         final Card attacker = fixture.creature("Attacker", 3, 3);
-        final Card blocker = fixture.creature(defender, "Chosen blocker", 2, 2);
+        attacker.addIntrinsicKeyword("Haste");
+        final Card target = fixture.creature(defender, "Target creature", 2, 2);
+        final Card friendlyTarget = fixture.creature("Friendly target", 2, 2);
+
+        Assert.assertTrue(CombatUtil.getAllPossibleDefenders(fixture.player).contains(target));
+        Assert.assertTrue(CombatUtil.canAttack(attacker, target));
+        Assert.assertFalse(CombatUtil.getAllPossibleDefenders(fixture.player)
+                .contains(friendlyTarget));
+        Assert.assertFalse(CombatUtil.canAttack(attacker, friendlyTarget));
+
         final Combat combat = new Combat(fixture.player);
-        combat.addAttacker(attacker, defender);
-        combat.setHearthstoneForcedBlocker(attacker, blocker);
+        combat.addAttacker(attacker, target);
 
-        HearthstoneMode.applyForcedBlockers(combat, defender);
-
-        Assert.assertTrue(combat.isBlocking(blocker, attacker));
+        Assert.assertSame(combat.getDefenderByAttacker(attacker), target);
+        Assert.assertFalse(combat.removeAbsentCombatants());
+        Assert.assertSame(combat.getDefenderByAttacker(attacker), target);
     }
 
     @Test
-    public void flyingAttackerCanForceGroundCreatureToBlock() {
-        final Fixture fixture = new Fixture(true);
-        final Player defender = fixture.addPlayer("Defender", 2, 2);
-        final Card attacker = fixture.creature("Flying attacker", 3, 3);
-        attacker.addIntrinsicKeyword("Flying");
-        final Card blocker = fixture.creature(defender, "Ground blocker", 2, 2);
-        final Combat combat = new Combat(fixture.player);
-        combat.addAttacker(attacker, defender);
-        combat.setHearthstoneForcedBlocker(attacker, blocker);
-
-        HearthstoneMode.applyForcedBlockers(combat, defender);
-
-        Assert.assertTrue(combat.isBlocking(blocker, attacker));
-    }
-
-    @Test
-    public void groundAttackerCannotForceFlyingCreatureToBlock() {
-        final Fixture fixture = new Fixture(true);
-        final Player defender = fixture.addPlayer("Defender", 2, 2);
-        final Card attacker = fixture.creature("Ground attacker", 3, 3);
-        final Card blocker = fixture.creature(defender, "Flying blocker", 2, 2);
-        blocker.addIntrinsicKeyword("Flying");
-        final Combat combat = new Combat(fixture.player);
-        combat.addAttacker(attacker, defender);
-        combat.setHearthstoneForcedBlocker(attacker, blocker);
-
-        HearthstoneMode.applyForcedBlockers(combat, defender);
-
-        Assert.assertFalse(combat.isBlocking(blocker, attacker));
-    }
-
-    @Test
-    public void menacingAttackerCanForceOrdinaryCreatureToBlock() {
-        final Fixture fixture = new Fixture(true);
-        final Player defender = fixture.addPlayer("Defender", 2, 2);
-        final Card attacker = fixture.creature("Menacing attacker", 3, 3);
-        attacker.addIntrinsicKeyword("Menace");
-        final Card blocker = fixture.creature(defender, "Ordinary blocker", 2, 2);
-        final Combat combat = new Combat(fixture.player);
-        combat.addAttacker(attacker, defender);
-        combat.setHearthstoneForcedBlocker(attacker, blocker);
-
-        HearthstoneMode.applyForcedBlockers(combat, defender);
-
-        Assert.assertTrue(combat.isBlocking(blocker, attacker));
-    }
-
-    @Test
-    public void ordinaryAttackerCannotForceMenacingCreatureToBlock() {
+    public void attackableDefendersDoNotReverseFlyingOrHorsemanship() {
         final Fixture fixture = new Fixture(true);
         final Player defender = fixture.addPlayer("Defender", 2, 2);
         final Card attacker = fixture.creature("Ordinary attacker", 3, 3);
-        final Card blocker = fixture.creature(defender, "Menacing blocker", 2, 2);
-        blocker.addIntrinsicKeyword("Menace");
-        final Combat combat = new Combat(fixture.player);
-        combat.addAttacker(attacker, defender);
-        combat.setHearthstoneForcedBlocker(attacker, blocker);
+        attacker.addIntrinsicKeyword("Haste");
+        final Card flyingTarget = fixture.creature(defender, "Flying target", 2, 2);
+        flyingTarget.addIntrinsicKeyword("Flying");
+        final Card horsemanshipTarget = fixture.creature(defender, "Horsemanship target", 2, 2);
+        horsemanshipTarget.addIntrinsicKeyword("Horsemanship");
+        final Card flyingAttacker = fixture.creature("Flying attacker", 3, 3);
+        flyingAttacker.addIntrinsicKeyword("Flying");
+        final Card horsemanshipAttacker = fixture.creature("Horsemanship attacker", 3, 3);
+        horsemanshipAttacker.addIntrinsicKeyword("Horsemanship");
+        final Card groundBlocker = fixture.creature(defender, "Ground blocker", 2, 2);
 
-        HearthstoneMode.applyForcedBlockers(combat, defender);
-
-        Assert.assertFalse(combat.isBlocking(blocker, attacker));
+        Assert.assertTrue(CombatUtil.canAttack(attacker, flyingTarget));
+        Assert.assertTrue(CombatUtil.canAttack(attacker, horsemanshipTarget));
+        Assert.assertFalse(CombatUtil.canBlock(flyingAttacker, groundBlocker));
+        Assert.assertFalse(CombatUtil.canBlock(horsemanshipAttacker, groundBlocker));
     }
 
     @Test
-    public void forcedBlocksAreInactiveOutsideHearthstoneMode() {
+    public void automaticAttackableDefendersAreInactiveOutsideHearthstoneMode() {
         final Fixture fixture = new Fixture(false);
         final Player defender = fixture.addPlayer("Defender", 2, 2);
         final Card attacker = fixture.creature("Attacker", 3, 3);
-        final Card blocker = fixture.creature(defender, "Blocker", 2, 2);
-        final Combat combat = new Combat(fixture.player);
-        combat.addAttacker(attacker, defender);
-        combat.setHearthstoneForcedBlocker(attacker, blocker);
+        attacker.addIntrinsicKeyword("Haste");
+        final Card target = fixture.creature(defender, "Target creature", 2, 2);
 
-        HearthstoneMode.applyForcedBlockers(combat, defender);
-
-        Assert.assertFalse(combat.isBlocking(blocker, attacker));
-    }
-
-    @Test
-    public void ordinaryCombatKeepsNormalFlyingAndMenaceRules() {
-        final Fixture fixture = new Fixture(false);
-        final Player defender = fixture.addPlayer("Defender", 2, 2);
-        final Card flyingAttacker = fixture.creature("Flying attacker", 3, 3);
-        flyingAttacker.addIntrinsicKeyword("Flying");
-        final Card groundBlocker = fixture.creature(defender, "Ground blocker", 2, 2);
-        Assert.assertFalse(CombatUtil.canBlock(flyingAttacker, groundBlocker));
-
-        final Card groundAttacker = fixture.creature("Ground attacker", 3, 3);
-        final Card flyingBlocker = fixture.creature(defender, "Flying blocker", 2, 2);
-        flyingBlocker.addIntrinsicKeyword("Flying");
-        Assert.assertTrue(CombatUtil.canBlock(groundAttacker, flyingBlocker));
-
-        final Card menacingAttacker = fixture.creature("Menacing attacker", 3, 3);
-        menacingAttacker.addIntrinsicKeyword("Menace");
-        final Combat combat = new Combat(fixture.player);
-        combat.addAttacker(menacingAttacker, defender);
-        Assert.assertFalse(CombatUtil.canAttackerBeBlockedWithAmount(
-                menacingAttacker, 1, combat));
+        Assert.assertFalse(CombatUtil.getAllPossibleDefenders(fixture.player).contains(target));
+        Assert.assertFalse(CombatUtil.canAttack(attacker, target));
     }
 
     private static final class Fixture {
@@ -224,6 +166,8 @@ public class HearthstoneModeTest {
             game = new Game(players, rules, new Match(rules, players, "Hearthstone mode test"));
             player = game.getPlayers().get(0);
             player.setTeam(1);
+            game.getPhaseHandler().devModeSet(PhaseType.MAIN1, player, false, 1);
+            game.setAge(GameStage.Play);
         }
 
         private Player addPlayer(final String name, final int id, final int team) {

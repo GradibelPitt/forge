@@ -1548,13 +1548,6 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
         getGui().updateAutoPassPrompt();
     }
 
-    @Override
-    public Card chooseHearthstoneBlocker(final Card attacker, final CardCollectionView possibleBlockers) {
-        return chooseSingleEntityForEffect(possibleBlockers, null,
-                localizer.getMessage("lblHearthstoneChooseBlocker", attacker.getTranslatedName()),
-                true, null);
-    }
-
     private static final ZoneType[] ACTIONABLE_PAYMENT_ZONES = new ZoneType[] {
         ZoneType.Hand, ZoneType.Battlefield, ZoneType.Graveyard, ZoneType.Exile, ZoneType.Command
     };

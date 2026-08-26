@@ -3,19 +3,10 @@ package forge.game;
 import forge.game.ability.AbilityFactory;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.combat.Combat;
-import forge.game.combat.CombatUtil;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.staticability.StaticAbilityNoCleanupDamage;
 import forge.game.zone.ZoneType;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /** Engine-owned rules for the Hearthstone game variant. */
 public final class HearthstoneMode {
@@ -67,83 +58,4 @@ public final class HearthstoneMode {
         }
     }
 
-    /**
-     * After attackers are final, lets the attacking player reserve at most one
-     * eligible defending creature for each attacker. Flying and Menace use the
-     * mode's reverse hierarchy, and each blocker can be reserved only once.
-     */
-    public static void chooseForcedBlockers(final Combat combat) {
-        final Player attackingPlayer = combat.getAttackingPlayer();
-        if (!isActive(attackingPlayer.getGame()) || attackingPlayer.getController() == null) {
-            return;
-        }
-
-        final Set<Card> reserved = new HashSet<>();
-        for (final Card attacker : combat.getAttackers()) {
-            final Player defender = combat.getDefenderPlayerByAttacker(attacker);
-            if (defender == null) {
-                continue;
-            }
-
-            final CardCollection candidates = new CardCollection();
-            for (final Card blocker : defender.getCreaturesInPlay()) {
-                if (!reserved.contains(blocker)
-                        && CombatUtil.canHearthstoneForceBlock(attacker, blocker, combat)) {
-                    candidates.add(blocker);
-                }
-            }
-            if (candidates.isEmpty()) {
-                continue;
-            }
-
-            final Card chosen = attackingPlayer.getController()
-                    .chooseHearthstoneBlocker(attacker, candidates);
-            if (chosen != null && candidates.contains(chosen)) {
-                combat.setHearthstoneForcedBlocker(attacker, chosen);
-                reserved.add(chosen);
-            }
-        }
-    }
-
-    /** Applies reserved forced blocks after the defending player declares blocks. */
-    public static void applyForcedBlockers(final Combat combat, final Player defender) {
-        if (!isActive(defender.getGame())) {
-            return;
-        }
-
-        for (final Map.Entry<Card, Card> entry : combat.getHearthstoneForcedBlockers().entrySet()) {
-            final Card attacker = entry.getKey();
-            final Card blocker = entry.getValue();
-            if (!combat.getAttackers().contains(attacker)
-                    || !blocker.isInPlay()
-                    || blocker.getController() != defender
-                    || !CombatUtil.canHearthstoneForceBlock(attacker, blocker, null)) {
-                continue;
-            }
-
-            final int resultingBlockerCount = combat.getBlockers(attacker).size()
-                    + (combat.isBlocking(blocker, attacker) ? 0 : 1);
-            if (!CombatUtil.canHearthstoneAttackerBeForceBlockedWithAmount(
-                    attacker, resultingBlockerCount, combat)) {
-                continue;
-            }
-
-            final List<Card> previousAttackers = new ArrayList<>(
-                    combat.getAttackersBlockedBy(blocker));
-            combat.undoBlockingAssignment(blocker);
-            if (CombatUtil.canHearthstoneForceBlock(attacker, blocker, combat)) {
-                combat.addBlocker(attacker, blocker);
-                if (CombatUtil.validateHearthstoneForcedBlocks(combat, defender,
-                        combat.getHearthstoneForcedBlockers().keySet()) != null) {
-                    combat.undoBlockingAssignment(blocker);
-                    for (final Card previousAttacker : previousAttackers) {
-                        if (combat.getAttackers().contains(previousAttacker)
-                                && CombatUtil.canBlock(previousAttacker, blocker, combat)) {
-                            combat.addBlocker(previousAttacker, blocker);
-                        }
-                    }
-                }
-            }
-        }
-    }
 }

@@ -22,9 +22,9 @@
 
 - **Status:** 已实现为通用静止式异能，复用鹏洛客／战役的 `Card` defender 战斗管线。
 - **DSL:** `S:Mode$ CanBeAttacked | ValidDefender$ Card.Self | ValidAttacker$ Creature.OppCtrl`。
-- **Semantics:** 符合 `ValidAttacker$` 的生物可在宣告攻击者时选择符合 `ValidDefender$` 的牌张作为攻击目标；攻击箭头、阻挡、战斗伤害和防御牌手解析均继续使用现有 `Combat` 逻辑。它不是强制阻挡，也不改变召唤失调规则。
-- **Java implementation:** `StaticAbilityCanBeAttacked` 将合格生物牌加入 `CombatUtil.getAllPossibleDefenders`，并由 `CombatUtil.canAttack` 对具体攻击者再次校验。
-- **Tests:** `AttackableCreatureTest` 覆盖对手生物可攻击、己方生物不可攻击、普通生物不进入 defender 列表，以及 `Combat` 保存牌张攻击目标。
+- **Semantics:** 符合 `ValidAttacker$` 的生物可在宣告攻击者时选择符合 `ValidDefender$` 的牌张作为攻击目标；攻击箭头、阻挡、战斗伤害和防御牌手解析均继续使用现有 `Combat` 逻辑。它不是强制阻挡，也不改变召唤失调、飞行、马术、威慑等规则。炉石模式下，每个生物都由模式规则自动获得相同的攻击目标资格，不要求牌张脚本逐张写此静止式异能。
+- **Java implementation:** `StaticAbilityCanBeAttacked` 将显式合格牌张及炉石模式下的所有对方生物加入 `CombatUtil.getAllPossibleDefenders`，并由 `CombatUtil.canAttack` 对具体攻击者再次校验。
+- **Tests:** `AttackableCreatureTest` 覆盖显式词条的对手生物可攻击、己方生物不可攻击、普通模式下普通生物不进入 defender 列表，以及 `Combat` 保存牌张攻击目标；`HearthstoneModeTest` 覆盖模式自动资格、普通模式隔离和飞行／马术不参与攻击目标过滤。
 
 ## printedNamed（原始牌名筛选）
 

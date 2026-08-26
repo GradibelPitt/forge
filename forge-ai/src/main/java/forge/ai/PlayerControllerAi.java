@@ -829,27 +829,6 @@ public class PlayerControllerAi extends PlayerController {
     }
 
     @Override
-    public Card chooseHearthstoneBlocker(final Card attacker, final CardCollectionView possibleBlockers) {
-        Card best = null;
-        int bestValue = 0;
-        for (final Card blocker : possibleBlockers) {
-            if (!ComputerUtilCombat.canDestroyBlocker(player, blocker, attacker,
-                    attacker.getGame().getCombat(), true)) {
-                continue;
-            }
-            final boolean losesAttacker = ComputerUtilCombat.canDestroyAttacker(player,
-                    attacker, blocker, attacker.getGame().getCombat(), true);
-            final int value = ComputerUtilCard.evaluateCreature(blocker)
-                    - (losesAttacker ? ComputerUtilCard.evaluateCreature(attacker) : 0);
-            if (value > bestValue) {
-                best = blocker;
-                bestValue = value;
-            }
-        }
-        return best;
-    }
-
-    @Override
     public List<SpellAbility> chooseSpellAbilityToPlay() {
         return brains.chooseSpellAbilityToPlay();
     }

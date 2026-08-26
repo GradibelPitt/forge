@@ -70,8 +70,6 @@ public class Combat {
     private final Supplier<Map<Card, CardCollection>> blockersOrderedForDamageAssignment = Suppliers.memoize(Maps::newHashMap);
     private final Supplier<CardCollection> lkiCache = Suppliers.memoize(CardCollection::new);
     private final Supplier<CardDamageTable> damageMap = Suppliers.memoize(CardDamageTable::new);
-    private final Map<Card, Card> hearthstoneForcedBlockers = new LinkedHashMap<>();
-
     // List holds creatures who have dealt 1st strike damage to disallow them deal damage on regular basis (unless they have double-strike KW)
     private final Supplier<CardCollection> combatantsThatDealtFirstStrikeDamage = Suppliers.memoize(CardCollection::new);
 
@@ -115,9 +113,6 @@ public class Combat {
         // Note: Doesn't currently set up lkiCache, since it's just a cache and not strictly needed...
         for (Table.Cell<Card, GameEntity, Integer> entry : combat.damageMap.get().cellSet()) {
             damageMap.get().put(map.map(entry.getRowKey()), map.map(entry.getColumnKey()), entry.getValue());
-        }
-        for (Entry<Card, Card> entry : combat.hearthstoneForcedBlockers.entrySet()) {
-            hearthstoneForcedBlockers.put(map.map(entry.getKey()), map.map(entry.getValue()));
         }
 
         attackConstraints = new AttackConstraints(this);
@@ -166,7 +161,6 @@ public class Combat {
         blockersOrderedForDamageAssignment.get().clear();
         lkiCache.get().clear();
         combatantsThatDealtFirstStrikeDamage.get().clear();
-        hearthstoneForcedBlockers.clear();
 
         //clear tracking for cards that care about "this combat"
         Game game = playerWhoAttacks.getGame();
@@ -385,14 +379,6 @@ public class Combat {
             addBlockerToDamageAssignmentOrder(attacker, blocker);
         }
         blocker.updateBlockingForView();
-    }
-
-    public final void setHearthstoneForcedBlocker(final Card attacker, final Card blocker) {
-        hearthstoneForcedBlockers.put(attacker, blocker);
-    }
-
-    public final Map<Card, Card> getHearthstoneForcedBlockers() {
-        return Collections.unmodifiableMap(hearthstoneForcedBlockers);
     }
 
     // remove blocker from specific attacker

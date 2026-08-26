@@ -55,7 +55,7 @@ class HearthstoneModeContractTest(unittest.TestCase):
         self.assertIn("lblHearthstone=炉石传说", chinese)
         self.assertIn("lblHearthstoneDesc=", chinese)
 
-    def test_forced_blocks_reverse_flying_and_menace_hierarchy(self):
+    def test_every_creature_is_attackable_instead_of_forcing_blocks(self):
         combat_util = (
             REPO_ROOT
             / "forge-game"
@@ -77,20 +77,49 @@ class HearthstoneModeContractTest(unittest.TestCase):
             / "game"
             / "HearthstoneMode.java"
         ).read_text(encoding="utf-8")
+        can_be_attacked = (
+            REPO_ROOT
+            / "forge-game"
+            / "src"
+            / "main"
+            / "java"
+            / "forge"
+            / "game"
+            / "staticability"
+            / "StaticAbilityCanBeAttacked.java"
+        ).read_text(encoding="utf-8")
+        phase_handler = (
+            REPO_ROOT
+            / "forge-game"
+            / "src"
+            / "main"
+            / "java"
+            / "forge"
+            / "game"
+            / "phase"
+            / "PhaseHandler.java"
+        ).read_text(encoding="utf-8")
 
-        self.assertIn("canHearthstoneForceBlock", combat_util)
         self.assertIn(
-            "blocker.hasKeyword(Keyword.FLYING) && !attacker.hasKeyword(Keyword.FLYING)",
-            combat_util,
+            "StaticAbilityCanBeAttacked::canBeAttacked", combat_util
         )
         self.assertIn(
-            "blocker.hasKeyword(Keyword.MENACE) && !attacker.hasKeyword(Keyword.MENACE)",
-            combat_util,
+            "HearthstoneMode.isActive(defender.getGame()) && defender.isCreature()",
+            can_be_attacked,
         )
-        self.assertIn("canHearthstoneAttackerBeForceBlockedWithAmount", combat_util)
-        self.assertIn("validateHearthstoneForcedBlocks", combat_util)
-        self.assertIn("CombatUtil.canHearthstoneForceBlock", mode)
-        self.assertIn("if (!isActive(defender.getGame()))", mode)
+        self.assertIn(
+            "attacker.getController().isOpponentOf(defender.getController())",
+            can_be_attacked,
+        )
+        for retired_name in (
+            "canHearthstoneForceBlock",
+            "chooseForcedBlockers",
+            "applyForcedBlockers",
+            "chooseHearthstoneBlocker",
+        ):
+            self.assertNotIn(retired_name, combat_util)
+            self.assertNotIn(retired_name, mode)
+            self.assertNotIn(retired_name, phase_handler)
 
     def test_profile_installer_removes_the_retired_rule_card(self):
         installer = (PROJECT_ROOT / "tools" / "install_to_forge.ps1").read_text(

@@ -415,11 +415,6 @@ public class PlayerControllerForTests extends PlayerController {
     }
 
     @Override
-    public Card chooseHearthstoneBlocker(final Card attacker, final CardCollectionView possibleBlockers) {
-        return null;
-    }
-
-    @Override
     public List<SpellAbility> chooseSpellAbilityToPlay() {
         //TODO: This method has to return the spellability chosen by player
         // It should not play the sa right from here. The code has been left as it is to quickly adapt to changed playercontroller interface

@@ -155,7 +155,6 @@ public abstract class PlayerController {
 
     public abstract void declareAttackers(Player attacker, Combat combat);
     public abstract void declareBlockers(Player defender, Combat combat);
-    public abstract Card chooseHearthstoneBlocker(Card attacker, CardCollectionView possibleBlockers);
 
     public abstract CardCollection orderBlockers(Card attacker, CardCollection blockers);
 
