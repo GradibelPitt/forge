@@ -18,7 +18,8 @@ class PilferedPowerContractTest(unittest.TestCase):
         lines = CARD.read_text(encoding="utf-8").splitlines()
 
         self.assertIn("Name:妙手空空", lines)
-        self.assertIn("ManaCost:1 B R", lines)
+        self.assertIn("ManaCost:1 B G", lines)
+        self.assertNotIn("ManaCost:1 B R", lines)
         self.assertIn("Types:Sorcery", lines)
 
         charm = next(line for line in lines if line.startswith("A:SP$ Charm"))
@@ -28,7 +29,8 @@ class PilferedPowerContractTest(unittest.TestCase):
         self.assertIn("DB$ ChangeZone", search)
         self.assertIn("Origin$ Library", search)
         self.assertIn("Destination$ Battlefield", search)
-        self.assertIn("ChangeType$ Swamp,Mountain", search)
+        self.assertIn("ChangeType$ Land.hasABasicLandType", search)
+        self.assertNotIn("ChangeType$ Swamp,Mountain", search)
         self.assertIn("ChangeNum$ X", search)
         self.assertIn("Tapped$ True", search)
         self.assertNotIn("Destination$ Hand", search)
@@ -36,7 +38,7 @@ class PilferedPowerContractTest(unittest.TestCase):
         self.assertEqual(
             1,
             sum("Origin$ Library" in line and "ChangeNum$ X" in line for line in lines),
-            "Swamps and Mountains must share one aggregate X-card search limit",
+            "lands with basic land types must share one aggregate X-card search limit",
         )
 
         delayed = next(line for line in lines if line.startswith("SVar:DelayTreasures:"))
@@ -60,12 +62,12 @@ class PilferedPowerContractTest(unittest.TestCase):
         )
         self.assertIn(
             "妙手空空|妙手空空|法术|选择一项 —\\n"
-            "• 从你的牌库中搜寻总计至多X张沼泽牌和／或山脉牌，将它们横置放进战场，然后洗牌。X为由你操控的生物数量。\\n"
+            "• 从你的牌库中搜寻至多X张各具有基本地类别的地牌，将它们横置放进战场，然后洗牌。X为由你操控的生物数量。\\n"
             "• 在你的下一个维持开始时，派出X个珍宝衍生物。X为由你操控的生物数量。",
             ZH_CN.read_text(encoding="utf-8").splitlines(),
         )
         self.assertIn(
-            "| 妙手空空 | `{1}{B}{R}` 法术 | `cards/multicolor/妙手空空.txt` | 121 |",
+            "| 妙手空空 | `{1}{B}{G}` 法术 | `cards/multicolor/妙手空空.txt` | 121 |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
 

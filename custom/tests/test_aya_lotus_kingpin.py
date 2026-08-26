@@ -18,7 +18,8 @@ class AyaLotusKingpinContractTest(unittest.TestCase):
         lines = CARD.read_text(encoding="utf-8").splitlines()
 
         self.assertIn("Name:艾雅，玉莲帮主", lines)
-        self.assertIn("ManaCost:3 B R", lines)
+        self.assertIn("ManaCost:2 B G U", lines)
+        self.assertNotIn("ManaCost:3 B R", lines)
         self.assertIn("Types:Creature Rogue", lines)
         self.assertNotIn("Types:Legendary Creature Rogue", lines)
         self.assertIn("PT:5/3", lines)
@@ -109,7 +110,7 @@ class AyaLotusKingpinContractTest(unittest.TestCase):
             EDITION.read_text(encoding="utf-8").splitlines(),
         )
         self.assertIn(
-            "| 艾雅，玉莲帮主 | `{3}{B}{R}`，5/3 生物～熊猫人／浪客 | "
+            "| 艾雅，玉莲帮主 | `{2}{B}{G}{U}`，5/3 生物～熊猫人／浪客 | "
             "`cards/multicolor/艾雅，玉莲帮主.txt` | 118 |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )

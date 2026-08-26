@@ -1,5 +1,5 @@
 Name:艾雅，玉莲帮主
-ManaCost:3 B R
+ManaCost:2 B G U
 Types:Creature Rogue
 PT:5/3
 T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ CreateTreasures | TriggerZones$ Battlefield | TriggerDescription$ 当艾雅进战场时，派出三个珍宝衍生物。从以下此前未选择过的选项中选择一项，然后你获得具有该项异能的徽记。
