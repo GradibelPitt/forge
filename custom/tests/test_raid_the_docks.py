@@ -63,36 +63,18 @@ class RaidTheDocksContractTest(unittest.TestCase):
             text,
         )
 
-    def test_two_pirates_advance_each_step_and_progress_caps_at_three(self):
+    def test_two_pirates_advance_each_step_on_the_known_working_command_zone_path(self):
         text = self.read_card()
         self.assertIn("Mode$ SpellCast | ValidCard$ Pirate", text)
         self.assertIn("TriggerZones$ Command", text)
-        self.assertIn("Card.Self+counters_LT3_QUEST", text)
-        self.assertIn(
-            "SVar:TrackPirate:DB$ StoreSVar | SVar$ PiratesCastForQuest | "
-            "Type$ CountSVar | Expression$ PiratesCastForQuest/Plus.1 | "
-            "SubAbility$ AddQuestCounter",
-            text,
-        )
+        self.assertIn("Card.Self+counters_LT6_QUEST", text)
         self.assertIn(
             "SVar:AddQuestCounter:DB$ PutCounter | Defined$ Self | "
-            "CounterType$ QUEST | CounterNum$ 1 | MaxFromEffect$ 3 | "
-            "ConditionCheckSVar$ PiratesCastForQuest | ConditionSVarCompare$ EQ2 | "
-            "SubAbility$ ResetPirateProgress",
+            "CounterType$ QUEST | CounterNum$ 1 | MaxFromEffect$ 6",
             text,
         )
-        self.assertIn(
-            "SVar:ResetPirateProgress:DB$ StoreSVar | SVar$ PiratesCastForQuest | "
-            "Type$ Number | Expression$ 0",
-            text,
-        )
-        self.assertIn("SVar:PiratesCastForQuest:Number$0", text)
-        self.assertIn(
-            "S:Mode$ MaxCounter | ValidCard$ Card.Self | CounterType$ QUEST | "
-            "MaxNum$ 3 | EffectZone$ Command",
-            text,
-        )
-        self.assertNotIn("counters_LT6_QUEST", text)
+        self.assertNotIn("SVar:TrackPirate:DB$ StoreSVar", text)
+        self.assertNotIn("S:Mode$ MaxCounter", text)
 
     def test_all_three_step_abilities_are_exhaust_without_sorcery_timing(self):
         text = self.read_card()
@@ -100,11 +82,11 @@ class RaidTheDocksContractTest(unittest.TestCase):
         self.assertNotIn("SorcerySpeed$ True", text)
         self.assertNotIn("Activate only as a sorcery", text)
         self.assertNotIn("Do this only as a sorcery", text)
-        self.assertIn("counters_GE1_QUEST", text)
         self.assertIn("counters_GE2_QUEST", text)
-        self.assertIn("counters_GE3_QUEST", text)
-        self.assertNotIn("counters_GE4_QUEST", text)
-        self.assertNotIn("counters_GE6_QUEST", text)
+        self.assertIn("counters_GE4_QUEST", text)
+        self.assertIn("counters_GE6_QUEST", text)
+        self.assertNotIn("counters_GE1_QUEST", text)
+        self.assertNotIn("counters_GE3_QUEST", text)
 
     def test_first_step_puts_a_small_equipment_from_the_library_onto_the_battlefield(self):
         text = self.read_card()
@@ -124,7 +106,7 @@ class RaidTheDocksContractTest(unittest.TestCase):
         text = self.read_card()
         self.assertIn(
             "A:AB$ Effect | Cost$ 5 | ActivationZone$ Command | "
-            "IsPresent$ Card.Self+counters_GE3_QUEST",
+            "IsPresent$ Card.Self+counters_GE6_QUEST",
             text,
         )
         self.assertIn("Name$ Emblem — 毁灭战舰", text)
