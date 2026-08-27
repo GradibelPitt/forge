@@ -67,6 +67,8 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
     private InventoryItem lastAltCard = null;
     private boolean panelOptionsCreated = false;
     private boolean incrementalLoading;
+    private boolean pagedLoading;
+    private boolean preservePageOnRefresh;
     private boolean loadingNextBatch;
     private int nextEntryIndex;
     private int nextEntryCopyIndex;
@@ -75,6 +77,10 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
     private final List<ItemInfo> orderedItems = new ArrayList<>();
     private final List<Group> groups = new ArrayList<>();
     private final IncrementalImageLoadState incrementalLoadState = new IncrementalImageLoadState();
+    private final ImageViewPageState pageState = new ImageViewPageState();
+    private final FLabel btnPreviousPage;
+    private final FLabel lblPageStatus;
+    private final FLabel btnNextPage;
     final Localizer localizer = Localizer.getInstance();
 
     private static boolean isPreferenceEnabled(final ForgePreferences.FPref preferenceName) {
@@ -156,6 +162,24 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
 
     public ImageView(final ItemManager<T> itemManager0, final ItemManagerModel<T> model0, final boolean showRanking) {
         super(itemManager0, model0);
+
+        btnPreviousPage = new FLabel.ButtonBuilder()
+                .text("\u2039")
+                .tooltip(localizer.getMessage("lblBack"))
+                .fontSize(18)
+                .build();
+        lblPageStatus = new FLabel.Builder()
+                .fontAlign(SwingConstants.CENTER)
+                .fontSize(12)
+                .build();
+        btnNextPage = new FLabel.ButtonBuilder()
+                .text("\u203a")
+                .tooltip(localizer.getMessage("lblNext"))
+                .fontSize(18)
+                .build();
+        btnPreviousPage.setCommand((Runnable) () -> changePage(false));
+        btnNextPage.setCommand((Runnable) () -> changePage(true));
+        setPageControlsVisible(false);
 
         SItemManagerUtil.populateImageViewOptions(itemManager0, cbGroupByOptions, cbPileByOptions);
 
@@ -364,6 +388,37 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
         cbPileByOptions.addTo(getPnlOptions(), "pushx, growx");
         getPnlOptions().add(new FLabel.Builder().text(localizer.getMessage("lblColumns") +":").fontSize(12).build());
         cbColumnCount.addTo(getPnlOptions(), "w 38px!");
+        getPnlOptions().add(btnPreviousPage, "w 28px!, h " + FTextField.HEIGHT + "px");
+        getPnlOptions().add(lblPageStatus, "w 58px!, h " + FTextField.HEIGHT + "px");
+        getPnlOptions().add(btnNextPage, "w 28px!, h " + FTextField.HEIGHT + "px");
+    }
+
+    private void changePage(final boolean forward) {
+        final boolean changed = forward ? pageState.nextPage() : pageState.previousPage();
+        if (!changed) {
+            return;
+        }
+        preservePageOnRefresh = true;
+        refresh(null, -1, 0);
+        focus();
+    }
+
+    private void setPageControlsVisible(final boolean visible) {
+        btnPreviousPage.setVisible(visible);
+        lblPageStatus.setVisible(visible);
+        btnNextPage.setVisible(visible);
+        getPnlOptions().revalidate();
+        getPnlOptions().repaint();
+    }
+
+    private void updatePageControls() {
+        setPageControlsVisible(pagedLoading);
+        if (!pagedLoading) {
+            return;
+        }
+        btnPreviousPage.setEnabled(pageState.hasPreviousPage());
+        btnNextPage.setEnabled(pageState.hasNextPage());
+        lblPageStatus.setText(pageState.getPageNumber() + " / " + pageState.getPageCount());
     }
 
     public GroupDef getGroupBy() {
@@ -572,14 +627,28 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
             totalItemCount += itemEntry.getValue();
         }
 
+        final boolean supportsLimitedCardLoading = itemManager.getGenericType().equals(PaperCard.class)
+                && totalItemCount > IncrementalImageLoadState.BATCH_SIZE;
         incrementalLoading = itemManager.getGenericType().equals(PaperCard.class)
                 && groupBy == null
                 && pileBy == null
                 && totalItemCount > IncrementalImageLoadState.BATCH_SIZE;
+        pagedLoading = supportsLimitedCardLoading && !incrementalLoading;
+        if (!preservePageOnRefresh || !pagedLoading) {
+            pageState.reset(totalItemCount);
+        }
+        preservePageOnRefresh = false;
         incrementalLoadState.reset(totalItemCount, incrementalLoading);
         nextEntryIndex = 0;
         nextEntryCopyIndex = 0;
-        appendItems(incrementalLoadState.claimNextBatch());
+        if (pagedLoading) {
+            positionCursorAt(pageState.getStartOffset(), entries);
+            appendItems(pageState.getPageItemCount());
+        }
+        else {
+            appendItems(incrementalLoadState.claimNextBatch());
+        }
+        updatePageControls();
 
         if (groupBy != null
                 && groups.size() > groupBy.getGroups().length
@@ -589,6 +658,19 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
         }
 
         updateLayout(true);
+    }
+
+    private void positionCursorAt(final int itemOffset, final List<Entry<T, Integer>> entries) {
+        int remaining = itemOffset;
+        while (remaining > 0 && nextEntryIndex < entries.size()) {
+            final int qty = entries.get(nextEntryIndex).getValue();
+            if (remaining < qty) {
+                nextEntryCopyIndex = remaining;
+                return;
+            }
+            remaining -= qty;
+            nextEntryIndex++;
+        }
     }
 
     private void appendItems(final int itemCount) {
