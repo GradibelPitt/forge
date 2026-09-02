@@ -89,7 +89,11 @@ class HoggerPatchesCropArtTest(unittest.TestCase):
             '"PH01\\$ChainbreakerHoggerName.full.jpg"',
             '"PH01\\$($ChainbreakerHoggerName)1.artcrop.jpg"',
             '"PH01\\$($ChainbreakerHoggerName)2.full.jpg"',
+            '"PH01\\$($ChainbreakerHoggerName)2.artcrop.jpg"',
             '"PH01\\$PatchesPirateName.full.jpg"',
+            '"PH01\\$($PatchesPirateName)1.artcrop.jpg"',
+            '"PH01\\$($PatchesPirateName)2.full.jpg"',
+            '"PH01\\$($PatchesPirateName)2.artcrop.jpg"',
         ):
             with self.subTest(path=path):
                 self.assertIn(path, installer)
