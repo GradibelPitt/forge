@@ -1,0 +1,27 @@
+Name:于吉
+ManaCost:2 U B R
+Types:Legendary Creature Human Shaman
+PT:3/4
+T:Mode$ SpellCast | ValidCard$ Card.!named于吉 | ValidActivatingPlayer$ You | ActivatorThisTurnCast$ EQ1 | OptionalDecider$ You | TriggerZones$ Battlefield | Execute$ ChooseName | TriggerDescription$ 每回合中，当你施放第一个名称不是于吉的咒语时，你可以选择一个牌名。每位对手可以选择质疑你。若有牌手如此作，展示你的手牌。若其中没有具该名称的牌，每位质疑你的牌手各从你手上选择一张牌并将其放逐；若其中有具该名称的牌，每位质疑你的牌手各获得一个具有「你不能质疑」的徽记。若无人质疑你，或质疑失败，你可以视同该咒语为具所选牌名的牌来施放，并支付该牌的法术力费用而非该咒语的法术力费用。
+SVar:ChooseName:DB$ NameCard | Defined$ You | SubAbility$ AskChallenges
+SVar:AskChallenges:DB$ GenericChoice | Defined$ Opponent.!HasCardsInCommand_Effect.namedEmblem — 于吉的缠怨_GE1 | TempRemember$ Chooser | Choices$ Challenge,NoChallenge | ShowChoice$ True | ChoicePrompt$ 是否质疑于吉？ | SubAbility$ CheckChallenges
+SVar:Challenge:DB$ Pump | Defined$ Remembered | NoteCards$ Self | NoteCardsFor$ YuJiChallenge | SpellDescription$ 质疑。
+SVar:NoChallenge:DB$ Pump | SpellDescription$ 不质疑。
+SVar:CheckChallenges:DB$ Branch | BranchConditionSVar$ ChallengerCount | BranchConditionSVarCompare$ GE1 | TrueSubAbility$ RevealHand | FalseSubAbility$ CastNamed
+SVar:ChallengerCount:PlayerCountOpponents$HasPropertyNotedForYuJiChallenge
+SVar:RevealHand:DB$ RevealHand | Defined$ You | SubAbility$ CheckNamedCard
+SVar:CheckNamedCard:DB$ Branch | BranchConditionSVar$ NamedInHand | BranchConditionSVarCompare$ GE1 | TrueSubAbility$ PunishChallengers | FalseSubAbility$ ChallengersExile
+SVar:NamedInHand:Count$ValidHand Card.NamedCard
+SVar:PunishChallengers:DB$ RepeatEach | RepeatPlayers$ Player.NotedForYuJiChallenge | ClearRememberedBeforeLoop$ True | RepeatSubAbility$ CreateCantChallengeEmblem | SubAbility$ CastNamed
+SVar:CreateCantChallengeEmblem:DB$ Effect | Name$ Emblem — 于吉的缠怨 | EffectOwner$ Player.IsRemembered | StaticAbilities$ CantChallengeText | Duration$ Permanent | Unique$ True
+SVar:CantChallengeText:Mode$ Continuous | Affected$ You | Description$ 你不能质疑。
+SVar:ChallengersExile:DB$ RepeatEach | RepeatPlayers$ Player.NotedForYuJiChallenge | ClearRememberedBeforeLoop$ True | RepeatSubAbility$ ChooseHandCard | SubAbility$ ExileChosenCards
+SVar:ChooseHandCard:DB$ ChooseCard | Defined$ Player.IsRemembered | Choices$ Card.YouOwn+!IsRemembered | ChoiceZone$ Hand | Amount$ 1 | Mandatory$ True | RememberChosen$ True | ChoiceTitle$ 从于吉操控者的手牌中选择一张牌放逐
+SVar:ExileChosenCards:DB$ ChangeZoneAll | ChangeType$ Card.IsRemembered | Origin$ Hand | Destination$ Exile | SubAbility$ ClearChallengeNotes
+SVar:CastNamed:DB$ Play | CopyFromChosenName$ True | ValidSA$ Spell | Optional$ True | RememberPlayed$ True | SubAbility$ CheckCast | StackDescription$ None
+SVar:CheckCast:DB$ Branch | BranchConditionSVar$ WasCast | BranchConditionSVarCompare$ GE1 | TrueSubAbility$ ExileOriginalSpell | FalseSubAbility$ ClearChallengeNotes
+SVar:WasCast:Remembered$Valid Card
+SVar:ExileOriginalSpell:DB$ ChangeZone | Defined$ TriggeredCardLKICopy | Origin$ Stack | Destination$ Exile | SubAbility$ ClearChallengeNotes
+SVar:ClearChallengeNotes:DB$ Pump | Defined$ Player | ClearNotedCardsFor$ YuJiChallenge | SubAbility$ CleanupYuJi
+SVar:CleanupYuJi:DB$ Cleanup | ClearRemembered$ True | ClearNamedCard$ True | ClearChosenCard$ True
+Oracle:每回合中，当你施放第一个名称不是于吉的咒语时，你可以选择一个牌名。每位对手可以选择质疑你。若有牌手如此作，展示你的手牌。若其中没有具该名称的牌，每位质疑你的牌手各从你手上选择一张牌并将其放逐；若其中有具该名称的牌，每位质疑你的牌手各获得一个具有「你不能质疑」的徽记。\n若无人质疑你，或质疑失败，你可以视同该咒语为具所选牌名的牌来施放，并支付该牌的法术力费用而非该咒语的法术力费用。

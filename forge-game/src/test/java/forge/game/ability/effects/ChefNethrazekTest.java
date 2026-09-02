@@ -10,11 +10,14 @@ import forge.game.GameStage;
 import forge.game.GameType;
 import forge.game.Match;
 import forge.game.ability.AbilityFactory;
+import forge.game.ability.AbilityKey;
+import forge.game.ability.ApiType;
 import forge.game.card.Card;
 import forge.game.card.CardFactory;
 import forge.game.keyword.Companion;
 import forge.game.keyword.Keyword;
 import forge.game.player.Player;
+import forge.game.replacement.ReplacementEffect;
 import forge.game.spellability.SpellAbility;
 import forge.game.staticability.StaticAbilityCantBeCast;
 import forge.game.trigger.Trigger;
@@ -33,6 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
 
 public class ChefNethrazekTest {
     @BeforeClass
@@ -116,13 +120,40 @@ public class ChefNethrazekTest {
         Assert.assertFalse(ordinaryCopy.isValid(new String[] {"Card.IsCompanion"},
                 controller, ordinaryCopy, null));
 
-        final SpellAbility search = AbilityFactory.getAbility(chef.getSVar("TrigLands"), chef);
-        Assert.assertEquals(search.getParam("Origin"), "Library");
-        Assert.assertEquals(search.getParam("Destination"), "Battlefield");
-        Assert.assertEquals(search.getParam("ChangeType"), "Land");
-        Assert.assertEquals(search.getParam("ChangeNum"), "10");
-        Assert.assertEquals(search.getParam("NoShuffle"), "True");
-        Assert.assertFalse(search.hasParam("Tapped"));
+        final SpellAbility reveal = AbilityFactory.getAbility(chef.getSVar("TrigLands"), chef);
+        Assert.assertEquals(reveal.getApi(), ApiType.DigUntil);
+        Assert.assertEquals(reveal.getParam("Amount"), "10");
+        Assert.assertEquals(reveal.getParam("Valid"), "Land.hasABasicLandType");
+        Assert.assertEquals(reveal.getParam("FoundDestination"), "Battlefield");
+        Assert.assertEquals(reveal.getParam("RevealedDestination"), "Library");
+        Assert.assertEquals(reveal.getParam("RevealedLibraryPosition"), "-1");
+        Assert.assertEquals(reveal.getParam("RevealRandomOrder"), "True");
+        Assert.assertFalse(reveal.hasParam("Tapped"));
+    }
+
+    @Test
+    public void realScriptRevealEffectIgnoresOppositionAgent() throws Exception {
+        final Game game = game();
+        final Player controller = game.getPlayers().get(0);
+        final Player opponent = game.getPlayers().get(1);
+        final Card chef = cardFromScript(game, controller);
+        final Card oppositionAgent = oppositionAgentFromScript(game, opponent);
+        Assert.assertEquals(oppositionAgent.getStaticAbilities().size(), 1);
+        Assert.assertEquals(oppositionAgent.getReplacementEffects().size(), 1);
+        final SpellAbility reveal = AbilityFactory.getAbility(chef.getSVar("TrigLands"), chef);
+        reveal.setActivatingPlayer(controller);
+
+        final Card revealedLand = basicForest(game, controller, "Revealed Forest");
+        final ReplacementEffect exileFound = oppositionAgent.getReplacementEffects().get(0);
+        final Map<AbilityKey, Object> moveParams = AbilityKey.newMap();
+        moveParams.put(AbilityKey.Affected, revealedLand);
+        moveParams.put(AbilityKey.Origin, ZoneType.Library);
+        moveParams.put(AbilityKey.Destination, ZoneType.Battlefield);
+        moveParams.put(AbilityKey.Cause, reveal);
+
+        Assert.assertFalse(exileFound.canReplace(moveParams));
+        moveParams.put(AbilityKey.FoundSearchingLibrary, true);
+        Assert.assertTrue(exileFound.canReplace(moveParams));
     }
 
     private static Game game() {
@@ -149,6 +180,16 @@ public class ChefNethrazekTest {
                 new PaperCard(rules, "PH01", CardRarity.MythicRare), owner, game);
     }
 
+    private static Card oppositionAgentFromScript(final Game game, final Player owner)
+            throws Exception {
+        final Path script = Paths.get("..", "forge-gui", "res", "cardsfolder", "o",
+                "opposition_agent.txt").toAbsolutePath().normalize();
+        final CardRules rules = new CardRules.Reader().readCard(
+                Files.readAllLines(script, StandardCharsets.UTF_8), "Opposition Agent");
+        return CardFactory.getCard(
+                new PaperCard(rules, "CMR", CardRarity.Rare), owner, game);
+    }
+
     private static Card vanilla(final Game game, final Player owner,
                                 final String name, final String manaCost) {
         final CardRules rules = CardRules.fromScript(Arrays.asList(
@@ -158,5 +199,16 @@ public class ChefNethrazekTest {
                 "Oracle:Test card."));
         return CardFactory.getCard(
                 new PaperCard(rules, "TST", CardRarity.Common), owner, game);
+    }
+
+    private static Card basicForest(final Game game, final Player owner,
+                                    final String name) {
+        final CardRules rules = CardRules.fromScript(Arrays.asList(
+                "Name:" + name,
+                "ManaCost:no cost",
+                "Types:Basic Land Forest",
+                "Oracle:({T}: Add {G}.)"));
+        return CardFactory.getCard(
+                new PaperCard(rules, "TST", CardRarity.BasicLand), owner, game);
     }
 }
