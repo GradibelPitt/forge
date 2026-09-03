@@ -127,4 +127,5 @@ Type=Custom_Set
 131 C 火炮长 @Luca Zontini
 132 C 船载火炮 @Warren Mahy
 133 R 炸药工程师 @Kati Sarin
+134 M 飞行员帕奇斯 @Custom
 137 C 玩具船 @BOSi Studio

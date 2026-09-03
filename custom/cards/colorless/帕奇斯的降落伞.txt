@@ -1,0 +1,7 @@
+Name:帕奇斯的降落伞
+ManaCost:0
+Types:Instant
+A:SP$ Token | TokenScript$ c_1_1_pirate_haste | TokenOwner$ You | TokenAmount$ 1 | SubAbility$ DBDraw | SpellDescription$ 派出一个1/1并具有敏捷的海盗衍生生物，然后抓一张牌。
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 1 | SpellDescription$ 抓一张牌。
+DeckHas:Ability$Token
+Oracle:派出一个1/1并具有敏捷的海盗衍生生物，然后抓一张牌。
