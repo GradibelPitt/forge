@@ -6,3 +6,6 @@ Type=Custom_Set
 
 [cards]
 2 C 伪造的药水 @Custom
+5 C Emblem — Aya's Jade Treasure @Custom
+6 C Emblem — Aya's Burst Treasure @Custom
+7 C Emblem — Aya's Cunning Treasure @Custom

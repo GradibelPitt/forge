@@ -225,7 +225,7 @@ public class AyaLotusKingpinScriptTest {
     }
 
     @Test
-    public void registeredPrintUsesTheNormalizedArtworkFilename() {
+    public void registeredPrintUsesTheExpectedArtworkSet() {
         final PaperCard registered = StaticData.instance().getCommonCards()
                 .getAllCards("艾雅，玉莲帮主").stream()
                 .filter(card -> "PH01".equals(card.getEdition()))
@@ -237,10 +237,11 @@ public class AyaLotusKingpinScriptTest {
         for (final String emblemName : EMBLEM_NAMES) {
             final PaperCard emblem = StaticData.instance().getCommonCards()
                     .getAllCards(emblemName).stream()
-                    .filter(card -> "PH01".equals(card.getEdition()))
+                    .filter(card -> "TOKEN_HS".equals(card.getEdition()))
                     .findFirst()
-                    .orElseThrow(() -> new AssertionError("missing PH01 registration for " + emblemName));
-            Assert.assertEquals(emblem.getCardImageKey(), "PH01/" + emblemName + ".full");
+                    .orElseThrow(() -> new AssertionError("missing TOKEN_HS registration for " + emblemName));
+            Assert.assertEquals(emblem.getArtist(), "Custom");
+            Assert.assertEquals(emblem.getCardImageKey(), "TOKEN_HS/" + emblemName + ".full");
         }
     }
 

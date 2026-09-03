@@ -25,25 +25,26 @@ EMBLEMS = {
         "ConjureForgedPotion",
     ),
 }
-EDITION = ROOT / "editions" / "Placeholder_Set.txt"
+MAIN_EDITION = ROOT / "editions" / "Placeholder_Set.txt"
+EMBLEM_EDITION = ROOT / "editions" / "Token_HS.txt"
 ART_BACKUP = ROOT / "tools" / "card-artwork" / "Aya_Lotus_Kingpin_full_hswiki.jpg"
 ART = ROOT / "cards" / "pictures" / "PH01" / "艾雅,玉莲帮主.artcrop.jpg"
 EMBLEM_ART = {
     "Emblem — Aya's Jade Treasure": (
         ROOT / "tools" / "card-artwork" / "Aya_Jade_Treasure_source.jpg",
-        ROOT / "cards" / "pictures" / "PH01" / "Emblem — Aya's Jade Treasure.artcrop.jpg",
+        ROOT / "cards" / "pictures" / "TOKEN_HS" / "Emblem — Aya's Jade Treasure.artcrop.jpg",
         "59D4AD2423C7119074163C08F0D0CC08F1FA1871851772374CAA36878929C049",
         "EF54B75BC1EBC1E242A209C3019E3EA2E881CD0E062F2F8170F871A549D3AD14",
     ),
     "Emblem — Aya's Burst Treasure": (
         ROOT / "tools" / "card-artwork" / "Aya_Burst_Treasure_source.jpg",
-        ROOT / "cards" / "pictures" / "PH01" / "Emblem — Aya's Burst Treasure.artcrop.jpg",
+        ROOT / "cards" / "pictures" / "TOKEN_HS" / "Emblem — Aya's Burst Treasure.artcrop.jpg",
         "8BF4AA5F0B97B541DC350D86229D3DB0742F3F62BD9BC9105F37DC7727BD2693",
         "9CA0CC9DCC7ABD349B841C0F34EB86D7313D7AEB20C9CB42C13556F394580314",
     ),
     "Emblem — Aya's Cunning Treasure": (
         ROOT / "tools" / "card-artwork" / "Aya_Cunning_Treasure_source.jpg",
-        ROOT / "cards" / "pictures" / "PH01" / "Emblem — Aya's Cunning Treasure.artcrop.jpg",
+        ROOT / "cards" / "pictures" / "TOKEN_HS" / "Emblem — Aya's Cunning Treasure.artcrop.jpg",
         "C5726D5D2A8FDBAF0062C93FF8493B8439A5217029124E594E22FCAAE321EAB4",
         "2A44F38B236A809AB28C9F3203B77ADAD9AA9934D8EDF96BD7CB352F71A89B92",
     ),
@@ -164,13 +165,21 @@ class AyaLotusKingpinContractTest(unittest.TestCase):
     def test_registration_localization_documentation_and_art(self):
         self.assertIn(
             "118 R 艾雅，玉莲帮主 @James Ryman",
-            EDITION.read_text(encoding="utf-8").splitlines(),
+            MAIN_EDITION.read_text(encoding="utf-8").splitlines(),
         )
-        edition_lines = EDITION.read_text(encoding="utf-8").splitlines()
+        main_edition_lines = MAIN_EDITION.read_text(encoding="utf-8").splitlines()
+        emblem_edition_lines = EMBLEM_EDITION.read_text(encoding="utf-8").splitlines()
         for collector_number, (_, card_name, _) in zip(
-            (134, 135, 136), EMBLEMS.values()
+            (5, 6, 7), EMBLEMS.values()
         ):
-            self.assertIn(f"{collector_number} C {card_name}", edition_lines)
+            self.assertIn(
+                f"{collector_number} C {card_name} @Custom",
+                emblem_edition_lines,
+            )
+            self.assertFalse(
+                any(card_name in line for line in main_edition_lines),
+                card_name,
+            )
         self.assertIn(
             "| 艾雅，玉莲帮主 | `{2}{B}{G}{U}`，5/3 生物～熊猫人／浪客 | "
             "`cards/multicolor/艾雅，玉莲帮主.txt` | 118 |",
