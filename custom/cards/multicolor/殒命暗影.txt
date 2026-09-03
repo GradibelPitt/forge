@@ -3,6 +3,6 @@ ManaCost:0
 Colors:blue,black
 Types:Instant
 A:SP$ Cleanup | SpellDescription$ Cast the last instant or sorcery spell you cast that wasn't named CARDNAME instead. You still pay its mana cost.
-T:Mode$ SpellCast | ValidCard$ Instant.!printedNamed殒命暗影,Sorcery.!printedNamed殒命暗影 | ValidActivatingPlayer$ You | TriggerZones$ Hand | Execute$ BecomeLastSpell | Static$ True | TriggerDescription$ While CARDNAME is in your hand, each time you cast an instant or sorcery spell that wasn't originally named CARDNAME, CARDNAME becomes a copy of that spell and retains this ability.
-SVar:BecomeLastSpell:DB$ Clone | Defined$ TriggeredCardLKICopy | CloneZone$ Hand | GainThisAbility$ True
+T:Mode$ SpellCast | ValidCard$ Instant.!printedNamed殒命暗影,Sorcery.!printedNamed殒命暗影 | ValidActivatingPlayer$ You | TriggerZones$ Hand,Library,Graveyard,Exile | Execute$ BecomeLastSpell | Static$ True | TriggerDescription$ While CARDNAME is in your hand, library, graveyard, or exile, each time you cast an instant or sorcery spell that wasn't originally named CARDNAME, CARDNAME becomes a copy of that spell, remains an instant, and retains this ability.
+SVar:BecomeLastSpell:DB$ Clone | Defined$ TriggeredCardLKICopy | AddTypes$ Instant | GainThisAbility$ True
 Oracle:CARDNAME is blue and black. As you cast CARDNAME, instead cast the last instant or sorcery spell you cast that wasn't named CARDNAME. (You still pay its mana cost.)

@@ -59,14 +59,15 @@ class ShadowOfDemiseContractTest(unittest.TestCase):
             trigger,
         )
         self.assertIn("ValidActivatingPlayer$ You", trigger)
-        self.assertIn("TriggerZones$ Hand", trigger)
+        self.assertIn("TriggerZones$ Hand,Library,Graveyard,Exile", trigger)
         self.assertIn("Execute$ BecomeLastSpell", trigger)
         self.assertIn("Static$ True", trigger)
 
         clone = next(line for line in lines if line.startswith("SVar:BecomeLastSpell:"))
         self.assertIn("DB$ Clone", clone)
         self.assertIn("Defined$ TriggeredCardLKICopy", clone)
-        self.assertIn("CloneZone$ Hand", clone)
+        self.assertNotIn("CloneZone$", clone)
+        self.assertIn("AddTypes$ Instant", clone)
         self.assertIn("GainThisAbility$ True", clone)
 
         self.assertFalse(any(line.startswith("S:Mode$ CantBeCast") for line in lines))
@@ -81,8 +82,9 @@ class ShadowOfDemiseContractTest(unittest.TestCase):
         self.assertIn(
             "| 殒命暗影 | `{0}` 蓝黑双色瞬间 | "
             "`cards/multicolor/殒命暗影.txt` | 97 | "
-            "施放时改为施放你上一个施放且不为殒命暗影的瞬间或法术咒语，"
-            "并照常支付其法术力费用。 |",
+            "在手牌、牌库、坟墓场或放逐区持续记录你上一个施放且不为殒命暗影的"
+            "瞬间或法术；成为该咒语的复制品时额外保留瞬间类别，因此即使复制法术"
+            "也能在瞬间时机施放，并照常支付其法术力费用。 |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
 

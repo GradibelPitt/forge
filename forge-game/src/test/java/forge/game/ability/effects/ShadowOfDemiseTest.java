@@ -100,6 +100,15 @@ public class ShadowOfDemiseTest {
         Assert.assertEquals(shadow.getManaCost(), sorcery.getManaCost());
         Assert.assertEquals(shadow.getFirstSpellAbility().getApi(),
                 sorcery.getFirstSpellAbility().getApi());
+        Assert.assertTrue(shadow.isInstant(),
+                "a copied sorcery must retain instant timing");
+        Assert.assertTrue(shadow.isSorcery(),
+                "the copied spell must retain its original sorcery type");
+        game.getPhaseHandler().setPlayerTurn(opponent);
+        final SpellAbility copiedSorcery = shadow.getFirstSpellAbility();
+        copiedSorcery.setActivatingPlayer(player);
+        Assert.assertTrue(copiedSorcery.canCastTiming(player),
+                "the copied sorcery must be castable outside sorcery timing");
         Assert.assertTrue(shadow.getTriggers().stream().anyMatch(trigger ->
                         trigger.getMode() == TriggerType.SpellCast
                                 && trigger.getActiveZone().contains(ZoneType.Hand)),
@@ -110,6 +119,29 @@ public class ShadowOfDemiseTest {
         final Trigger trigger = trackingTrigger(shadow);
         Assert.assertFalse(trigger.performTest(spellCastParams(artifact, player)),
                 "non-instant and non-sorcery spells must not replace the remembered spell");
+    }
+
+    @Test
+    public void cardInLibraryTracksSpellBeforeItIsDrawn() throws Exception {
+        final TestContext context = context("Shadow of Demise library tracking test");
+        final CardRules shadowRules = shadowRules();
+        final Card shadow = CardFactory.getCard(
+                new PaperCard(shadowRules, "PH01", CardRarity.MythicRare),
+                context.player, context.game);
+        final Card libraryShadow = context.game.getAction().moveTo(
+                ZoneType.Library, shadow, null, null);
+        final Card sorcery = spell(context.game, context.player, "Final Edict",
+                "B B", "Sorcery",
+                "A:SP$ Destroy | ValidTgts$ Creature | SpellDescription$ Destroy target creature.");
+
+        Assert.assertTrue(trackingTrigger(libraryShadow).getActiveZone()
+                        .contains(ZoneType.Library),
+                "the card must track the previous spell before it is drawn");
+        resolveTrackingTrigger(libraryShadow, sorcery, context.player);
+
+        Assert.assertEquals(libraryShadow.getName(), "Final Edict");
+        Assert.assertTrue(libraryShadow.isInstant(),
+                "a sorcery remembered in the library must retain instant timing");
     }
 
     @Test

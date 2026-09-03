@@ -1,0 +1,11 @@
+Name:玩具船
+ManaCost:U U
+Types:Artifact Creature Ship
+PT:2/3
+K:Defender
+S:Mode$ MustBlock | ValidCreature$ Card.Self | Description$ CARDNAME blocks each combat if able.
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.Pirate+YouCtrl | TriggerZones$ Battlefield | Execute$ TrigDraw | TriggerDescription$ Whenever a Pirate enters the battlefield under your control, draw a card.
+SVar:TrigDraw:DB$ Draw | Defined$ You | NumCards$ 1
+DeckHas:Ability$Draw
+DeckHints:Type$Pirate
+Oracle:守军\n只要玩具船可以阻挡，则它必须阻挡。\n每当你召唤一个海盗时，抓一张牌。
