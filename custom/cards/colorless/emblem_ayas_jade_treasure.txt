@@ -1,0 +1,7 @@
+Name:Emblem — Aya's Jade Treasure
+ManaCost:no cost
+Types:Emblem
+T:Mode$ Sacrificed | ValidCard$ Treasure.token+YouCtrl | TriggerZones$ Command | Execute$ CreateJadeGolem | TriggerDescription$ 每当你牺牲一个珍宝衍生物时，派出一个青玉魔像。
+SVar:CreateJadeGolem:DB$ MakeCard | Defined$ You | Conjure$ True | Name$ 青玉魔像 | Amount$ 1 | Zone$ Battlefield
+AI:RemoveDeck:All
+Oracle:每当你牺牲一个珍宝衍生物时，派出一个青玉魔像。

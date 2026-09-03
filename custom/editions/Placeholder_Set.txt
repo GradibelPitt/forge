@@ -127,3 +127,6 @@ Type=Custom_Set
 131 C 火炮长 @Luca Zontini
 132 C 船载火炮 @Warren Mahy
 133 R 炸药工程师 @Kati Sarin
+134 C Emblem — Aya's Jade Treasure
+135 C Emblem — Aya's Burst Treasure
+136 C Emblem — Aya's Cunning Treasure

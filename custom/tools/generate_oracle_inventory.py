@@ -35,6 +35,7 @@ EDITION_ORDER = (
     "Placeholder_Set.txt",
     "JiFei99_Set.txt",
     "BoTu_Three_Kingdoms_New_Chapter.txt",
+    "Token_HS.txt",
 )
 
 

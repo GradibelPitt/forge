@@ -1,0 +1,8 @@
+[metadata]
+Code=TOKEN_HS
+Name=衍生牌
+Date=2026-09-03
+Type=Custom_Set
+
+[cards]
+2 C 伪造的药水 @Custom

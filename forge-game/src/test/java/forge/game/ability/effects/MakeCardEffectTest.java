@@ -46,6 +46,8 @@ public class MakeCardEffectTest {
 
     @Test
     public void gameRulesCannotBeMaterializedByMakeCard() {
+        Assert.assertFalse(MakeCardEffect.canMaterialize(null),
+                "a missing entity name must be rejected before Card.fromPaperCard");
         Assert.assertTrue(MakeCardEffect.canMaterialize(paper("Ordinary", "Artifact")));
         Assert.assertFalse(MakeCardEffect.canMaterialize(gameRulePaper("Game Rule")));
     }

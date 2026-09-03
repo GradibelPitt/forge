@@ -3,6 +3,9 @@ package forge.game.ability.effects;
 import com.google.common.collect.Lists;
 import forge.StaticData;
 import forge.card.CardEdition;
+import forge.card.CardRarity;
+import forge.card.ColorSet;
+import forge.card.GamePieceType;
 import forge.card.ICardFace;
 import forge.deck.CardPool;
 import forge.game.Game;
@@ -145,6 +148,11 @@ public class MakeCardEffect extends SpellAbilityEffect {
             final ZoneType zone = attach ? ZoneType.Battlefield : 
                 ZoneType.smartValueOf(sa.getParamOrDefault("Zone", "Library"));
             if (zone == null) return;
+            final boolean asEmblem = sa.hasParam("AsEmblem");
+            if (asEmblem && !ZoneType.Command.equals(zone)) {
+                System.err.println("Malformed MakeCard entry: AsEmblem requires Zone$ Command - " + source);
+                return;
+            }
 
             final int amount = sa.hasParam("Amount") ?
                     AbilityUtils.calculateAmount(source, sa.getParam("Amount"), sa) : 1;
@@ -177,14 +185,30 @@ public class MakeCardEffect extends SpellAbilityEffect {
                             pc = StaticData.instance().getCommonCards().getCard(name, editionCode);
                         }
                         if (!canMaterialize(pc)) {
+                            if (pc == null) {
+                                System.err.println("MakeCardEffect didn't find card by name: " + name);
+                            }
                             break;
                         }
                         Card card = Card.fromPaperCard(pc, player);
 
+                        if (asEmblem) {
+                            // Keep the independently loaded PaperCard rules and image, but make the
+                            // materialized game object obey the same zone semantics as DB$ Effect
+                            // emblems instead of leaving an ordinary CARD in the command zone.
+                            card.setGamePieceType(GamePieceType.EFFECT);
+                            card.setEmblem(true);
+                            card.setColor(ColorSet.C);
+                            card.setRarity(CardRarity.Common);
+                            card.setGameTimestamp(game.getNextTimestamp());
+                            card.setEffectSource(sa);
+                        }
                         if (sa.hasParam("TokenCard")) {
                             card.setTokenCard(true);
                         }
-                        game.getAction().moveTo(ZoneType.None, card, sa, moveParams);
+                        if (!asEmblem) {
+                            game.getAction().moveTo(ZoneType.None, card, sa, moveParams);
+                        }
                         cards.add(card);
                         toMake--;
                         if (sa.hasParam("Tapped")) {
@@ -205,7 +229,12 @@ public class MakeCardEffect extends SpellAbilityEffect {
                     table.put(player, c, CounterType.getType(sa.getParam("WithCounter")), numCtr);
                     moveParams.put(AbilityKey.CounterTable, table);
                 }        
-                if (attach) {
+                if (asEmblem) {
+                    // Use the effect command-zone path so ChangesZone triggers stay suppressed.
+                    // In particular, do not stage an entity-backed emblem in None as a card first.
+                    game.getAction().moveToCommand(c, sa);
+                    madeCards.add(finishMaking(sa, c, source));
+                } else if (attach) {
                     for (Card a : attachList) {
                         Card cc;
                         if (c.getZone().getZoneType().equals(ZoneType.None)) cc = c;
@@ -232,8 +261,10 @@ public class MakeCardEffect extends SpellAbilityEffect {
                     madeCards.add(finishMaking(sa, made, source));            
                 }
             }
-            triggerList.triggerChangesZoneAll(game, sa);
-            counterTable.replaceCounterEffect(game, sa);
+            if (!asEmblem) {
+                triggerList.triggerChangesZoneAll(game, sa);
+                counterTable.replaceCounterEffect(game, sa);
+            }
 
             if (sa.hasParam("Reveal")) {
                 game.getAction().reveal(cards, player, true);
@@ -279,7 +310,7 @@ public class MakeCardEffect extends SpellAbilityEffect {
     }
 
     static boolean canMaterialize(final PaperCard paperCard) {
-        return GameRuleCard.canMaterialize(paperCard);
+        return paperCard != null && GameRuleCard.canMaterialize(paperCard);
     }
 
     static List<String> getRandomNonlandStartingDeckNames(final CardPool startingDeck,

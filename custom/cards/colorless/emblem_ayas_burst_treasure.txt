@@ -1,0 +1,7 @@
+Name:Emblem — Aya's Burst Treasure
+ManaCost:no cost
+Types:Emblem
+T:Mode$ Sacrificed | ValidCard$ Treasure.token+YouCtrl | TriggerZones$ Command | Execute$ DealRandomDamage | TriggerDescription$ 每当你牺牲一个珍宝衍生物时，此徽记对一个随机选择的目标造成2点伤害，该目标须既不是你，也不是由你操控的永久物。
+SVar:DealRandomDamage:DB$ DealDamage | ValidTgts$ Player.Other,Permanent.YouDontCtrl | TargetsAtRandom$ True | NumDmg$ 2
+AI:RemoveDeck:All
+Oracle:每当你牺牲一个珍宝衍生物时，此徽记对一个随机选择的目标造成2点伤害，该目标须既不是你，也不是由你操控的永久物。

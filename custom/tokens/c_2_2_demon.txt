@@ -1,0 +1,5 @@
+Name:恶魔
+ManaCost:no cost
+Types:Creature Demon
+PT:2/2
+Oracle:

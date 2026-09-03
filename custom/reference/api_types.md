@@ -80,6 +80,18 @@ Takes one card from a targeted opponent whose name matches the `Card` object of 
   SVar:TakeSameName:DB$ StealSameName | ValidTgts$ Opponent
   ```
 
+### Entity-backed emblems with `MakeCard`
+
+`MakeCard` accepts `AsEmblem$ True` only together with `Zone$ Command`. It loads the named `PaperCard` normally, retaining that independent script's triggers, abilities, Oracle text, and image, then marks the materialized game object as both an emblem and `GamePieceType.EFFECT`. This avoids leaving an ordinary `CARD` in the command zone while allowing an emblem's rules to live in its own registered card script.
+
+```text
+SVar:GainEmblem:DB$ MakeCard | Defined$ You | Name$ Emblem — Example | Zone$ Command | AsEmblem$ True
+```
+
+The named entity must be present in the card database. Do not combine `AsEmblem$ True` with another zone or `AttachedTo$`.
+
+For a resolution-time three-way choice among entity-backed emblems, use the existing `GenericChoice` API and put an `IsPresent$ Emblem.YouCtrl+named... | PresentZone$ Command | PresentCompare$ EQ0` restriction on each fixed `MakeCard` choice. `GenericChoice` removes choices whose restrictions fail before opening its UI. This makes “has not been chosen” a direct check for the corresponding emblem object in that player's command zone, not a history of selected description text.
+
 ## Deck-construction rules (`DeckRule:`)
 
 `DeckRule:` is top-level card-script metadata, not an `ApiType`. A rule becomes active when its source card is included in a deck. The top-level key is exact after Java-style trimming: `DeckRule :`, `DeckRule :` (NBSP), and ` DeckRule:` are different unknown keys, not construction rules. Parameter field names and enum values are case-insensitive. Rule IDs are trimmed and NFC-normalized but remain case-sensitive, and must be unique within one card script. The first schema supports only `ONCE_PER_DECK`: one or several copies of the source card activate a rule once.

@@ -1,0 +1,7 @@
+Name:Emblem — Aya's Cunning Treasure
+ManaCost:no cost
+Types:Emblem
+T:Mode$ Sacrificed | ValidCard$ Treasure.token+YouCtrl | TriggerZones$ Command | Execute$ ConjureForgedPotion | TriggerDescription$ 每当你牺牲一个珍宝衍生物时，化生一张伪造的药水并置入你的手牌。
+SVar:ConjureForgedPotion:DB$ MakeCard | Defined$ You | Conjure$ True | Name$ 伪造的药水 | Amount$ 1 | Zone$ Hand
+AI:RemoveDeck:All
+Oracle:每当你牺牲一个珍宝衍生物时，化生一张伪造的药水并置入你的手牌。

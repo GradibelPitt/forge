@@ -4,15 +4,9 @@ Types:Creature Rogue
 PT:5/3
 T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ CreateTreasures | TriggerZones$ Battlefield | TriggerDescription$ 当艾雅进战场时，派出三个珍宝衍生物。从以下此前未选择过的选项中选择一项，然后你获得具有该项异能的徽记。
 SVar:CreateTreasures:DB$ Token | TokenAmount$ 3 | TokenScript$ c_a_treasure_sac | TokenOwner$ You | SubAbility$ ChooseEmblem
-SVar:ChooseEmblem:DB$ Charm | Choices$ CreateJadeEmblem,CreateDamageEmblem,CreateDrawEmblem | ChoiceRestriction$ ThisGame | CharmNum$ 1
-SVar:CreateJadeEmblem:DB$ Effect | Name$ Emblem — 艾雅的青玉财宝 | EffectOwner$ You | Triggers$ JadeTreasureTrigger | Duration$ Permanent | SpellDescription$ 你获得具有「每当你牺牲一个珍宝衍生物时，派出一个青玉魔像。」的徽记。
-SVar:CreateDamageEmblem:DB$ Effect | Name$ Emblem — 艾雅的爆裂财宝 | EffectOwner$ You | Triggers$ DamageTreasureTrigger | Duration$ Permanent | SpellDescription$ 你获得具有「每当你牺牲一个珍宝衍生物时，此徽记对一个随机选择的目标造成2点伤害，该目标须既不是你，也不是由你操控的永久物。」的徽记。
-SVar:CreateDrawEmblem:DB$ Effect | Name$ Emblem — 艾雅的智谋财宝 | EffectOwner$ You | Triggers$ DrawTreasureTrigger | Duration$ Permanent | SpellDescription$ 你获得具有「每当你牺牲一个珍宝衍生物时，你可以支付{1}。若如此作，抓一张牌。」的徽记。
-SVar:JadeTreasureTrigger:Mode$ Sacrificed | ValidCard$ Treasure.token+YouCtrl | TriggerZones$ Command | Execute$ CreateJadeGolem | TriggerDescription$ 每当你牺牲一个珍宝衍生物时，派出一个青玉魔像。
-SVar:CreateJadeGolem:DB$ MakeCard | Defined$ You | Conjure$ True | Name$ 青玉魔像 | Amount$ 1 | Zone$ Battlefield
-SVar:DamageTreasureTrigger:Mode$ Sacrificed | ValidCard$ Treasure.token+YouCtrl | TriggerZones$ Command | Execute$ DealRandomDamage | TriggerDescription$ 每当你牺牲一个珍宝衍生物时，此徽记对一个随机选择的目标造成2点伤害，该目标须既不是你，也不是由你操控的永久物。
-SVar:DealRandomDamage:DB$ DealDamage | ValidTgts$ Player.Other,Permanent.YouDontCtrl | TargetsAtRandom$ True | NumDmg$ 2
-SVar:DrawTreasureTrigger:Mode$ Sacrificed | ValidCard$ Treasure.token+YouCtrl | TriggerZones$ Command | Execute$ DrawCard | TriggerDescription$ 每当你牺牲一个珍宝衍生物时，你可以支付{1}。若如此作，抓一张牌。
-SVar:DrawCard:AB$ Draw | Cost$ 1 | Defined$ You | NumCards$ 1
-DeckHas:Ability$Token|Damage|Draw|Sacrifice
-Oracle:当艾雅进战场时，派出三个珍宝衍生物。从以下此前未选择过的选项中选择一项，然后你获得具有该项异能的徽记：\n• 每当你牺牲一个珍宝衍生物时，派出一个青玉魔像。\n• 每当你牺牲一个珍宝衍生物时，此徽记对一个随机选择的目标造成2点伤害，该目标须既不是你，也不是由你操控的永久物。\n• 每当你牺牲一个珍宝衍生物时，你可以支付{1}。若如此作，抓一张牌。
+SVar:ChooseEmblem:DB$ GenericChoice | Defined$ You | Choices$ GainJadeEmblem,GainDamageEmblem,GainCunningEmblem | ChoiceAmount$ 1 | ChoicePrompt$ 选择一项尚未获得的财宝徽记
+SVar:GainJadeEmblem:DB$ MakeCard | Defined$ You | Name$ Emblem — Aya's Jade Treasure | Zone$ Command | AsEmblem$ True | IsPresent$ Emblem.YouCtrl+namedEmblem — Aya's Jade Treasure | PresentZone$ Command | PresentCompare$ EQ0 | SpellDescription$ 你获得具有「每当你牺牲一个珍宝衍生物时，派出一个青玉魔像。」的徽记。
+SVar:GainDamageEmblem:DB$ MakeCard | Defined$ You | Name$ Emblem — Aya's Burst Treasure | Zone$ Command | AsEmblem$ True | IsPresent$ Emblem.YouCtrl+namedEmblem — Aya's Burst Treasure | PresentZone$ Command | PresentCompare$ EQ0 | SpellDescription$ 你获得具有「每当你牺牲一个珍宝衍生物时，此徽记对一个随机选择的目标造成2点伤害，该目标须既不是你，也不是由你操控的永久物。」的徽记。
+SVar:GainCunningEmblem:DB$ MakeCard | Defined$ You | Name$ Emblem — Aya's Cunning Treasure | Zone$ Command | AsEmblem$ True | IsPresent$ Emblem.YouCtrl+namedEmblem — Aya's Cunning Treasure | PresentZone$ Command | PresentCompare$ EQ0 | SpellDescription$ 你获得具有「每当你牺牲一个珍宝衍生物时，化生一张伪造的药水并置入你的手牌。」的徽记。
+DeckHas:Ability$Token|Damage|Sacrifice
+Oracle:当艾雅进战场时，派出三个珍宝衍生物。从以下此前未选择过的选项中选择一项，然后你获得具有该项异能的徽记：\n• 每当你牺牲一个珍宝衍生物时，派出一个青玉魔像。\n• 每当你牺牲一个珍宝衍生物时，此徽记对一个随机选择的目标造成2点伤害，该目标须既不是你，也不是由你操控的永久物。\n• 每当你牺牲一个珍宝衍生物时，化生一张伪造的药水并置入你的手牌。

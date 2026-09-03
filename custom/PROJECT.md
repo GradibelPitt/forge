@@ -46,6 +46,7 @@
 - 启迪者伊利斯通过 `Count$StartingDeckDuplicateNonlandNames` 检查注册的起始主牌构筑；地牌不参与重名判定，同名不同版本会合并计数，满足条件时在施放触发结算时化生当前手牌中每张牌的一个复制。
 - 启迪者伊利斯与海中向导芬利爵士均以 Forge 原生分组搭档 `Partner:探险者协会` 实现“探险者协会”；Commander 构筑会把同组的两名传奇角色视为合法的双指挥官，并合并其颜色标识。
 - 海盗帕奇斯通过牌张脚本从手牌/牌库登场；突牙使用引擎级 `Boarding:3`。
+- 艾雅的三种财宝徽记分别具有独立的已登记牌张脚本；`MakeCard | AsEmblem` 会保留所选脚本的 `PaperCard` 规则与图片，同时把产生的游戏对象标记为真正的 `GamePieceType.EFFECT` 徽记并放入指挥区。艾雅在派出珍宝后以 `GenericChoice` 三选一，每项通过现有 `IsPresent` 限制只检查该牌手指挥区是否已有对应实体徽记，不记录或比较选择文字，也不再内联三种徽记效果。
 - 卡图同步工具已支持从 `cards/pictures/` 安装到 Forge 本地图片缓存。
 - 简中卡牌资源以 `forge-gui/res/languages/cardnames-zh-CN.txt` 为唯一源码；开发客户端在启动时预载该文件，运行仓库的 `publish_git_payload.ps1 -SyncCustom` 会同时同步到 `app/res/languages/cardnames-zh-CN.txt` 并校验哈希，避免只发布卡牌而漏发中文类别或规则文字。
 - 最新引擎迁移已恢复 `CardDiscover`，并修复 `BranchEffect` 在分支解析时传递替代效应对象；新桌面聚合 JAR 已构建，安装到实际客户端与客户端对局验证仍待单独记录。
