@@ -564,7 +564,7 @@ public abstract class SpellAbility extends CardTraitBase implements ISpellAbilit
     public boolean isLandAbility() { return false; }
 
     public boolean isTurnFaceUp() {
-        return isMorphUp() || isDisguiseUp() || isManifestUp() || isCloakUp();
+        return isMorphUp() || isDisguiseUp() || isManifestUp() || isCloakUp() || isMysteryUp();
     }
 
     public boolean isMorphUp() {
@@ -583,6 +583,9 @@ public abstract class SpellAbility extends CardTraitBase implements ISpellAbilit
     }
     public boolean isCloakUp() {
         return hasParam("CloakUp");
+    }
+    public boolean isMysteryUp() {
+        return hasParam("MysteryUp");
     }
 
     public boolean isUnlock() {

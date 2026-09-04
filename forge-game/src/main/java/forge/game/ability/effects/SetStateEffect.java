@@ -192,6 +192,9 @@ public class SetStateEffect extends SpellAbilityEffect {
                 } else if (sa.isCloakUp()) {
                     String sb = p + " has uncloaked " + gameCard.getDisplayName();
                     game.fireEvent(new GameEventAddLog(GameLogEntryType.STACK_RESOLVE, sb));
+                } else if (sa.isMysteryUp()) {
+                    String sb = p + " has revealed the Mystery " + gameCard.getDisplayName();
+                    game.fireEvent(new GameEventAddLog(GameLogEntryType.STACK_RESOLVE, sb));
                 } else if (sa.isKeyword(Keyword.DOUBLE_AGENDA)) {
                     String sb = p + " has revealed " + gameCard.getDisplayName() + " with the chosen names: " + gameCard.getNamedCards();
                     game.fireEvent(new GameEventAddLog(GameLogEntryType.STACK_RESOLVE, sb));

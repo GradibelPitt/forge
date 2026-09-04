@@ -167,6 +167,18 @@ public class GameAction {
             position = null;
         }
 
+        final boolean toBattlefield = zoneTo.is(ZoneType.Battlefield) || zoneTo.is(ZoneType.Merged);
+        final boolean wasFacedown = c.isFaceDown();
+        final boolean preparedMystery = toBattlefield
+                && (zoneFrom == null || !zoneFrom.is(ZoneType.Battlefield))
+                && c.isMystery() && !wasFacedown;
+        if (toBattlefield && (zoneFrom == null || !zoneFrom.is(ZoneType.Battlefield)) && c.isMystery()) {
+            if (!c.isFaceDown()) {
+                c.turnFaceDown(true);
+            }
+            CardFactoryUtil.setMysteryFaceDownState(c);
+        }
+
         // 111.11. A copy of a permanent spell becomes a token as it resolves.
         // The token has the characteristics of the spell that became that token.
         // The token is not “created” for the purposes of any replacement effects or triggered abilities that refer to creating a token.
@@ -192,10 +204,8 @@ public class GameAction {
             return c;
         }
 
-        boolean toBattlefield = zoneTo.is(ZoneType.Battlefield) || zoneTo.is(ZoneType.Merged);
         boolean fromBattlefield = zoneFrom != null && zoneFrom.is(ZoneType.Battlefield);
         boolean fromGraveyard = zoneFrom != null && zoneFrom.is(ZoneType.Graveyard);
-        boolean wasFacedown = c.isFaceDown();
 
         // Rule 111.8: A token that has left the battlefield can't move to another zone
         if (!isGameRule && !c.isSpell() && c.isToken() && !fromBattlefield && zoneFrom != null && !zoneFrom.is(ZoneType.Stack)
@@ -413,7 +423,7 @@ public class GameAction {
 
             if (repres != ReplacementResult.NotReplaced && repres != ReplacementResult.Updated) {
                 // reset failed manifested Cards back to original
-                if ((c.isManifested() || c.isCloaked()) && !c.isInPlay()) {
+                if ((c.isManifested() || c.isCloaked() || preparedMystery) && !c.isInPlay()) {
                     c.forceTurnFaceUp();
                 }
 

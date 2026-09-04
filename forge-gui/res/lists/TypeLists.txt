@@ -354,6 +354,7 @@ Cartouche
 Case
 Class
 Curse:Curses
+Mystery:Mysteries
 Plan:Plans
 Quest
 Role

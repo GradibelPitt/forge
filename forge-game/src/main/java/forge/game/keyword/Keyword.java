@@ -137,6 +137,7 @@ public enum Keyword {
     MORPH("Morph", KeywordWithCost.class, false, "You may cast this card face down as a 2/2 creature for {3}. Turn it face up any time for its morph cost."),
     MULTIKICKER("Multikicker", KeywordWithCost.class, false, "You may pay an additional %s any number of times as you cast this spell."),
     MUTATE("Mutate", KeywordWithCost.class, true, "If you cast this spell for its mutate cost, put it over or under target non-Human creature you own. They mutate into the creature on top plus all abilities from under it."),
+    MYSTERY("Mystery", SimpleKeyword.class, false, "You may cast this card face down for {1}{U}{U} as a blue enchantment named 蓝色奥秘 with the Mystery subtype and no abilities. Turn it face up only during an opponent's turn."),
     MYRIAD("Myriad", SimpleKeyword.class, false, "Whenever this creature attacks, for each opponent other than defending player, you may create a token that's a copy of this creature that's tapped and attacking that player or a planeswalker they control. Exile the tokens at end of combat."),
     NIGHTBOUND("Nightbound", SimpleKeyword.class, true, "If a player casts at least two spells during their own turn, it becomes day next turn."),
     NINJUTSU("Ninjutsu", Ninjutsu.class, false, "%s, Return an unblocked attacker you control to hand: Put this card onto the battlefield from your %s tapped and attacking."),

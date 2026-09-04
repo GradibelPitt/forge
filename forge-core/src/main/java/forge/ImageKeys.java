@@ -25,6 +25,7 @@ public final class ImageKeys {
     public static final String MORPH_IMAGE           = "morph";
     public static final String MANIFEST_IMAGE        = "manifest";
     public static final String CLOAKED_IMAGE         = "cloaked";
+    public static final String MYSTERY_IMAGE          = "mystery";
     public static final String FORETELL_IMAGE        = "foretell";
     public static final String BLESSING_IMAGE        = "blessing";
     public static final String INITIATIVE_IMAGE      = "initiative";

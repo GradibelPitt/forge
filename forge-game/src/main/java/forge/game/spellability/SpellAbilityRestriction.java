@@ -548,6 +548,9 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
         if (c.isPhasedOut() || c.isUsedToPay()) {
             return false;
         }
+        if (c.isMystery() && sa.isSpell() && !sa.isCastFaceDown()) {
+            return false;
+        }
 
         Player activator = sa.getActivatingPlayer();
         if (activator == null) {

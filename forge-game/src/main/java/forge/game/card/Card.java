@@ -3496,7 +3496,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         }
         for (SpellAbility sa : getSpellAbilities()) {
             // morph up and disguise up are not part of the card
-            if (sa.isMorphUp() || sa.isDisguiseUp()) {
+            if (sa.isMorphUp() || sa.isDisguiseUp() || sa.isMysteryUp()) {
                 continue;
             }
             // while Adventure and Omen are part of Secondary
@@ -5839,6 +5839,10 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     public final boolean isPlaneswalker()   { return getType().isPlaneswalker(); }
     public final boolean isBattle()      { return getType().isBattle(); }
     public final boolean isEnchantment()    { return getType().isEnchantment(); }
+    public final boolean isMystery() {
+        final CardState original = states.get(CardStateName.Original);
+        return original != null && original.hasIntrinsicKeyword(Keyword.MYSTERY);
+    }
 
     public final boolean isEquipment()  { return getType().isEquipment(); }
     public final boolean isFortification()  { return getType().isFortification(); }
@@ -6632,6 +6636,10 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
                 return StaticData.instance().getOtherImageKey(ImageKeys.FORETELL_IMAGE, null);
             }
             return ImageKeys.getTokenKey(ImageKeys.HIDDEN_CARD);
+        }
+
+        if (isMystery()) {
+            return ImageKeys.getTokenKey(ImageKeys.MYSTERY_IMAGE);
         }
 
         if (isManifested()) {
@@ -7678,9 +7686,13 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
             }
         }
 
-        if (sa.isCastFaceDown()) {
+        if (sa.isCastFaceDown() || (isMystery() && sa.isSpell())) {
             turnFaceDown(true);
-            CardFactoryUtil.setFaceDownState(this, sa);
+            if (isMystery()) {
+                CardFactoryUtil.setMysteryFaceDownState(this);
+            } else {
+                CardFactoryUtil.setFaceDownState(this, sa);
+            }
         }
     }
 

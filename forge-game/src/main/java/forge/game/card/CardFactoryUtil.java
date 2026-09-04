@@ -19,6 +19,7 @@ package forge.game.card;
 
 import com.google.common.collect.*;
 import forge.GameCommand;
+import forge.ImageKeys;
 import forge.card.*;
 import forge.card.mana.ManaCost;
 import forge.card.mana.ManaCostParser;
@@ -77,7 +78,15 @@ public class CardFactoryUtil {
      * @return a {@link forge.game.spellability.SpellAbility} object.
      */
     public static SpellAbility abilityCastFaceDown(final CardState cardState, final boolean intrinsic, String key) {
-        final Spell morphDown = new Spell(cardState.getCard(), new Cost(ManaCost.THREE, false)) {
+        return abilityCastFaceDown(cardState, intrinsic, key,
+                new Cost(ManaCost.THREE, false),
+                "(You may cast this card face down as a 2/2 creature for {3}.)",
+                key + " - Creature 2/2");
+    }
+
+    private static SpellAbility abilityCastFaceDown(final CardState cardState, final boolean intrinsic,
+            final String key, final Cost cost, final String description, final String stackDescription) {
+        final Spell faceDown = new Spell(cardState.getCard(), cost) {
             private static final long serialVersionUID = -1438810964807867610L;
 
             @Override
@@ -109,15 +118,33 @@ public class CardFactoryUtil {
             }
         };
 
-        morphDown.setCardState(cardState);
+        faceDown.setCardState(cardState);
 
-        morphDown.setDescription("(You may cast this card face down as a 2/2 creature for {3}.)");
-        morphDown.setStackDescription(key + " - Creature 2/2");
-        morphDown.setCastFaceDown(true);
+        faceDown.setDescription(description);
+        faceDown.setStackDescription(stackDescription);
+        faceDown.setCastFaceDown(true);
 
-        morphDown.setIntrinsic(intrinsic);
+        faceDown.setIntrinsic(intrinsic);
 
-        return morphDown;
+        return faceDown;
+    }
+
+    private static SpellAbility abilityCastMystery(final CardState cardState, final boolean intrinsic) {
+        final SpellAbility mystery = abilityCastFaceDown(cardState, intrinsic, "Mystery",
+                new Cost("1 U U", false),
+                "(You may cast this card face down for {1}{U}{U} as 蓝色奥秘, a blue Enchantment — Mystery.)",
+                "蓝色奥秘 - Enchantment Mystery");
+        mystery.putParam("MysteryDown", "True");
+        return mystery;
+    }
+
+    private static SpellAbility abilityTurnMysteryFaceUp(final CardState cardState) {
+        final String ability = "ST$ SetState | Cost$ 0 | ActivationZone$ Battlefield"
+                + " | OpponentTurn$ True | Secondary$ True"
+                + " | PresentDefined$ Self | IsPresent$ Card.Self+faceDown"
+                + " | MysteryUp$ True | Mode$ TurnFaceUp"
+                + " | SpellDescription$ Turn this Mystery face up. Activate only during an opponent's turn.";
+        return AbilityFactory.getAbility(ability, cardState);
     }
 
     public static SpellAbility abilityUnlockRoom(CardState cardState) {
@@ -584,7 +611,31 @@ public class CardFactoryUtil {
     public static void addTriggerAbility(final KeywordInterface inst, final Card card, final boolean intrinsic) {
         String keyword = inst.getOriginal();
 
-        if (keyword.startsWith("Afflict")) {
+        if (keyword.equals("Mystery")) {
+            if (!card.isEnchantment() || !card.getType().hasSubtype("Mystery")) {
+                throw new IllegalStateException("Mystery cards must have type Enchantment Mystery: " + card.getName());
+            }
+            if (!card.hasSVar("MysteryEffect")) {
+                throw new IllegalStateException("Mystery cards must define SVar:MysteryEffect: " + card.getName());
+            }
+
+            final SpellAbility mysteryEffect = AbilityFactory.getAbility(card.getSVar("MysteryEffect"), card);
+            if (!(mysteryEffect instanceof AbilitySub)) {
+                throw new IllegalStateException("MysteryEffect must be a DB$ subability: " + card.getName());
+            }
+            mysteryEffect.setIntrinsic(intrinsic);
+
+            final SpellAbility sacrifice = AbilityFactory.getAbility("DB$ Sacrifice | Defined$ Self", card);
+            sacrifice.setIntrinsic(intrinsic);
+            sacrifice.setSubAbility((AbilitySub) mysteryEffect);
+
+            final String triggerDefinition = "Mode$ TurnFaceUp | ValidCard$ Card.Self"
+                    + " | TriggerZones$ Battlefield | Secondary$ True"
+                    + " | TriggerDescription$ When CARDNAME is turned face up, sacrifice it, then resolve its mystery effect.";
+            final Trigger revealTrigger = TriggerHandler.parseTrigger(triggerDefinition, card, intrinsic);
+            revealTrigger.setOverridingAbility(sacrifice);
+            inst.addTrigger(revealTrigger);
+        } else if (keyword.startsWith("Afflict")) {
             final String[] k = keyword.split(":");
             final String n = k[1];
 
@@ -3143,6 +3194,12 @@ public class CardFactoryUtil {
             final SpellAbility sa = AbilityFactory.getAbility(sb.toString(), card);
             sa.setIntrinsic(intrinsic);
             inst.addSpellAbility(sa);
+        } else if (keyword.equals("Mystery")) {
+            final SpellAbility faceDown = abilityCastMystery(card, intrinsic);
+            final SpellAbility faceUp = abilityTurnMysteryFaceUp(card);
+            faceUp.setIntrinsic(intrinsic);
+            inst.addSpellAbility(faceDown);
+            inst.addSpellAbility(faceUp);
         } else if (keyword.startsWith("Morph") && inst instanceof KeywordWithCost withCost) {
             inst.addSpellAbility(abilityCastFaceDown(card, intrinsic, "Morph"));
             SpellAbility morphUp = abilityTurnFaceUp(card, withCost.getCost(), "MorphUp", "Morph", "morph");
@@ -4170,5 +4227,31 @@ public class CardFactoryUtil {
 
             c.addFaceupCommand(unanimate);
         }
+    }
+
+    public static void setMysteryFaceDownState(final Card c) {
+        final CardState faceDown = c.getFaceDownState();
+        if ("蓝色奥秘".equals(faceDown.getName())) {
+            return;
+        }
+
+        faceDown.setName("蓝色奥秘");
+        faceDown.setManaCost(new ManaCost("1 U U"));
+        faceDown.setType(new CardType(List.of("Enchantment", "Mystery"), false));
+        faceDown.setColor(ColorSet.fromMask(MagicColor.BLUE));
+        faceDown.setOracleText("你的对手隐藏了一些秘密。");
+        faceDown.setBasePower(0);
+        faceDown.setBaseToughness(0);
+        faceDown.setIntrinsicKeywords(List.of(), false);
+        faceDown.setImageKey(ImageKeys.getTokenKey(ImageKeys.MYSTERY_IMAGE));
+
+        c.addFaceupCommand(new GameCommand() {
+            private static final long serialVersionUID = -7370119027084538480L;
+
+            @Override
+            public void run() {
+                c.clearStates(CardStateName.FaceDown, true);
+            }
+        });
     }
 }
