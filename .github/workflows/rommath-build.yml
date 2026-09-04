@@ -24,12 +24,6 @@ jobs:
         with:
           ref: automation/rommath-20260904
           fetch-depth: 1
-          sparse-checkout: |
-            custom
-            forge-gui/res/languages/cardnames-zh-CN.txt
-            .github/scripts/build_rommath.py
-            .github/workflows/rommath-build.yml
-          sparse-checkout-cone-mode: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -89,7 +83,7 @@ jobs:
 
           - Card script: `custom/cards/blue/大法师罗曼斯.txt`.
           - Registration/localization: PH01 #139 with `@Custom`; full four-field `cardnames-zh-CN.txt` entry.
-          - Art: `RLK_803_art.jpg` downloaded from the Grand Magister Rommath asset on hswiki.gg, preserved under `tools/card-artwork/`, then deterministically cropped to an RGB JPEG at approximately 1.37:1 under `cards/pictures/PH01/`.
+          - Art: the square Grand Magister Rommath full-art asset was discovered through hswiki.gg's MediaWiki API, preserved under `tools/card-artwork/`, then deterministically cropped to an RGB JPEG at approximately 1.37:1 under `cards/pictures/PH01/`.
           - Validation run on GitHub `windows-latest`: targeted `lint_card.py`, `tests.test_grand_magister_rommath`, full DIY Python discovery suite, `install_to_forge.ps1`, and source/deployed crop SHA-256 comparison all passed before this record was written.
           - State boundary: source validation and isolated-profile deployment are verified; interactive desktop rendering and live-match behavior remain a separate client acceptance step.
           "@
