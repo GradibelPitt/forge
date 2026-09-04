@@ -2,8 +2,11 @@ Name:大法师罗曼斯
 ManaCost:5 U U U U
 Types:Legendary Creature Human Wizard
 PT:5/7
-T:Mode$ SpellCast | ValidCard$ Card.Self | TriggerZones$ Stack | Execute$ ReturnSpells | TriggerDescription$ 当你施放CARDNAME时，将你坟墓场中的每张瞬间牌和法术牌移回你手上。本回合中，你可以不支付这些牌的法术力费用来施放它们。
-SVar:ReturnSpells:DB$ ChangeZoneAll | Defined$ You | Origin$ Graveyard | Destination$ Hand | ChangeType$ Instant,Sorcery | RememberChanged$ True | ForgetOtherRemembered$ True | SubAbility$ GrantFreeCast
-SVar:GrantFreeCast:DB$ Effect | Defined$ You | RememberObjects$ Remembered | StaticAbilities$ FreeCast | Duration$ EndOfTurn
-SVar:FreeCast:Mode$ Continuous | EffectZone$ Command | Affected$ Card.IsRemembered+YouOwn+inZoneHand | MayPlay$ True | MayPlayWithoutManaCost$ True | Description$ 本回合中，你可以不支付这些牌的法术力费用来施放它们。
+T:Mode$ SpellCast | ValidCard$ Card.Self | TriggerZones$ Stack | Execute$ TrigReturnSpells | TriggerDescription$ 当你施放CARDNAME时，将你坟墓场中的每张瞬间牌和法术牌移回你手上。本回合中，你可以不支付这些牌的法术力费用来施放它们。
+SVar:TrigReturnSpells:DB$ ChangeZoneAll | ChangeType$ Instant.YouOwn,Sorcery.YouOwn | Origin$ Graveyard | Destination$ Hand | RememberChanged$ True | SubAbility$ DBFreeCastEffect
+SVar:DBFreeCastEffect:DB$ Effect | RememberObjects$ Remembered | StaticAbilities$ FreeCast | ForgetOnMoved$ Hand | Duration$ UntilEndOfTurn | SubAbility$ DBCleanupReturned
+SVar:FreeCast:Mode$ Continuous | Affected$ Instant.IsRemembered,Sorcery.IsRemembered | MayPlay$ True | MayPlayWithoutManaCost$ True | AffectedZone$ Hand | Description$ 本回合中，你可以不支付这些牌的法术力费用来施放它们。
+SVar:DBCleanupReturned:DB$ Cleanup | ClearRemembered$ True
+DeckHas:Ability$Graveyard
+DeckHints:Type$Instant|Sorcery
 Oracle:当你施放CARDNAME时，将你坟墓场中的每张瞬间牌和法术牌移回你手上。本回合中，你可以不支付这些牌的法术力费用来施放它们。
