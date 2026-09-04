@@ -1,0 +1,63 @@
+import hashlib
+import unittest
+from pathlib import Path
+
+from PIL import Image
+
+
+ROOT = Path(__file__).resolve().parents[1]
+FORGE_ROOT = ROOT.parent
+CARD = ROOT / "cards" / "blue" / "法术反制.txt"
+EDITION = ROOT / "editions" / "Placeholder_Set.txt"
+ART_BACKUP = ROOT / "tools" / "card-artwork" / "Counterspell_full_original.jpg"
+ART = ROOT / "cards" / "pictures" / "PH01" / "法术反制.artcrop.jpg"
+ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
+
+ORACLE = "奥秘\\n反击目标法术或瞬间咒语。"
+SOURCE_ART_SHA256 = "A5F4BFABB5623C7F6040328CDF0A091ED426A6A81684852F20C27C2684527825"
+
+
+class CounterspellMysteryContractTest(unittest.TestCase):
+    def test_card_uses_mystery_and_targets_only_instant_or_sorcery_spells(self):
+        lines = CARD.read_text(encoding="utf-8").splitlines()
+
+        for line in (
+            "Name:法术反制",
+            "ManaCost:1 U U",
+            "Types:Enchantment Mystery",
+            "K:Mystery",
+            "SVar:MysteryEffect:DB$ Counter | TargetType$ Spell | "
+            "ValidTgts$ Instant,Sorcery | TgtPrompt$ 选择目标法术或瞬间咒语 | "
+            "SpellDescription$ 反击目标法术或瞬间咒语。",
+            f"Oracle:{ORACLE}",
+        ):
+            self.assertIn(line, lines)
+
+    def test_registration_localization_and_art(self):
+        self.assertIn(
+            "138 R 法术反制 @Jason Chan",
+            EDITION.read_text(encoding="utf-8").splitlines(),
+        )
+        self.assertIn(
+            f"法术反制|法术反制|结界～奥秘|{ORACLE}",
+            ZH_CN.read_text(encoding="utf-8").splitlines(),
+        )
+
+        self.assertEqual(
+            SOURCE_ART_SHA256,
+            hashlib.sha256(ART_BACKUP.read_bytes()).hexdigest().upper(),
+        )
+        with Image.open(ART_BACKUP) as image:
+            self.assertEqual("JPEG", image.format)
+            self.assertEqual("RGB", image.mode)
+            self.assertEqual((1548, 1200), image.size)
+
+        with Image.open(ART) as image:
+            self.assertEqual("JPEG", image.format)
+            self.assertEqual("RGB", image.mode)
+            self.assertEqual((1548, 1130), image.size)
+            self.assertAlmostEqual(1.37, image.width / image.height, delta=0.01)
+
+
+if __name__ == "__main__":
+    unittest.main()

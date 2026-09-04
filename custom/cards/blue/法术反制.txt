@@ -1,0 +1,6 @@
+Name:法术反制
+ManaCost:1 U U
+Types:Enchantment Mystery
+K:Mystery
+SVar:MysteryEffect:DB$ Counter | TargetType$ Spell | ValidTgts$ Instant,Sorcery | TgtPrompt$ 选择目标法术或瞬间咒语 | SpellDescription$ 反击目标法术或瞬间咒语。
+Oracle:奥秘\n反击目标法术或瞬间咒语。

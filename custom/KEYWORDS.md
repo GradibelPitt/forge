@@ -14,8 +14,8 @@ Name:Example Mystery
 ManaCost:2 U
 Types:Enchantment Mystery
 K:Mystery
-SVar:MysteryEffect:DB$ Counter | ValidTgts$ Spell | SpellDescription$ Counter target spell.
-Oracle:Counter target spell.
+SVar:MysteryEffect:DB$ Counter | TargetType$ Spell | ValidTgts$ Instant,Sorcery | TgtPrompt$ Select target instant or sorcery spell | SpellDescription$ Counter target instant or sorcery spell.
+Oracle:Counter target instant or sorcery spell.
 ```
 
 - **Java implementation:** `Keyword` 注册；`CardFactoryUtil` 生成隐藏施放、翻面动作、牺牲触发和共用背面；`SpellAbilityRestriction` 禁止正面施放；`GameAction` 在所有进战场路径统一准备背面；`Card` 与 `SetStateEffect` 负责身份、图片键和翻面日志。

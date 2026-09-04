@@ -42,7 +42,7 @@ public class MysteryTest {
         Assert.assertTrue(mystery.isEnchantment());
         Assert.assertTrue(mystery.getType().hasSubtype("Mystery"));
         Assert.assertTrue(mystery.isValid("Permanent", fixture.controller, mystery, null));
-        Assert.assertEquals(mystery.getOracleText(), "Counter target spell.");
+        Assert.assertEquals(mystery.getOracleText(), "Counter target instant or sorcery spell.");
     }
 
     @Test
@@ -74,7 +74,7 @@ public class MysteryTest {
 
         mystery.forceTurnFaceUp();
         Assert.assertEquals(mystery.getName(), "Test Counterspell Mystery");
-        Assert.assertEquals(mystery.getOracleText(), "Counter target spell.");
+        Assert.assertEquals(mystery.getOracleText(), "Counter target instant or sorcery spell.");
     }
 
     @Test
@@ -149,6 +149,9 @@ public class MysteryTest {
         Assert.assertEquals(sacrifice.getApi(), ApiType.Sacrifice);
         Assert.assertNotNull(sacrifice.getSubAbility());
         Assert.assertEquals(sacrifice.getSubAbility().getApi(), ApiType.Counter);
+        Assert.assertNotNull(sacrifice.getSubAbility().getTargetRestrictions());
+        Assert.assertEquals(sacrifice.getSubAbility().getTargetRestrictions().getValidTgts(),
+                new String[] { "Instant", "Sorcery" });
     }
 
     private static Card mystery(final Fixture fixture) {
@@ -157,8 +160,10 @@ public class MysteryTest {
                 "ManaCost:2 U",
                 "Types:Enchantment Mystery",
                 "K:Mystery",
-                "SVar:MysteryEffect:DB$ Counter | Defined$ Targeted | SpellDescription$ Counter target spell.",
-                "Oracle:Counter target spell."
+                "SVar:MysteryEffect:DB$ Counter | TargetType$ Spell | ValidTgts$ Instant,Sorcery"
+                        + " | TgtPrompt$ Select target instant or sorcery spell"
+                        + " | SpellDescription$ Counter target instant or sorcery spell.",
+                "Oracle:Counter target instant or sorcery spell."
         ));
         final Card card = CardFactory.getCard(
                 new PaperCard(rules, "TST", CardRarity.Uncommon),
