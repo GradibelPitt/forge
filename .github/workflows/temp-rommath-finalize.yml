@@ -23,8 +23,8 @@ jobs:
       - name: Install test dependency
         run: python -m pip install pillow
       - name: Add localization and authoritative docs
-        shell: python
         run: |
+          python - <<'PY'
           from pathlib import Path
           root = Path('.')
           zh = root / 'forge-gui/res/languages/cardnames-zh-CN.txt'
@@ -49,6 +49,7 @@ jobs:
               else:
                   lines.append(row)
               cards.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          PY
       - name: Validate Rommath and DIY cards
         working-directory: custom
         run: |
@@ -56,8 +57,8 @@ jobs:
           python -m unittest tests.test_grand_magister_rommath
           python -m unittest discover -s tests -p 'test_*.py'
       - name: Record verification and remove one-shot workflow
-        shell: python
         run: |
+          python - <<'PY'
           from pathlib import Path
           v = Path('custom/VERIFICATION.md')
           text = v.read_text(encoding='utf-8')
@@ -71,10 +72,12 @@ jobs:
                   f.write('- 用户提供原画备份为 `tools/card-artwork/Grand_Magister_Rommath_HS.jpg`；裁图为 `cards/pictures/PH01/大法师罗曼斯.artcrop.jpg`，800×584 RGB JPEG，约 1.37:1。\n')
                   f.write('- GitHub Actions 实际运行 `lint_card.py`、`tests.test_grand_magister_rommath` 与 DIY Python 全量测试；本记录不宣称本地 Forge 安装或客户端对局实测。\n')
           Path('.github/workflows/temp-rommath-finalize.yml').unlink()
+          PY
       - name: Commit finalized source
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add forge-gui/res/languages/cardnames-zh-CN.txt custom/CARDS.md custom/VERIFICATION.md .github/workflows/temp-rommath-finalize.yml
+          git add forge-gui/res/languages/cardnames-zh-CN.txt custom/CARDS.md custom/VERIFICATION.md
+          git add -u .github/workflows/temp-rommath-finalize.yml
           git commit -m 'Finalize Grand Magister Rommath localization and verification'
           git push origin diy
