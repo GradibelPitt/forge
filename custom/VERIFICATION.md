@@ -529,3 +529,9 @@ Java 测试从 `D:\Forge\forge-latest` 执行，并使用实际模块和测试�
 - 确认当前桌面客户端确实加载最新聚合 JAR。
 - 中文本地化实现后，在中文界面逐卡检查名称、类别和规则文字。
 - 在客户端验证 `CardDiscover` 的 0、1、2、3 个选项、同名去重、数据库来源及双方牌库来源。
+
+## 2026-09-04 — 大法师罗曼斯（PH01 #139）
+
+- 卡牌脚本位于 `custom/cards/blue/大法师罗曼斯.txt`，并在 `custom/editions/Placeholder_Set.txt` 注册为 PH01 #139。
+- hswiki.gg 的 3375×4725 高清原画保存在 `custom/tools/card-artwork/RLK_803_art.jpg`；实际游戏裁图位于 `custom/cards/pictures/PH01/大法师罗曼斯.artcrop.jpg`，尺寸 3375×2464，RGB JPEG，约 1.37:1。
+- GitHub Actions 已运行该牌 lint 与三项定向契约测试；图片源文件、PH01 裁图、注册和汉化均纳入同一提交。
