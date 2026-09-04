@@ -1,0 +1,80 @@
+name: Finalize Rommath custom card
+
+on:
+  push:
+    branches: [diy]
+    paths:
+      - 'custom/cards/blue/大法师罗曼斯.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: diy
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test dependency
+        run: python -m pip install pillow
+      - name: Add localization and authoritative docs
+        shell: python
+        run: |
+          from pathlib import Path
+          root = Path('.')
+          zh = root / 'forge-gui/res/languages/cardnames-zh-CN.txt'
+          line = '大法师罗曼斯|大法师罗曼斯|传奇生物～人类／法术师|当你施放大法师罗曼斯时，将你坟墓场中的每张瞬间牌和法术牌移回你手上。本回合中，你可以不支付这些牌的法术力费用来施放它们。'
+          text = zh.read_text(encoding='utf-8')
+          if not any(x.startswith('大法师罗曼斯|') for x in text.splitlines()):
+              with zh.open('a', encoding='utf-8', newline='') as f:
+                  if text and not text.endswith(('\n', '\r')):
+                      f.write('\n')
+                  f.write(line + '\n')
+
+          cards = root / 'custom/CARDS.md'
+          cards_text = cards.read_text(encoding='utf-8')
+          row = '| 大法师罗曼斯 | `{5}{U}{U}{U}{U}`，5/7 传奇生物～人类／法术师 | `cards/blue/大法师罗曼斯.txt` | 139 | 施放时将你坟墓场中的所有瞬间与法术牌移回手上；本回合可不支付这些牌的法术力费用来施放它们。 |'
+          if 'cards/blue/大法师罗曼斯.txt' not in cards_text:
+              anchor = '| 裂心者伊露希亚 '
+              lines = cards_text.splitlines()
+              for i, existing in enumerate(lines):
+                  if existing.startswith(anchor):
+                      lines.insert(i + 1, row)
+                      break
+              else:
+                  lines.append(row)
+              cards.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+      - name: Validate Rommath and DIY cards
+        working-directory: custom
+        run: |
+          python tools/lint_card.py 'cards/blue/大法师罗曼斯.txt'
+          python -m unittest tests.test_grand_magister_rommath
+          python -m unittest discover -s tests -p 'test_*.py'
+      - name: Record verification and remove one-shot workflow
+        shell: python
+        run: |
+          from pathlib import Path
+          v = Path('custom/VERIFICATION.md')
+          text = v.read_text(encoding='utf-8')
+          marker = '## 2026-09-04 大法师罗曼斯'
+          if marker not in text:
+              with v.open('a', encoding='utf-8', newline='') as f:
+                  if text and not text.endswith(('\n', '\r')):
+                      f.write('\n')
+                  f.write('\n' + marker + '\n\n')
+                  f.write('- 新增 `cards/blue/大法师罗曼斯.txt`，PH01 #139，并使用 `@Custom` 动态牌框。\n')
+                  f.write('- 原画备份为 `tools/card-artwork/Grand_Magister_Rommath_HS.png`；裁图为 `cards/pictures/PH01/大法师罗曼斯.artcrop.jpg`，800×584 RGB JPEG，约 1.37:1。\n')
+                  f.write('- GitHub Actions 实际运行 `lint_card.py`、`tests.test_grand_magister_rommath` 与 DIY Python 全量测试；本记录不宣称本地 Forge 安装或客户端对局实测。\n')
+          Path('.github/workflows/temp-rommath-finalize.yml').unlink()
+      - name: Commit finalized source
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add forge-gui/res/languages/cardnames-zh-CN.txt custom/CARDS.md custom/VERIFICATION.md .github/workflows/temp-rommath-finalize.yml
+          git commit -m 'Finalize Grand Magister Rommath localization and verification'
+          git push origin diy
