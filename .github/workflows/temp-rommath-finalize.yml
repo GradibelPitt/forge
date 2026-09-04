@@ -22,6 +22,64 @@ jobs:
           python-version: '3.12'
       - name: Install test dependency
         run: python -m pip install pillow
+      - name: Download and crop Rommath artwork
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+          from PIL import Image
+          from io import BytesIO
+
+          urls = [
+              'https://art.hearthstonejson.com/v1/512x/RLK_803.jpg',
+              'https://d15f34w2p8l1cc.cloudfront.net/hearthstone/ccdb8721aa0b140ff36963010f54071abdb0cbe45dd942bc877e0fe4af2fe214.png',
+          ]
+          data = None
+          last_error = None
+          for url in urls:
+              try:
+                  req = Request(url, headers={'User-Agent': 'Mozilla/5.0 ForgeDIY/1.0'})
+                  with urlopen(req, timeout=30) as r:
+                      data = r.read()
+                  img = Image.open(BytesIO(data)).convert('RGB')
+                  # The HearthstoneJSON 512x endpoint is artwork-only. Reject obvious full-card renders.
+                  if img.width <= 0 or img.height <= 0:
+                      raise RuntimeError('invalid artwork dimensions')
+                  print(f'ART_SOURCE={url}')
+                  break
+              except Exception as exc:
+                  last_error = exc
+                  data = None
+          if data is None:
+              raise RuntimeError(f'Unable to download Rommath artwork: {last_error}')
+
+          backup = Path('custom/tools/card-artwork/Grand_Magister_Rommath_HS.jpg')
+          crop = Path('custom/cards/pictures/PH01/大法师罗曼斯.artcrop.jpg')
+          backup.parent.mkdir(parents=True, exist_ok=True)
+          crop.parent.mkdir(parents=True, exist_ok=True)
+
+          img = Image.open(BytesIO(data)).convert('RGB')
+          img.save(backup, 'JPEG', quality=95, subsampling=0)
+
+          ratio = 1.37
+          w, h = img.size
+          if w / h >= ratio:
+              ch = h
+              cw = round(h * ratio)
+              left = max(0, (w - cw) // 2)
+              top = 0
+          else:
+              cw = w
+              ch = round(w / ratio)
+              left = 0
+              # Center crop with a slight upward bias, per project art workflow.
+              top = max(0, round((h - ch) * 0.40))
+          art = img.crop((left, top, left + cw, top + ch))
+          art = art.resize((800, 584), Image.Resampling.LANCZOS)
+          art.save(crop, 'JPEG', quality=95, subsampling=0)
+          print(f'ART_BACKUP={backup} SIZE={img.size}')
+          print(f'ART_CROP={crop} SIZE={art.size} RATIO={art.width / art.height:.4f}')
+          PY
       - name: Add localization and authoritative docs
         run: |
           python - <<'PY'
@@ -30,11 +88,9 @@ jobs:
           zh = root / 'forge-gui/res/languages/cardnames-zh-CN.txt'
           line = '大法师罗曼斯|大法师罗曼斯|传奇生物～人类／法术师|当你施放大法师罗曼斯时，将你坟墓场中的每张瞬间牌和法术牌移回你手上。本回合中，你可以不支付这些牌的法术力费用来施放它们。'
           text = zh.read_text(encoding='utf-8')
-          if not any(x.startswith('大法师罗曼斯|') for x in text.splitlines()):
-              with zh.open('a', encoding='utf-8', newline='') as f:
-                  if text and not text.endswith(('\n', '\r')):
-                      f.write('\n')
-                  f.write(line + '\n')
+          lines = [x for x in text.splitlines() if not x.startswith('大法师罗曼斯|')]
+          lines.append(line)
+          zh.write_text('\n'.join(lines) + '\n', encoding='utf-8')
 
           cards = root / 'custom/CARDS.md'
           cards_text = cards.read_text(encoding='utf-8')
@@ -69,7 +125,7 @@ jobs:
                       f.write('\n')
                   f.write('\n' + marker + '\n\n')
                   f.write('- 新增 `cards/blue/大法师罗曼斯.txt`，PH01 #139，并使用 `@Custom` 动态牌框。\n')
-                  f.write('- 用户提供原画备份为 `tools/card-artwork/Grand_Magister_Rommath_HS.jpg`；裁图为 `cards/pictures/PH01/大法师罗曼斯.artcrop.jpg`，800×584 RGB JPEG，约 1.37:1。\n')
+                  f.write('- Hearthstone 罗曼斯原画备份为 `tools/card-artwork/Grand_Magister_Rommath_HS.jpg`；按图片工作流裁成 `cards/pictures/PH01/大法师罗曼斯.artcrop.jpg`，800×584 RGB JPEG，约 1.37:1。\n')
                   f.write('- GitHub Actions 实际运行 `lint_card.py`、`tests.test_grand_magister_rommath` 与 DIY Python 全量测试；本记录不宣称本地 Forge 安装或客户端对局实测。\n')
           Path('.github/workflows/temp-rommath-finalize.yml').unlink()
           PY
@@ -78,6 +134,8 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add forge-gui/res/languages/cardnames-zh-CN.txt custom/CARDS.md custom/VERIFICATION.md
+          git add custom/tools/card-artwork/Grand_Magister_Rommath_HS.jpg custom/cards/pictures/PH01/大法师罗曼斯.artcrop.jpg
           git add -u .github/workflows/temp-rommath-finalize.yml
-          git commit -m 'Finalize Grand Magister Rommath localization and verification'
+          git diff --cached --check
+          git commit -m 'Finalize Grand Magister Rommath artwork and verification'
           git push origin diy
