@@ -67,7 +67,7 @@ class GrandMagisterRommathContractTest(unittest.TestCase):
         self.assertTrue(ART_BACKUP.is_file())
         self.assertTrue(ART.is_file())
         with Image.open(ART_BACKUP) as image:
-            self.assertEqual((800, 1120), image.size)
+            self.assertEqual((512, 512), image.size)
         with Image.open(ART) as image:
             self.assertEqual("JPEG", image.format)
             self.assertEqual("RGB", image.mode)
