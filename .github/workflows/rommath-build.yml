@@ -38,6 +38,17 @@ jobs:
         shell: pwsh
         run: python .github/scripts/build_rommath.py
 
+      - name: Export original art and crop preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: rommath-art-preview
+          if-no-files-found: error
+          retention-days: 3
+          path: |
+            custom/tools/card-artwork/RLK_803_art.jpg
+            custom/tools/card-artwork/RLK_803_art.source.txt
+            custom/cards/pictures/PH01/大法师罗曼斯.artcrop.jpg
+
       - name: Lint Grand Magister Rommath
         shell: pwsh
         working-directory: custom
@@ -95,7 +106,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git rm -- .github/workflows/rommath-build.yml .github/scripts/build_rommath.py
+          git rm -- `
+            .github/workflows/rommath-build.yml `
+            .github/scripts/build_rommath.py `
+            .github/rommath-art-link.md
           git add -- `
             "custom/cards/blue/大法师罗曼斯.txt" `
             "custom/tests/test_grand_magister_rommath.py" `
