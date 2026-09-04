@@ -10,3 +10,4 @@ SVar:DBCleanupReturned:DB$ Cleanup | ClearRemembered$ True
 DeckHas:Ability$Graveyard
 DeckHints:Type$Instant|Sorcery
 Oracle:当你施放CARDNAME时，将你坟墓场中的每张瞬间牌和法术牌移回你手上。本回合中，你可以不支付这些牌的法术力费用来施放它们。
+# Remote finalize trigger 2026-09-04
