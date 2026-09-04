@@ -17,6 +17,9 @@ jobs:
     if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: windows-latest
     timeout-minutes: 45
+    env:
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
 
     steps:
       - name: Check out staging branch
@@ -94,7 +97,7 @@ jobs:
 
           - Card script: `custom/cards/blue/大法师罗曼斯.txt`.
           - Registration/localization: PH01 #139 with `@Custom`; full four-field `cardnames-zh-CN.txt` entry.
-          - Art: the square Grand Magister Rommath full-art asset was discovered through hswiki.gg's MediaWiki API, preserved under `tools/card-artwork/`, then deterministically cropped to an RGB JPEG at approximately 1.37:1 under `cards/pictures/PH01/`.
+          - Art: the high-resolution Grand Magister Rommath full-art asset was obtained from hswiki.gg, preserved under `tools/card-artwork/`, then deterministically cropped to an RGB JPEG at approximately 1.37:1 under `cards/pictures/PH01/`.
           - Validation run on GitHub `windows-latest`: targeted `lint_card.py`, `tests.test_grand_magister_rommath`, full DIY Python discovery suite, `install_to_forge.ps1`, and source/deployed crop SHA-256 comparison all passed before this record was written.
           - State boundary: source validation and isolated-profile deployment are verified; interactive desktop rendering and live-match behavior remain a separate client acceptance step.
           "@
