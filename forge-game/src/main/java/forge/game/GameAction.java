@@ -1640,6 +1640,7 @@ public class GameAction {
                     }
                 }
 
+                checkAgainCard |= stateBasedAction_Mystery(c, sacrificeList);
                 checkAgainCard |= stateBasedAction_Saga(c, sacrificeList);
                 checkAgainCard |= stateBasedAction_Battle(c, noRegCreats);
                 checkAgainCard |= stateBasedAction_Role(c, unAttachList);
@@ -1800,6 +1801,21 @@ public class GameAction {
         game.runSBACheckedCommands();
 
         return performedSBA;
+    }
+
+    private boolean stateBasedAction_Mystery(final Card c,
+            final CardCollection sacrificeList) {
+        if (!c.isMystery() || c.isFaceDown()) {
+            return false;
+        }
+        if (game.getStack().hasSourceOnStack(c, sa -> sa.getTrigger() != null
+                && sa.getTrigger().getMode() == TriggerType.TurnFaceUp
+                && sa.getTrigger().isKeyword(Keyword.MYSTERY))) {
+            return false;
+        }
+
+        sacrificeList.add(c);
+        return true;
     }
 
     private boolean stateBasedAction_Saga(Card c, CardCollection sacrificeList) {

@@ -21,6 +21,7 @@ import forge.card.mana.ManaCost;
 import forge.game.card.Card;
 import forge.game.card.CardState;
 import forge.game.cost.Cost;
+import forge.game.player.Player;
 
 /**
  * <p>
@@ -62,8 +63,33 @@ public abstract class AbilityStatic extends Ability implements Cloneable {
         if (this.isTurnFaceUp() && !c.canBeTurnedFaceUp()) {
             return false;
         }
+        if (!this.getRestrictions().canPlay(c, this)) {
+            return false;
+        }
 
-        return this.getRestrictions().canPlay(c, this);
+        return !this.isMysteryUp() || hasLegalMysteryEffectTargets(c);
+    }
+
+    private boolean hasLegalMysteryEffectTargets(final Card source) {
+        final SpellAbility mysteryEffect = getAdditionalAbility("MysteryEffect");
+        if (mysteryEffect == null) {
+            return false;
+        }
+
+        final Player activator = getActivatingPlayer() == null
+                ? source.getController() : getActivatingPlayer();
+        mysteryEffect.setActivatingPlayer(activator);
+        SpellAbility current = mysteryEffect;
+        do {
+            current.setTargetingPlayer(activator);
+            if (current.usesTargeting()
+                    && current.getTargetRestrictions().getNumCandidates(current)
+                    < current.getMinTargets()) {
+                return false;
+            }
+            current = current.getSubAbility();
+        } while (current != null);
+        return true;
     }
 
     /** {@inheritDoc} */

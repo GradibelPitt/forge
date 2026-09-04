@@ -6,7 +6,7 @@
 - **Front-face contract:** 每张奥秘的真实卡面必须写成 `Types:Enchantment Mystery` 并具有 `K:Mystery`。在其操控者手中时，牌名、费用、插画和规则文字均正常显示；展示手牌的效应也会向被展示者显示这些真实信息。奥秘本身始终是永久物牌，因此可被“从手牌将一张永久物牌放进战场”一类效应正常选择。
 - **Casting and entry:** 奥秘不能使用正面永久物咒语施放。`K:Mystery` 统一生成 `{1}{U}{U}` 的牌面朝下施放方式；其进入堆叠后只公开为蓝色的 `蓝色奥秘`、`结界～奥秘`，且没有规则异能。无论从手牌、牌库、坟墓场、放逐区或其他路径进入战场，只要真实卡面是奥秘，通用换区路径都会令其牌面朝下进入。
 - **Shared face:** 共用背面映射到 `TOKEN_HS` #8 的真实卡牌 `蓝色奥秘`：费用 `{1}{U}{U}`、蓝色、`结界～奥秘`，Oracle 只有 `你的对手隐藏了一些秘密。`；统一图片键为 `c:蓝色奥秘|TOKEN_HS|[8]`，使用 `cards/pictures/TOKEN_HS/蓝色奥秘.artcrop.jpg` 动态绘制完整卡面。其他奥秘在战场的牌框中对所有玩家始终显示该卡面，但底层保留各自真实正面的全部信息与 `MysteryEffect`；操控者可通过悬停／详情预览查看真实正面，对手不能查看真实正面。
-- **Reveal and resolution:** 牌面朝下的奥秘具有费用为 `{0}` 的原生 `TurnFaceUp` 特殊动作，并以 `OpponentTurn$ True` 限制为只能在对手回合使用。翻回正面会产生关键词自带的 `TurnFaceUp` 触发：先牺牲该结界，再结算该牌的 `MysteryEffect`。因此效果使用堆叠并可被响应，而正面不会作为永久物留在战场。
+- **Reveal and resolution:** 牌面朝下的奥秘具有费用为 `{0}` 的原生 `TurnFaceUp` 特殊动作，并以 `OpponentTurn$ True` 限制为只能在对手回合使用。若 `MysteryEffect` 任一需要至少一个目标的能力节点没有足够合法候选，该特殊动作不可使用；完全不使用目标或目标数下限为零的奥秘不受此限制。翻回正面会产生关键词自带的 `TurnFaceUp` 触发，并先让 `MysteryEffect` 正常使用堆叠、接受响应和结算。该触发仍在堆叠或等待进入堆叠时，正面奥秘保留在战场；触发结算、因目标失效而失效、或被反击并离开堆叠后，下一次状态检查才令它牺牲。这样效果可安全读取其来源，同时正面不会在触发处理完毕后留场。
 - **DSL:** 每张牌必须提供 `SVar:MysteryEffect:DB$ ...`；该 SVar 必须以 `DB$` 开头，目标、选择与后续子异能均按普通 Forge AbilityFactory 语法书写。例如：
 
 ```text
@@ -18,8 +18,8 @@ SVar:MysteryEffect:DB$ Counter | TargetType$ Spell | ValidTgts$ Instant,Sorcery 
 Oracle:Counter target instant or sorcery spell.
 ```
 
-- **Java implementation:** `Keyword` 注册；`CardFactoryUtil` 生成隐藏施放、翻面动作、牺牲触发和共用背面；`SpellAbilityRestriction` 禁止正面施放；`GameAction` 在所有进战场路径统一准备背面；`Card` 与 `SetStateEffect` 负责身份、统一图片键和翻面日志；桌面端 `CardPanel`／`CachedCardImage` 固定使用牌面朝下图片键绘制战场牌框，悬停详情仍沿用操控者可查看正面的既有权限。
-- **Tests:** `MysteryTest` 覆盖手牌真实卡面与永久物资格、正面施放禁令、共用施放费用和背面特征、任意进战场自动背面、双方可见性、对手回合限制，以及“牺牲后结算奥秘效果”的触发结构。
+- **Java implementation:** `Keyword` 注册；`CardFactoryUtil` 生成隐藏施放、翻面动作、目标预检所用的 `MysteryEffect` 副本、实际效果触发和共用背面；`AbilityStatic` 在翻面可用性检查中验证全部强制目标候选；`SpellAbilityRestriction` 禁止正面施放；`GameAction` 在所有进战场路径统一准备背面，并在奥秘翻面触发离开堆叠后的状态检查中令其退场；`Card` 与 `SetStateEffect` 负责身份、统一图片键和翻面日志；桌面端 `CardPanel`／`CachedCardImage` 固定使用牌面朝下图片键绘制战场牌框，悬停详情仍沿用操控者可查看正面的既有权限。
+- **Tests:** `MysteryTest` 覆盖手牌真实卡面与永久物资格、正面施放禁令、共用施放费用和背面特征、任意进战场自动背面、双方可见性、对手回合限制、无合法强制目标时禁止翻面、无目标效果仍可翻面，以及“效果在堆叠时留场、触发离开堆叠后退场”的顺序。
 
 ## Quest（任务牌）
 

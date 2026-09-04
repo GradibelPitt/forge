@@ -144,7 +144,12 @@ public class CardFactoryUtil {
                 + " | PresentDefined$ Self | IsPresent$ Card.Self+faceDown"
                 + " | MysteryUp$ True | Mode$ TurnFaceUp"
                 + " | SpellDescription$ Turn this Mystery face up. Activate only during an opponent's turn.";
-        return AbilityFactory.getAbility(ability, cardState);
+        final SpellAbility reveal = AbilityFactory.getAbility(ability, cardState);
+        if (cardState.hasSVar("MysteryEffect")) {
+            reveal.setAdditionalAbility("MysteryEffect",
+                    AbilityFactory.getAbility(cardState.getSVar("MysteryEffect"), cardState));
+        }
+        return reveal;
     }
 
     public static SpellAbility abilityUnlockRoom(CardState cardState) {
@@ -625,15 +630,11 @@ public class CardFactoryUtil {
             }
             mysteryEffect.setIntrinsic(intrinsic);
 
-            final SpellAbility sacrifice = AbilityFactory.getAbility("DB$ Sacrifice | Defined$ Self", card);
-            sacrifice.setIntrinsic(intrinsic);
-            sacrifice.setSubAbility((AbilitySub) mysteryEffect);
-
             final String triggerDefinition = "Mode$ TurnFaceUp | ValidCard$ Card.Self"
                     + " | TriggerZones$ Battlefield | Secondary$ True"
-                    + " | TriggerDescription$ When CARDNAME is turned face up, sacrifice it, then resolve its mystery effect.";
+                    + " | TriggerDescription$ When CARDNAME is turned face up, resolve its mystery effect.";
             final Trigger revealTrigger = TriggerHandler.parseTrigger(triggerDefinition, card, intrinsic);
-            revealTrigger.setOverridingAbility(sacrifice);
+            revealTrigger.setOverridingAbility(mysteryEffect);
             inst.addTrigger(revealTrigger);
         } else if (keyword.startsWith("Afflict")) {
             final String[] k = keyword.split(":");

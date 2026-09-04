@@ -18,6 +18,7 @@ import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.trigger.Trigger;
 import forge.game.trigger.TriggerType;
+import forge.game.trigger.WrappedAbility;
 import forge.game.zone.ZoneType;
 import forge.item.PaperCard;
 import forge.util.Lang;
@@ -147,7 +148,45 @@ public class MysteryTest {
     }
 
     @Test
-    public void revealingCreatesASacrificeThenMysteryEffectTrigger() {
+    public void mysteryCannotRevealWithoutALegalMysteryEffectTarget() {
+        final Fixture fixture = fixture();
+        final Card mystery = mystery(fixture);
+        fixture.controller.getZone(ZoneType.Hand).add(mystery);
+        fixture.game.getAction().moveToPlay(mystery, null, null);
+
+        final SpellAbility reveal = mystery.getSpellAbilities().stream()
+                .filter(SpellAbility::isMysteryUp)
+                .findFirst()
+                .orElseThrow();
+        reveal.setActivatingPlayer(fixture.controller);
+
+        Assert.assertFalse(reveal.canPlay());
+
+        fixture.game.getStack().add(instantSpell(fixture));
+
+        Assert.assertTrue(reveal.canPlay());
+    }
+
+    @Test
+    public void targetlessMysteryCanRevealWithoutAStackTarget() {
+        final Fixture fixture = fixture();
+        final Card mystery = mystery(fixture,
+                "DB$ Draw | NumCards$ 1 | SpellDescription$ Draw a card.",
+                "Draw a card.");
+        fixture.controller.getZone(ZoneType.Hand).add(mystery);
+        fixture.game.getAction().moveToPlay(mystery, null, null);
+
+        final SpellAbility reveal = mystery.getSpellAbilities().stream()
+                .filter(SpellAbility::isMysteryUp)
+                .findFirst()
+                .orElseThrow();
+        reveal.setActivatingPlayer(fixture.controller);
+
+        Assert.assertTrue(reveal.canPlay());
+    }
+
+    @Test
+    public void revealingCreatesTheMysteryEffectWithoutAnEarlySacrifice() {
         final Fixture fixture = fixture();
         final Card mystery = mystery(fixture);
 
@@ -157,32 +196,90 @@ public class MysteryTest {
                         && trigger.getKeyword().getKeyword() == Keyword.MYSTERY)
                 .findFirst()
                 .orElseThrow();
-        final SpellAbility sacrifice = revealTrigger.getOverridingAbility();
+        final SpellAbility mysteryEffect = revealTrigger.getOverridingAbility();
 
-        Assert.assertEquals(sacrifice.getApi(), ApiType.Sacrifice);
-        Assert.assertNotNull(sacrifice.getSubAbility());
-        Assert.assertEquals(sacrifice.getSubAbility().getApi(), ApiType.Counter);
-        Assert.assertNotNull(sacrifice.getSubAbility().getTargetRestrictions());
-        Assert.assertEquals(sacrifice.getSubAbility().getTargetRestrictions().getValidTgts(),
+        Assert.assertEquals(mysteryEffect.getApi(), ApiType.Counter);
+        Assert.assertNotNull(mysteryEffect.getTargetRestrictions());
+        Assert.assertEquals(mysteryEffect.getTargetRestrictions().getValidTgts(),
                 new String[] { "Instant", "Sorcery" });
     }
 
+    @Test
+    public void revealedMysteryLeavesOnlyAfterItsRevealTriggerFinishes() {
+        final Fixture fixture = fixture();
+        final Card mystery = mystery(fixture);
+        fixture.controller.getZone(ZoneType.Hand).add(mystery);
+        fixture.game.getAction().moveToPlay(mystery, null, null);
+        mystery.forceTurnFaceUp();
+
+        final Trigger revealTrigger = mystery.getTriggers().stream()
+                .filter(trigger -> trigger.getMode() == TriggerType.TurnFaceUp)
+                .filter(trigger -> trigger.getKeyword() != null
+                        && trigger.getKeyword().getKeyword() == Keyword.MYSTERY)
+                .findFirst()
+                .orElseThrow();
+        final SpellAbility mysteryEffect = revealTrigger.ensureAbility();
+        mysteryEffect.setActivatingPlayer(fixture.controller);
+        final WrappedAbility pendingReveal = new WrappedAbility(revealTrigger,
+                mysteryEffect, null);
+        pendingReveal.setActivatingPlayer(fixture.controller);
+
+        fixture.game.getStack().addSimultaneousStackEntry(pendingReveal);
+        fixture.game.getAction().checkStateEffects(false);
+
+        Assert.assertTrue(mystery.isInPlay());
+
+        fixture.game.getStack().clearSimultaneousStack();
+        fixture.game.getAction().checkStateEffects(false);
+
+        Assert.assertFalse(mystery.isInPlay());
+        Assert.assertTrue(fixture.controller.getZone(ZoneType.Graveyard)
+                .contains(mystery));
+    }
+
     private static Card mystery(final Fixture fixture) {
+        return mystery(fixture,
+                "DB$ Counter | TargetType$ Spell | ValidTgts$ Instant,Sorcery"
+                        + " | TgtPrompt$ Select target instant or sorcery spell"
+                        + " | SpellDescription$ Counter target instant or sorcery spell.",
+                "Counter target instant or sorcery spell.");
+    }
+
+    private static Card mystery(final Fixture fixture, final String effect,
+            final String oracle) {
         final CardRules rules = CardRules.fromScript(List.of(
                 "Name:Test Counterspell Mystery",
                 "ManaCost:2 U",
                 "Types:Enchantment Mystery",
                 "K:Mystery",
-                "SVar:MysteryEffect:DB$ Counter | TargetType$ Spell | ValidTgts$ Instant,Sorcery"
-                        + " | TgtPrompt$ Select target instant or sorcery spell"
-                        + " | SpellDescription$ Counter target instant or sorcery spell.",
-                "Oracle:Counter target instant or sorcery spell."
+                "SVar:MysteryEffect:" + effect,
+                "Oracle:" + oracle
         ));
         final Card card = CardFactory.getCard(
                 new PaperCard(rules, "TST", CardRarity.Uncommon),
                 fixture.controller, fixture.game);
         card.setController(fixture.controller, fixture.game.getNextTimestamp());
         return card;
+    }
+
+    private static SpellAbility instantSpell(final Fixture fixture) {
+        final CardRules rules = CardRules.fromScript(List.of(
+                "Name:Test Instant",
+                "ManaCost:U",
+                "Types:Instant",
+                "A:SP$ Draw | NumCards$ 1 | SpellDescription$ Draw a card.",
+                "Oracle:Draw a card."
+        ));
+        final Card card = CardFactory.getCard(
+                new PaperCard(rules, "TST", CardRarity.Common),
+                fixture.opponent, fixture.game);
+        card.setController(fixture.opponent, fixture.game.getNextTimestamp());
+        final SpellAbility spell = card.getSpellAbilities().stream()
+                .filter(SpellAbility::isSpell)
+                .findFirst()
+                .orElseThrow();
+        spell.setActivatingPlayer(fixture.opponent);
+        return spell;
     }
 
     private static Fixture fixture() {
