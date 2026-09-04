@@ -4243,7 +4243,7 @@ public class CardFactoryUtil {
         faceDown.setBasePower(0);
         faceDown.setBaseToughness(0);
         faceDown.setIntrinsicKeywords(List.of(), false);
-        faceDown.setImageKey(ImageKeys.getTokenKey(ImageKeys.MYSTERY_IMAGE));
+        faceDown.setImageKey(ImageKeys.MYSTERY_CARD_IMAGE_KEY);
 
         c.addFaceupCommand(new GameCommand() {
             private static final long serialVersionUID = -7370119027084538480L;

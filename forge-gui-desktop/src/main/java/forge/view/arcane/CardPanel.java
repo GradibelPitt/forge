@@ -258,7 +258,11 @@ public class CardPanel extends SkinnedPanel implements CardContainer, IDisposabl
         final float screenScale = GuiBase.getInterface().getScreenScale();
         int imageWidth = Math.round(imagePanel.getWidth() * screenScale);
         int imageHeight = Math.round(imagePanel.getHeight() * screenScale);
-        final String imageKey = card.getCurrentState().getImageKey(matchUI.getLocalPlayers());
+        final String visibleImageKey = card.getCurrentState().getImageKey(matchUI.getLocalPlayers());
+        // Keep the battlefield card itself face down. Authorized players can inspect the
+        // original face through the detail pane without replacing this panel image.
+        final String imageKey = CardImageRefreshPolicy.selectImageKey(
+                card.isFaceDown(), visibleImageKey, card.getFacedownImageKey());
         final long imageCacheGeneration = ImageCache.getCacheGeneration();
         if (!CardImageRefreshPolicy.shouldRefresh(lastImageKey, lastImageWidth, lastImageHeight,
                 lastImageCacheGeneration, imageKey, imageWidth, imageHeight, imageCacheGeneration,
@@ -270,7 +274,7 @@ public class CardPanel extends SkinnedPanel implements CardContainer, IDisposabl
         lastImageWidth = imageWidth;
         lastImageHeight = imageHeight;
         lastImageCacheGeneration = imageCacheGeneration;
-        cachedImage = new CachedCardImage(card, matchUI.getLocalPlayers(), imageWidth, imageHeight) {
+        cachedImage = new CachedCardImage(card, matchUI.getLocalPlayers(), imageWidth, imageHeight, imageKey) {
             @Override
             public void onImageFetched() {
                 markImageResolved();

@@ -1,0 +1,4 @@
+Name:蓝色奥秘
+ManaCost:1 U U
+Types:Enchantment Mystery
+Oracle:你的对手隐藏了一些秘密。

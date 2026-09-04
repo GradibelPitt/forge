@@ -5,6 +5,18 @@ import org.testng.annotations.Test;
 
 public class CardPanelImageRefreshTest {
     @Test
+    public void faceDownBattlefieldCardAlwaysUsesItsBackImage() {
+        Assert.assertEquals(CardImageRefreshPolicy.selectImageKey(
+                true, "front-image", "mystery-back"), "mystery-back");
+    }
+
+    @Test
+    public void faceUpBattlefieldCardUsesItsVisibleCurrentImage() {
+        Assert.assertEquals(CardImageRefreshPolicy.selectImageKey(
+                false, "front-image", "mystery-back"), "front-image");
+    }
+
+    @Test
     public void identicalResolvedImageRequestIsSkipped() {
         Assert.assertFalse(CardImageRefreshPolicy.shouldRefresh(
                 "card-key", 200, 280, 4,

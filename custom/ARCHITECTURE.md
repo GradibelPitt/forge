@@ -34,7 +34,7 @@
 
 - `forge-core/src/main/java/forge/deck/DeckFormat.java`：构筑合法性和 `IgnoreDeckLimits`。
 - `forge-game/src/main/java/forge/game/keyword/Keyword.java`：关键词注册。
-- `forge-game/src/main/java/forge/game/card/CardFactoryUtil.java`、`card/Card.java`、`spellability/SpellAbilityRestriction.java`、`GameAction.java` 与 `ability/effects/SetStateEffect.java`：奥秘的 `{1}{U}{U}` 隐藏施放、共用 `蓝色奥秘` 背面、正面施放禁令、任意进战场自动背面、仅对手回合免费翻面，以及翻面后牺牲并结算 `MysteryEffect`。`forge-core/.../ImageKeys.java` 和 `forge-gui/res/lists/TypeLists.txt` 分别登记共用 `t:mystery` 图片键与 `Mystery` 结界子类别。
+- `forge-game/src/main/java/forge/game/card/CardFactoryUtil.java`、`card/Card.java`、`spellability/SpellAbilityRestriction.java`、`GameAction.java` 与 `ability/effects/SetStateEffect.java`：奥秘的 `{1}{U}{U}` 隐藏施放、共用 `蓝色奥秘` 背面、正面施放禁令、任意进战场自动背面、仅对手回合免费翻面，以及翻面后牺牲并结算 `MysteryEffect`。`蓝色奥秘` 是 `TOKEN_HS` #1 的真实卡牌；`forge-core/.../ImageKeys.java` 将其他奥秘的背面统一映射为其卡牌键 `c:蓝色奥秘|TOKEN_HS|1`，并由 `cards/pictures/TOKEN_HS/蓝色奥秘.artcrop.jpg` 动态绘制完整卡面。`forge-gui-desktop/.../CardPanel.java` 与 `forge/CachedCardImage.java` 保证牌面朝下时战场牌框固定使用这一背面键，而操控者悬停详情仍可读取保留全部效果的真实正面；`forge-gui/res/lists/TypeLists.txt` 登记 `Mystery` 结界子类别。
 - `forge-game/src/main/java/forge/game/keyword/Boarding.java`：登船阈值、受伤角色统计与即时入场。
 - `forge-game/src/main/java/forge/game/GameAction.java`：伤害批次及区域移动与 Boarding 的集成点；也在任何起手／调度手牌产生前放逐 `GameRule` 牌，并在通用换区路径阻止这类牌离开放逐区。
 - `forge-game/src/main/java/forge/game/mulligan/LondonMulligan.java`：伦敦调度以起始手牌数量而非手牌上限为基准，每次把当前手牌洗回并重新抓满起始数量；只在玩家最终保留时，才按累计计数选择牌并依选择顺序置于牌库底，且不会允许下一次调度所需沉底数量超过所抓手牌。

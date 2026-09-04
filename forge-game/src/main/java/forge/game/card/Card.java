@@ -6639,7 +6639,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         }
 
         if (isMystery()) {
-            return ImageKeys.getTokenKey(ImageKeys.MYSTERY_IMAGE);
+            return ImageKeys.MYSTERY_CARD_IMAGE_KEY;
         }
 
         if (isManifested()) {

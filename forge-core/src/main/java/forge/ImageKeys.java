@@ -25,7 +25,10 @@ public final class ImageKeys {
     public static final String MORPH_IMAGE           = "morph";
     public static final String MANIFEST_IMAGE        = "manifest";
     public static final String CLOAKED_IMAGE         = "cloaked";
-    public static final String MYSTERY_IMAGE          = "mystery";
+    public static final String MYSTERY_CARD_NAME      = "蓝色奥秘";
+    public static final String MYSTERY_CARD_SET       = "TOKEN_HS";
+    public static final String MYSTERY_CARD_IMAGE_KEY =
+            CARD_PREFIX + MYSTERY_CARD_NAME + "|" + MYSTERY_CARD_SET + "|1";
     public static final String FORETELL_IMAGE        = "foretell";
     public static final String BLESSING_IMAGE        = "blessing";
     public static final String INITIATIVE_IMAGE      = "initiative";

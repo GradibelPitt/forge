@@ -69,8 +69,8 @@ public class MysteryTest {
         Assert.assertTrue(mystery.getType().hasSubtype("Mystery"));
         Assert.assertTrue(mystery.getColor().hasBlue());
         Assert.assertEquals(mystery.getOracleText(), PUBLIC_ORACLE);
-        Assert.assertEquals(mystery.getFacedownImageKey(),
-                ImageKeys.getTokenKey(ImageKeys.MYSTERY_IMAGE));
+        Assert.assertEquals(ImageKeys.MYSTERY_CARD_IMAGE_KEY, "c:蓝色奥秘|TOKEN_HS|1");
+        Assert.assertEquals(mystery.getFacedownImageKey(), ImageKeys.MYSTERY_CARD_IMAGE_KEY);
 
         mystery.forceTurnFaceUp();
         Assert.assertEquals(mystery.getName(), "Test Counterspell Mystery");
@@ -91,6 +91,8 @@ public class MysteryTest {
         Assert.assertEquals(moved.getName(), PUBLIC_NAME);
         Assert.assertTrue(moved.isEnchantment());
         Assert.assertTrue(moved.getType().hasSubtype("Mystery"));
+        Assert.assertEquals(moved.getView().getCurrentState().getImageKey(
+                List.of(fixture.controller.getView())), ImageKeys.MYSTERY_CARD_IMAGE_KEY);
         Assert.assertTrue(moved.getView().canFaceDownBeShownTo(fixture.controller.getView()));
         Assert.assertFalse(moved.getView().canFaceDownBeShownTo(fixture.opponent.getView()));
     }
