@@ -76,8 +76,10 @@ class KazakusPotionsNativeDemonContractTest(unittest.TestCase):
         self.assertNotIn("c_5_5_demon", text)
         self.assertNotIn("b_5_5_demon_flying", text)
 
-    def test_no_custom_demon_token_dependency_is_restored(self):
-        self.assertFalse((ROOT / "tokens" / "c_2_2_demon.txt").exists())
+    def test_recovery_adds_no_new_five_five_custom_demon_token(self):
+        # c_2_2_demon.txt already exists in the project and may serve unrelated cards.
+        # This recovery must leave it untouched and must not add the previously proposed
+        # c_5_5_demon dependency.
         self.assertFalse((ROOT / "tokens" / "c_5_5_demon.txt").exists())
 
     def test_registration_localization_index_and_art_contract(self):
