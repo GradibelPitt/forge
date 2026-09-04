@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import json
 from pathlib import Path
+from typing import Any
 
 import requests
 from PIL import Image
@@ -19,6 +20,13 @@ ART_BACKUP_PATH = CUSTOM / "tools" / "card-artwork" / "RLK_803_art.jpg"
 ART_SOURCE_PATH = CUSTOM / "tools" / "card-artwork" / "RLK_803_art.source.txt"
 ART_CROP_PATH = CUSTOM / "cards" / "pictures" / "PH01" / f"{CARD_NAME}.artcrop.jpg"
 
+WIKI_API = "https://hearthstone.wiki.gg/api.php"
+WIKI_PAGE = "https://hearthstone.wiki.gg/wiki/Grand_Magister_Rommath"
+HEADERS = {
+    "User-Agent": "ForgeDIY/1.0 (personal noncommercial custom-card project; GitHub Actions)",
+    "Referer": WIKI_PAGE,
+}
+
 ORACLE_ZH = (
     "当你施放大法师罗曼斯时，将你坟墓场中的每张瞬间牌和法术牌移回你手上。"
     "本回合中，你可以不支付这些牌的法术力费用来施放它们。"
@@ -29,7 +37,7 @@ ManaCost:5 U U U U
 Types:Legendary Creature Human Wizard
 PT:5/7
 T:Mode$ SpellCast | ValidCard$ Card.Self | TriggerZones$ Stack | Execute$ TrigReturnSpells | TriggerDescription$ {ORACLE_ZH}
-SVar:TrigReturnSpells:DB$ ChangeZoneAll | Origin$ Graveyard | Destination$ Hand | ChangeType$ Instant.YouOwn,Sorcery.YouOwn | RememberChanged$ True | SubAbility$ DBFreeCastEffect
+SVar:TrigReturnSpells:DB$ ChangeZoneAll | Defined$ You | Origin$ Graveyard | Destination$ Hand | ChangeType$ Instant.YouOwn,Sorcery.YouOwn | RememberChanged$ True | SubAbility$ DBFreeCastEffect
 SVar:DBFreeCastEffect:DB$ Effect | RememberObjects$ Remembered | StaticAbilities$ FreeCast | ForgetOnMoved$ Hand | Duration$ UntilEndOfTurn | SubAbility$ DBCleanupReturned
 SVar:FreeCast:Mode$ Continuous | Affected$ Instant.IsRemembered,Sorcery.IsRemembered | MayPlay$ True | MayPlayWithoutManaCost$ True | AffectedZone$ Hand | Description$ 本回合中，你可以不支付这些牌的法术力费用来施放它们。
 SVar:DBCleanupReturned:DB$ Cleanup | ClearRemembered$ True
@@ -62,7 +70,7 @@ class GrandMagisterRommathContractTest(unittest.TestCase):
         self.assertIn("Types:Legendary Creature Human Wizard", text)
         self.assertIn("PT:5/7", text)
 
-    def test_cast_trigger_returns_all_spells_and_grants_free_cast(self):
+    def test_cast_trigger_returns_only_your_spells_and_grants_free_cast(self):
         text = CARD.read_text(encoding="utf-8")
         self.assertIn(
             "T:Mode$ SpellCast | ValidCard$ Card.Self | TriggerZones$ Stack | "
@@ -70,9 +78,10 @@ class GrandMagisterRommathContractTest(unittest.TestCase):
             text,
         )
         self.assertIn(
-            "SVar:TrigReturnSpells:DB$ ChangeZoneAll | Origin$ Graveyard | "
-            "Destination$ Hand | ChangeType$ Instant.YouOwn,Sorcery.YouOwn | "
-            "RememberChanged$ True | SubAbility$ DBFreeCastEffect",
+            "SVar:TrigReturnSpells:DB$ ChangeZoneAll | Defined$ You | "
+            "Origin$ Graveyard | Destination$ Hand | "
+            "ChangeType$ Instant.YouOwn,Sorcery.YouOwn | RememberChanged$ True | "
+            "SubAbility$ DBFreeCastEffect",
             text,
         )
         self.assertIn(
@@ -84,8 +93,7 @@ class GrandMagisterRommathContractTest(unittest.TestCase):
         self.assertIn(
             "SVar:FreeCast:Mode$ Continuous | "
             "Affected$ Instant.IsRemembered,Sorcery.IsRemembered | "
-            "MayPlay$ True | MayPlayWithoutManaCost$ True | "
-            "AffectedZone$ Hand",
+            "MayPlay$ True | MayPlayWithoutManaCost$ True | AffectedZone$ Hand",
             text,
         )
         self.assertIn(
@@ -105,7 +113,9 @@ class GrandMagisterRommathContractTest(unittest.TestCase):
 
         self.assertTrue(ART_BACKUP.is_file())
         self.assertTrue(ART_SOURCE.is_file())
-        self.assertIn("hearthstone.wiki.gg", ART_SOURCE.read_text(encoding="utf-8"))
+        source_text = ART_SOURCE.read_text(encoding="utf-8")
+        self.assertIn("hearthstone.wiki.gg", source_text)
+        self.assertIn("Grand_Magister_Rommath", source_text)
         self.assertTrue(ART.is_file())
         with Image.open(ART_BACKUP) as image:
             self.assertGreaterEqual(image.width, 500)
@@ -159,49 +169,192 @@ def update_cards_doc() -> None:
     CARDS_DOC_PATH.write_text(text, encoding="utf-8", newline="\n")
 
 
-def get_hswiki_art() -> tuple[bytes, str]:
-    headers = {
-        "User-Agent": "ForgeDIY/1.0 (personal noncommercial custom-card project; GitHub Actions)"
-    }
-    api_url = (
-        "https://hearthstone.wiki.gg/api.php?action=query&format=json&prop=imageinfo&"
-        "iiprop=url%7Csize&titles=File%3ARLK_803_art.jpg"
-    )
-    candidates: list[str] = []
-    try:
-        response = requests.get(api_url, headers=headers, timeout=30)
-        response.raise_for_status()
-        payload = response.json()
-        pages = payload.get("query", {}).get("pages", {})
-        for page in pages.values():
-            info = page.get("imageinfo") or []
-            if info and info[0].get("url"):
-                candidates.append(info[0]["url"])
-    except Exception as exc:
-        print(f"MediaWiki API lookup failed: {exc}")
+def api_get(params: dict[str, str]) -> dict[str, Any]:
+    response = requests.get(WIKI_API, params=params, headers=HEADERS, timeout=45)
+    response.raise_for_status()
+    payload = response.json()
+    if "error" in payload:
+        raise RuntimeError(f"MediaWiki API error: {payload['error']}")
+    return payload
 
-    candidates.extend(
-        [
-            "https://hearthstone.wiki.gg/images/f/ff/RLK_803_art.jpg",
-            "https://hearthstone.wiki.gg/wiki/Special:Redirect/file/RLK_803_art.jpg",
-        ]
-    )
 
-    errors: list[str] = []
-    for url in dict.fromkeys(candidates):
+def add_candidate(
+    candidates: dict[str, dict[str, Any]],
+    *,
+    title: str,
+    url: str | None,
+    width: int | None = None,
+    height: int | None = None,
+    mime: str | None = None,
+) -> None:
+    if not url:
+        return
+    existing = candidates.setdefault(
+        url,
+        {"title": title, "url": url, "width": width or 0, "height": height or 0, "mime": mime or ""},
+    )
+    existing["title"] = existing.get("title") or title
+    existing["width"] = max(int(existing.get("width") or 0), int(width or 0))
+    existing["height"] = max(int(existing.get("height") or 0), int(height or 0))
+    existing["mime"] = existing.get("mime") or mime or ""
+
+
+def collect_hswiki_candidates() -> list[dict[str, Any]]:
+    candidates: dict[str, dict[str, Any]] = {}
+
+    for prefix in ("RLK_803", "Grand Magister Rommath"):
         try:
-            response = requests.get(url, headers=headers, timeout=45)
+            payload = api_get(
+                {
+                    "action": "query",
+                    "format": "json",
+                    "list": "allimages",
+                    "aiprefix": prefix,
+                    "ailimit": "max",
+                    "aiprop": "url|size|mime",
+                }
+            )
+            for item in payload.get("query", {}).get("allimages", []):
+                add_candidate(
+                    candidates,
+                    title=item.get("name", ""),
+                    url=item.get("url"),
+                    width=item.get("width"),
+                    height=item.get("height"),
+                    mime=item.get("mime"),
+                )
+        except Exception as exc:
+            print(f"allimages lookup failed for {prefix!r}: {exc}")
+
+    try:
+        payload = api_get(
+            {
+                "action": "query",
+                "format": "json",
+                "redirects": "1",
+                "generator": "images",
+                "titles": "Grand Magister Rommath",
+                "gimlimit": "max",
+                "prop": "imageinfo",
+                "iiprop": "url|size|mime",
+            }
+        )
+        for page in payload.get("query", {}).get("pages", {}).values():
+            info = page.get("imageinfo") or []
+            if not info:
+                continue
+            item = info[0]
+            add_candidate(
+                candidates,
+                title=page.get("title", ""),
+                url=item.get("url"),
+                width=item.get("width"),
+                height=item.get("height"),
+                mime=item.get("mime"),
+            )
+    except Exception as exc:
+        print(f"page image generator lookup failed: {exc}")
+
+    try:
+        parsed = api_get(
+            {
+                "action": "parse",
+                "format": "json",
+                "page": "Grand Magister Rommath",
+                "prop": "images",
+                "redirects": "1",
+            }
+        )
+        names = parsed.get("parse", {}).get("images", [])
+        for start in range(0, len(names), 20):
+            titles = "|".join(f"File:{name}" for name in names[start : start + 20])
+            details = api_get(
+                {
+                    "action": "query",
+                    "format": "json",
+                    "titles": titles,
+                    "prop": "imageinfo",
+                    "iiprop": "url|size|mime",
+                }
+            )
+            for page in details.get("query", {}).get("pages", {}).values():
+                info = page.get("imageinfo") or []
+                if not info:
+                    continue
+                item = info[0]
+                add_candidate(
+                    candidates,
+                    title=page.get("title", ""),
+                    url=item.get("url"),
+                    width=item.get("width"),
+                    height=item.get("height"),
+                    mime=item.get("mime"),
+                )
+    except Exception as exc:
+        print(f"parse/images lookup failed: {exc}")
+
+    def score(item: dict[str, Any]) -> float:
+        title = str(item.get("title", "")).lower()
+        width = int(item.get("width") or 0)
+        height = int(item.get("height") or 0)
+        ratio = width / height if height else 0.0
+        value = 0.0
+        if "rommath" in title:
+            value += 80
+        if "rlk_803" in title:
+            value += 80
+        if "full art" in title or "full_art" in title:
+            value += 200
+        elif "art" in title:
+            value += 150
+        if 0.90 <= ratio <= 1.10:
+            value += 120
+        elif 0.75 <= ratio <= 1.25:
+            value += 60
+        value += min(width, height) / 100
+        for penalty in ("gold", "premium", "icon", "logo", "achievement", "mercenaries"):
+            if penalty in title:
+                value -= 300
+        return value
+
+    ranked = sorted(candidates.values(), key=score, reverse=True)
+    print("Discovered hswiki image candidates:")
+    for item in ranked[:30]:
+        print(
+            f"  score={score(item):.1f} size={item.get('width')}x{item.get('height')} "
+            f"title={item.get('title')} url={item.get('url')}"
+        )
+    return ranked
+
+
+def get_hswiki_art() -> tuple[bytes, str, str]:
+    errors: list[str] = []
+    for item in collect_hswiki_candidates():
+        title = str(item.get("title", ""))
+        url = str(item.get("url", ""))
+        if not url:
+            continue
+        try:
+            response = requests.get(url, headers=HEADERS, timeout=60)
             response.raise_for_status()
             content_type = response.headers.get("content-type", "").lower()
             if "image" not in content_type:
                 raise RuntimeError(f"unexpected content type {content_type!r}")
             with Image.open(io.BytesIO(response.content)) as image:
-                image.verify()
-            return response.content, url
+                image.load()
+                width, height = image.size
+            if width < 500 or height < 500:
+                raise RuntimeError(f"image is too small: {width}x{height}")
+            if not 0.75 <= width / height <= 1.25:
+                raise RuntimeError(f"not square-ish full art: {width}x{height}")
+            return response.content, url, title
         except Exception as exc:
-            errors.append(f"{url}: {exc}")
+            errors.append(f"{title} ({url}): {exc}")
 
-    raise RuntimeError("Could not download RLK_803 art from hswiki.gg:\n" + "\n".join(errors))
+    raise RuntimeError(
+        "Could not locate a square Hearthstone full-art image for Grand Magister Rommath on hswiki.gg:\n"
+        + "\n".join(errors)
+    )
 
 
 def crop_art(data: bytes) -> None:
@@ -224,8 +377,8 @@ def crop_art(data: bytes) -> None:
     if width / height < target_ratio:
         crop_height = round(width / target_ratio)
         excess = height - crop_height
-        # Rommath's staff head is near the top-right; preserve the top and remove
-        # most of the unused lower area while keeping his face, fireball, and staff.
+        # Preserve the upper spell effects and staff while removing most of the
+        # lower empty area from the square Hearthstone full art.
         top = max(0, round(excess * 0.15))
         box = (0, top, width, top + crop_height)
     else:
@@ -254,17 +407,28 @@ def main() -> None:
     )
     update_cards_doc()
 
-    art_data, source_url = get_hswiki_art()
+    art_data, source_url, source_title = get_hswiki_art()
     crop_art(art_data)
     write_text(
         ART_SOURCE_PATH,
-        "Source page: https://hearthstone.wiki.gg/wiki/Grand_Magister_Rommath\n"
+        f"Source page: {WIKI_PAGE}\n"
+        f"MediaWiki file: {source_title}\n"
         f"Downloaded image: {source_url}\n"
         "Card ID: RLK_803\n"
         "Use: personal, noncommercial Forge DIY card art crop.\n",
     )
 
-    print(json.dumps({"card": CARD_NAME, "collector": 139, "art_source": source_url}, ensure_ascii=False))
+    print(
+        json.dumps(
+            {
+                "card": CARD_NAME,
+                "collector": 139,
+                "art_source": source_url,
+                "art_title": source_title,
+            },
+            ensure_ascii=False,
+        )
+    )
 
 
 if __name__ == "__main__":
