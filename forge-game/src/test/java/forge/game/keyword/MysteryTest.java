@@ -1,6 +1,7 @@
 package forge.game.keyword;
 
 import forge.ImageKeys;
+import forge.card.CardDb;
 import forge.card.CardRarity;
 import forge.card.CardRules;
 import forge.card.CardStateName;
@@ -69,12 +70,22 @@ public class MysteryTest {
         Assert.assertTrue(mystery.getType().hasSubtype("Mystery"));
         Assert.assertTrue(mystery.getColor().hasBlue());
         Assert.assertEquals(mystery.getOracleText(), PUBLIC_ORACLE);
-        Assert.assertEquals(ImageKeys.MYSTERY_CARD_IMAGE_KEY, "c:蓝色奥秘|TOKEN_HS|8");
+        Assert.assertEquals(ImageKeys.MYSTERY_CARD_IMAGE_KEY, "c:蓝色奥秘|TOKEN_HS|[8]");
         Assert.assertEquals(mystery.getFacedownImageKey(), ImageKeys.MYSTERY_CARD_IMAGE_KEY);
 
         mystery.forceTurnFaceUp();
         Assert.assertEquals(mystery.getName(), "Test Counterspell Mystery");
         Assert.assertEquals(mystery.getOracleText(), "Counter target instant or sorcery spell.");
+    }
+
+    @Test
+    public void mysteryPublicImageKeyUsesTheTokenHsCollectorNumber() {
+        final CardDb.CardRequest request = CardDb.CardRequest.fromString(
+                ImageKeys.MYSTERY_CARD_IMAGE_KEY.substring(ImageKeys.CARD_PREFIX.length()));
+
+        Assert.assertEquals(request.cardName, PUBLIC_NAME);
+        Assert.assertEquals(request.edition, "TOKEN_HS");
+        Assert.assertEquals(request.collectorNumber, "8");
     }
 
     @Test

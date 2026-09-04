@@ -16,6 +16,7 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "法术反制.artcrop.jpg"
 MYSTERY_BACK = ROOT / "cards" / "pictures" / "TOKEN_HS" / "蓝色奥秘.artcrop.jpg"
 LEGACY_MYSTERY_BACK = ROOT / "tokens" / "pictures" / "mystery.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
+IMAGE_KEYS = FORGE_ROOT / "forge-core" / "src" / "main" / "java" / "forge" / "ImageKeys.java"
 
 ORACLE = "奥秘\\n反击目标法术或瞬间咒语。"
 SOURCE_ART_SHA256 = "A5F4BFABB5623C7F6040328CDF0A091ED426A6A81684852F20C27C2684527825"
@@ -75,6 +76,10 @@ class CounterspellMysteryContractTest(unittest.TestCase):
         self.assertIn(
             "8 C 蓝色奥秘 @Custom",
             TOKEN_HS_EDITION.read_text(encoding="utf-8").splitlines(),
+        )
+        self.assertIn(
+            'MYSTERY_CARD_NAME + "|" + MYSTERY_CARD_SET + "|[8]"',
+            IMAGE_KEYS.read_text(encoding="utf-8"),
         )
         self.assertTrue(MYSTERY_BACK.is_file())
         self.assertFalse(LEGACY_MYSTERY_BACK.exists())

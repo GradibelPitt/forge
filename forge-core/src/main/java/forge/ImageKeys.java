@@ -28,7 +28,7 @@ public final class ImageKeys {
     public static final String MYSTERY_CARD_NAME      = "蓝色奥秘";
     public static final String MYSTERY_CARD_SET       = "TOKEN_HS";
     public static final String MYSTERY_CARD_IMAGE_KEY =
-            CARD_PREFIX + MYSTERY_CARD_NAME + "|" + MYSTERY_CARD_SET + "|8";
+            CARD_PREFIX + MYSTERY_CARD_NAME + "|" + MYSTERY_CARD_SET + "|[8]";
     public static final String FORETELL_IMAGE        = "foretell";
     public static final String BLESSING_IMAGE        = "blessing";
     public static final String INITIATIVE_IMAGE      = "initiative";
