@@ -73,7 +73,7 @@ class CounterspellMysteryContractTest(unittest.TestCase):
             BLUE_MYSTERY_CARD.read_text(encoding="utf-8").splitlines(),
         )
         self.assertIn(
-            "1 C 蓝色奥秘 @Custom",
+            "8 C 蓝色奥秘 @Custom",
             TOKEN_HS_EDITION.read_text(encoding="utf-8").splitlines(),
         )
         self.assertTrue(MYSTERY_BACK.is_file())

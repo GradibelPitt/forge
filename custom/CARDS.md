@@ -149,7 +149,7 @@
 | 船载火炮 | `{R}{R}`，2/3 神器生物～构装体 | `cards/red/船载火炮.txt` | 132 | 具有守军且能阻挡则必须阻挡；每当一个由你操控的海盗进战场时，对任一目标造成 2 点伤害。船载火炮本身不是海盗。 |
 | 炸药工程师 | `{R}{R}`，2/3 生物～海盗 | `cards/red/炸药工程师.txt` | 133 | 在你的回合中，由你操控的海盗造成的伤害增加 1 点。 |
 | 飞行员帕奇斯 | `{U}`，1/1 生物～海盗 | `cards/colorless/飞行员帕奇斯.txt` | 134 | 牌库限一张；飞行；进战场时化生六张帕奇斯的降落伞到你的牌库，然后洗牌。 |
-| 蓝色奥秘 | `{1}{U}{U}` 结界～奥秘 | `cards/blue/蓝色奥秘.txt` | TOKEN_HS / 1 | 真实卡牌形式的共用奥秘背面；Oracle 为“你的对手隐藏了一些秘密。”，其他奥秘的战场牌框统一映射到该卡面。 |
+| 蓝色奥秘 | `{1}{U}{U}` 结界～奥秘 | `cards/blue/蓝色奥秘.txt` | TOKEN_HS / 8 | 真实卡牌形式的共用奥秘背面；Oracle 为“你的对手隐藏了一些秘密。”，其他奥秘的战场牌框统一映射到该卡面。 |
 | 帕奇斯的降落伞 | `{0}` 瞬间 | `cards/colorless/帕奇斯的降落伞.txt` | TOKEN_HS / 4 | 派出一个 1/1 且具有敏捷的海盗衍生生物，然后抓一张牌。 |
 | Emblem — Aya's Jade Treasure | 无法术力费用的实体徽记定义 | `cards/colorless/emblem_ayas_jade_treasure.txt` | TOKEN_HS / 5 | 被艾雅选中后以真正的 `EFFECT` 进入指挥区；使用 `TOKEN_HS` 的 `@Custom` 动态牌框图片，每当其拥有者牺牲一个珍宝衍生物时，派出一个青玉魔像。 |
 | Emblem — Aya's Burst Treasure | 无法术力费用的实体徽记定义 | `cards/colorless/emblem_ayas_burst_treasure.txt` | TOKEN_HS / 6 | 被艾雅选中后以真正的 `EFFECT` 进入指挥区；使用 `TOKEN_HS` 的 `@Custom` 动态牌框图片，每当其拥有者牺牲一个珍宝衍生物时，对随机选择的非己方目标造成 2 点伤害。 |

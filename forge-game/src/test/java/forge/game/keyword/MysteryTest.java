@@ -69,7 +69,7 @@ public class MysteryTest {
         Assert.assertTrue(mystery.getType().hasSubtype("Mystery"));
         Assert.assertTrue(mystery.getColor().hasBlue());
         Assert.assertEquals(mystery.getOracleText(), PUBLIC_ORACLE);
-        Assert.assertEquals(ImageKeys.MYSTERY_CARD_IMAGE_KEY, "c:蓝色奥秘|TOKEN_HS|1");
+        Assert.assertEquals(ImageKeys.MYSTERY_CARD_IMAGE_KEY, "c:蓝色奥秘|TOKEN_HS|8");
         Assert.assertEquals(mystery.getFacedownImageKey(), ImageKeys.MYSTERY_CARD_IMAGE_KEY);
 
         mystery.forceTurnFaceUp();
