@@ -9,7 +9,7 @@ FORGE_ROOT = ROOT.parent
 CARD = ROOT / "cards" / "blue" / "大法师罗曼斯.txt"
 EDITION = ROOT / "editions" / "Placeholder_Set.txt"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
-ART_BACKUP = ROOT / "tools" / "card-artwork" / "Grand_Magister_Rommath_HS.png"
+ART_BACKUP = ROOT / "tools" / "card-artwork" / "Grand_Magister_Rommath_HS.jpg"
 ART = ROOT / "cards" / "pictures" / "PH01" / "大法师罗曼斯.artcrop.jpg"
 
 
