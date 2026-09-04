@@ -1,0 +1,113 @@
+name: Build Grand Magister Rommath
+
+on:
+  push:
+    branches:
+      - automation/rommath-20260904
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rommath-card-build
+  cancel-in-progress: false
+
+jobs:
+  build-and-validate:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out staging branch
+        uses: actions/checkout@v4
+        with:
+          ref: automation/rommath-20260904
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install image dependencies
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pillow requests
+
+      - name: Generate script, registration, localization, test, and hswiki crop
+        shell: pwsh
+        run: python .github/scripts/build_rommath.py
+
+      - name: Lint Grand Magister Rommath
+        shell: pwsh
+        working-directory: custom
+        run: python tools/lint_card.py "cards/blue/大法师罗曼斯.txt"
+
+      - name: Run targeted contract test
+        shell: pwsh
+        working-directory: custom
+        run: python -m unittest tests.test_grand_magister_rommath -v
+
+      - name: Run all DIY Python tests
+        shell: pwsh
+        working-directory: custom
+        run: python -m unittest discover -s tests -p "test_*.py"
+
+      - name: Install to an isolated Forge profile
+        shell: pwsh
+        working-directory: custom
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\install_to_forge.ps1
+
+      - name: Verify installed crop hash
+        shell: pwsh
+        run: |
+          $source = Join-Path $PWD 'custom\cards\pictures\PH01\大法师罗曼斯.artcrop.jpg'
+          $installed = Join-Path $env:LOCALAPPDATA 'Forge\Cache\pics\cards\PH01\大法师罗曼斯.artcrop.jpg'
+          if (-not (Test-Path -LiteralPath $installed -PathType Leaf)) {
+              throw "Installed crop is missing: $installed"
+          }
+          $sourceHash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
+          $installedHash = (Get-FileHash -LiteralPath $installed -Algorithm SHA256).Hash
+          if ($sourceHash -ne $installedHash) {
+              throw "Installed crop hash differs: source=$sourceHash installed=$installedHash"
+          }
+          Write-Output "ROMMATH_ART_SHA256=$sourceHash"
+
+      - name: Record verified state
+        shell: pwsh
+        run: |
+          $path = Join-Path $PWD 'custom\VERIFICATION.md'
+          $record = @"
+
+          ## 2026-09-04 — 大法师罗曼斯
+
+          - Card script: `custom/cards/blue/大法师罗曼斯.txt`.
+          - Registration/localization: PH01 #139 with `@Custom`; full four-field `cardnames-zh-CN.txt` entry.
+          - Art: `RLK_803_art.jpg` downloaded from the Grand Magister Rommath asset on hswiki.gg, preserved under `tools/card-artwork/`, then deterministically cropped to an RGB JPEG at approximately 1.37:1 under `cards/pictures/PH01/`.
+          - Validation run on GitHub `windows-latest`: targeted `lint_card.py`, `tests.test_grand_magister_rommath`, full DIY Python discovery suite, `install_to_forge.ps1`, and source/deployed crop SHA-256 comparison all passed before this record was written.
+          - State boundary: source validation and isolated-profile deployment are verified; interactive desktop rendering and live-match behavior remain a separate client acceptance step.
+          "@
+          [IO.File]::AppendAllText($path, $record.Replace("          ", ""), [Text.UTF8Encoding]::new($false))
+
+      - name: Commit validated card payload to staging branch
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git rm -- .github/workflows/rommath-build.yml .github/scripts/build_rommath.py
+          git add -- `
+            "custom/cards/blue/大法师罗曼斯.txt" `
+            "custom/tests/test_grand_magister_rommath.py" `
+            "custom/editions/Placeholder_Set.txt" `
+            "forge-gui/res/languages/cardnames-zh-CN.txt" `
+            "custom/CARDS.md" `
+            "custom/VERIFICATION.md" `
+            "custom/tools/card-artwork/RLK_803_art.jpg" `
+            "custom/tools/card-artwork/RLK_803_art.source.txt" `
+            "custom/cards/pictures/PH01/大法师罗曼斯.artcrop.jpg"
+
+          git status --short
+          git diff --cached --check
+          git commit -m "feat(custom): add Grand Magister Rommath [skip ci]"
+          git push origin HEAD:automation/rommath-20260904
