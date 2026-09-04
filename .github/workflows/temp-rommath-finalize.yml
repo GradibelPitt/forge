@@ -27,57 +27,22 @@ jobs:
           python-version: '3.12'
       - name: Install test dependency
         run: python -m pip install pillow
-      - name: Download and crop Rommath artwork
+      - name: Verify supplied Rommath artwork crop
         run: |
           python - <<'PY'
           from pathlib import Path
-          from urllib.request import Request, urlopen
           from PIL import Image
-          from io import BytesIO
-
-          # Official Hearthstone artwork asset for Grand Magister Rommath (RLK_803).
-          # The CloudFront asset is preferred because it preserves the portrait source
-          # corresponding to the wiki artwork; the 512x art endpoint is only fallback.
-          urls = [
-              'https://d15f34w2p8l1cc.cloudfront.net/hearthstone/ccdb8721aa0b140ff36963010f54071abdb0cbe45dd942bc877e0fe4af2fe214.png',
-              'https://art.hearthstonejson.com/v1/512x/RLK_803.jpg',
-          ]
-          img = None
-          used = None
-          last_error = None
-          for url in urls:
-              try:
-                  req = Request(url, headers={'User-Agent': 'Mozilla/5.0 ForgeDIY/1.0'})
-                  with urlopen(req, timeout=30) as r:
-                      data = r.read()
-                  img = Image.open(BytesIO(data)).convert('RGB')
-                  used = url
-                  break
-              except Exception as exc:
-                  last_error = exc
-          if img is None:
-              raise RuntimeError(f'Unable to download Rommath artwork: {last_error}')
-          print(f'ART_SOURCE={used} RAW_SIZE={img.size}')
-
           backup = Path('custom/tools/card-artwork/Grand_Magister_Rommath_HS.jpg')
           crop = Path('custom/cards/pictures/PH01/大法师罗曼斯.artcrop.jpg')
-          backup.parent.mkdir(parents=True, exist_ok=True)
-          crop.parent.mkdir(parents=True, exist_ok=True)
-
-          # Project contract keeps a normalized portrait backup at 800x1120.
-          portrait = img.resize((800, 1120), Image.Resampling.LANCZOS)
-          portrait.save(backup, 'JPEG', quality=95, subsampling=0)
-
-          # Deterministic 1.37:1 crop, biased upward to retain Rommath's face and spell effects.
-          w, h = portrait.size
-          target_w, target_h = 800, 584
-          top = max(0, round((h - target_h) * 0.40))
-          if top + target_h > h:
-              top = h - target_h
-          art = portrait.crop((0, top, target_w, top + target_h))
-          art.save(crop, 'JPEG', quality=95, subsampling=0)
-          print(f'ART_BACKUP={backup} SIZE={portrait.size}')
-          print(f'ART_CROP={crop} SIZE={art.size} RATIO={art.width / art.height:.4f}')
+          if not backup.is_file() or not crop.is_file():
+              raise RuntimeError('Rommath source backup or crop art is missing')
+          with Image.open(backup) as image:
+              assert image.size == (800, 1120), image.size
+          with Image.open(crop) as image:
+              assert image.format == 'JPEG', image.format
+              assert image.mode == 'RGB', image.mode
+              assert image.size == (800, 584), image.size
+              assert abs(image.width / image.height - 1.37) <= 0.01
           PY
       - name: Add localization and authoritative docs
         run: |
@@ -124,7 +89,7 @@ jobs:
                       f.write('\n')
                   f.write('\n' + marker + '\n\n')
                   f.write('- 新增 `cards/blue/大法师罗曼斯.txt`，PH01 #139，并使用 `@Custom` 动态牌框。\n')
-                  f.write('- 罗曼斯原画备份为 `tools/card-artwork/Grand_Magister_Rommath_HS.jpg`（800×1120）；按图片工作流裁成 `cards/pictures/PH01/大法师罗曼斯.artcrop.jpg`（800×584 RGB JPEG，约 1.37:1）。\n')
+                  f.write('- 用户提供的罗曼斯原画备份为 `tools/card-artwork/Grand_Magister_Rommath_HS.jpg`（800×1120）；按图片工作流裁成 `cards/pictures/PH01/大法师罗曼斯.artcrop.jpg`（800×584 RGB JPEG，约 1.37:1）。\n')
                   f.write('- GitHub Actions 实际运行 `lint_card.py`、`tests.test_grand_magister_rommath` 与 DIY Python 全量测试；本记录不宣称本地 Forge 安装或客户端对局实测。\n')
           Path('.github/workflows/temp-rommath-finalize.yml').unlink()
           PY
@@ -133,8 +98,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add forge-gui/res/languages/cardnames-zh-CN.txt custom/CARDS.md custom/VERIFICATION.md
-          git add custom/tools/card-artwork/Grand_Magister_Rommath_HS.jpg custom/cards/pictures/PH01/大法师罗曼斯.artcrop.jpg
           git add -u .github/workflows/temp-rommath-finalize.yml
           git diff --cached --check
-          git commit -m 'Finalize Grand Magister Rommath artwork and verification'
+          git commit -m 'Finalize Grand Magister Rommath localization and verification'
           git push origin diy
