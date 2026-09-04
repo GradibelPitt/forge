@@ -68,7 +68,7 @@ jobs:
                       f.write('\n')
                   f.write('\n' + marker + '\n\n')
                   f.write('- 新增 `cards/blue/大法师罗曼斯.txt`，PH01 #139，并使用 `@Custom` 动态牌框。\n')
-                  f.write('- 原画备份为 `tools/card-artwork/Grand_Magister_Rommath_HS.png`；裁图为 `cards/pictures/PH01/大法师罗曼斯.artcrop.jpg`，800×584 RGB JPEG，约 1.37:1。\n')
+                  f.write('- 用户提供原画备份为 `tools/card-artwork/Grand_Magister_Rommath_HS.jpg`；裁图为 `cards/pictures/PH01/大法师罗曼斯.artcrop.jpg`，800×584 RGB JPEG，约 1.37:1。\n')
                   f.write('- GitHub Actions 实际运行 `lint_card.py`、`tests.test_grand_magister_rommath` 与 DIY Python 全量测试；本记录不宣称本地 Forge 安装或客户端对局实测。\n')
           Path('.github/workflows/temp-rommath-finalize.yml').unlink()
       - name: Commit finalized source
