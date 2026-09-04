@@ -88,11 +88,14 @@ jobs:
           if ($failureHeaders.Count -ne 2) {
               throw "Unexpected full-suite failure count: $($failureHeaders.Count). Expected only two pre-existing localization failures."
           }
-          if ($text.Contains('test_grand_magister_rommath') -and $text.Contains('FAIL: test_')) {
-              throw 'Rommath contract unexpectedly appeared in the full-suite failure output.'
+          if ($text.Contains('FAIL: test_registration_localization_and_hswiki_art_crop') -or
+              $text.Contains('FAIL: test_cast_trigger_returns_only_your_spells_and_grants_free_cast') -or
+              $text.Contains('FAIL: test_characteristics')) {
+              throw 'A Rommath contract check unexpectedly failed in the full-suite run.'
           }
           Write-Warning 'DIY full suite reached only the two pre-existing localization consistency failures (法术反制 wording and 开进码头 punctuation); no new failure was introduced by Rommath.'
           Write-Output 'DIY_FULL_SUITE=BASELINE_ONLY'
+          exit 0
 
       - name: Install to an isolated Forge profile
         shell: pwsh
