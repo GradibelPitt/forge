@@ -16,7 +16,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: diy
-          fetch-depth: 0
+          fetch-depth: 1
+          sparse-checkout: |
+            custom
+            forge-gui/res/languages/cardnames-zh-CN.txt
+            .github/workflows/temp-rommath-finalize.yml
+          sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -34,7 +39,8 @@ jobs:
               'https://art.hearthstonejson.com/v1/512x/RLK_803.jpg',
               'https://d15f34w2p8l1cc.cloudfront.net/hearthstone/ccdb8721aa0b140ff36963010f54071abdb0cbe45dd942bc877e0fe4af2fe214.png',
           ]
-          data = None
+          img = None
+          used = None
           last_error = None
           for url in urls:
               try:
@@ -42,23 +48,18 @@ jobs:
                   with urlopen(req, timeout=30) as r:
                       data = r.read()
                   img = Image.open(BytesIO(data)).convert('RGB')
-                  # The HearthstoneJSON 512x endpoint is artwork-only. Reject obvious full-card renders.
-                  if img.width <= 0 or img.height <= 0:
-                      raise RuntimeError('invalid artwork dimensions')
-                  print(f'ART_SOURCE={url}')
+                  used = url
                   break
               except Exception as exc:
                   last_error = exc
-                  data = None
-          if data is None:
+          if img is None:
               raise RuntimeError(f'Unable to download Rommath artwork: {last_error}')
+          print(f'ART_SOURCE={used} SIZE={img.size}')
 
           backup = Path('custom/tools/card-artwork/Grand_Magister_Rommath_HS.jpg')
           crop = Path('custom/cards/pictures/PH01/大法师罗曼斯.artcrop.jpg')
           backup.parent.mkdir(parents=True, exist_ok=True)
           crop.parent.mkdir(parents=True, exist_ok=True)
-
-          img = Image.open(BytesIO(data)).convert('RGB')
           img.save(backup, 'JPEG', quality=95, subsampling=0)
 
           ratio = 1.37
@@ -72,12 +73,10 @@ jobs:
               cw = w
               ch = round(w / ratio)
               left = 0
-              # Center crop with a slight upward bias, per project art workflow.
               top = max(0, round((h - ch) * 0.40))
           art = img.crop((left, top, left + cw, top + ch))
           art = art.resize((800, 584), Image.Resampling.LANCZOS)
           art.save(crop, 'JPEG', quality=95, subsampling=0)
-          print(f'ART_BACKUP={backup} SIZE={img.size}')
           print(f'ART_CROP={crop} SIZE={art.size} RATIO={art.width / art.height:.4f}')
           PY
       - name: Add localization and authoritative docs
