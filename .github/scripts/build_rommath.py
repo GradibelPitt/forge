@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import io
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 import requests
 from PIL import Image
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 ROOT = Path(__file__).resolve().parents[2]
 CUSTOM = ROOT / "custom"
@@ -22,6 +28,8 @@ ART_CROP_PATH = CUSTOM / "cards" / "pictures" / "PH01" / f"{CARD_NAME}.artcrop.j
 
 WIKI_API = "https://hearthstone.wiki.gg/api.php"
 WIKI_PAGE = "https://hearthstone.wiki.gg/wiki/Grand_Magister_Rommath"
+WIKI_FILE = "File:Grand_Magister_Rommath_full.jpg"
+DIRECT_FALLBACK = "https://hearthstone.wiki.gg/images/Grand_Magister_Rommath_full.jpg?1b0759"
 HEADERS = {
     "User-Agent": "ForgeDIY/1.0 (personal noncommercial custom-card project; GitHub Actions)",
     "Referer": WIKI_PAGE,
@@ -115,12 +123,14 @@ class GrandMagisterRommathContractTest(unittest.TestCase):
         self.assertTrue(ART_SOURCE.is_file())
         source_text = ART_SOURCE.read_text(encoding="utf-8")
         self.assertIn("hearthstone.wiki.gg", source_text)
-        self.assertIn("Grand_Magister_Rommath", source_text)
+        self.assertIn("Grand_Magister_Rommath_full.jpg", source_text)
         self.assertTrue(ART.is_file())
         with Image.open(ART_BACKUP) as image:
-            self.assertGreaterEqual(image.width, 500)
-            self.assertGreaterEqual(image.height, 500)
-            self.assertAlmostEqual(1.0, image.width / image.height, delta=0.25)
+            self.assertGreaterEqual(image.width, 2000)
+            self.assertGreaterEqual(image.height, 2000)
+            self.assertGreater(image.height, image.width)
+            self.assertGreaterEqual(image.width / image.height, 0.60)
+            self.assertLessEqual(image.width / image.height, 0.85)
         with Image.open(ART) as image:
             self.assertEqual("JPEG", image.format)
             self.assertEqual("RGB", image.mode)
@@ -178,162 +188,28 @@ def api_get(params: dict[str, str]) -> dict[str, Any]:
     return payload
 
 
-def add_candidate(
-    candidates: dict[str, dict[str, Any]],
-    *,
-    title: str,
-    url: str | None,
-    width: int | None = None,
-    height: int | None = None,
-    mime: str | None = None,
-) -> None:
-    if not url:
-        return
-    existing = candidates.setdefault(
-        url,
-        {"title": title, "url": url, "width": width or 0, "height": height or 0, "mime": mime or ""},
-    )
-    existing["title"] = existing.get("title") or title
-    existing["width"] = max(int(existing.get("width") or 0), int(width or 0))
-    existing["height"] = max(int(existing.get("height") or 0), int(height or 0))
-    existing["mime"] = existing.get("mime") or mime or ""
-
-
-def collect_hswiki_candidates() -> list[dict[str, Any]]:
-    candidates: dict[str, dict[str, Any]] = {}
-
-    for prefix in ("RLK_803", "Grand Magister Rommath"):
-        try:
-            payload = api_get(
-                {
-                    "action": "query",
-                    "format": "json",
-                    "list": "allimages",
-                    "aiprefix": prefix,
-                    "ailimit": "max",
-                    "aiprop": "url|size|mime",
-                }
-            )
-            for item in payload.get("query", {}).get("allimages", []):
-                add_candidate(
-                    candidates,
-                    title=item.get("name", ""),
-                    url=item.get("url"),
-                    width=item.get("width"),
-                    height=item.get("height"),
-                    mime=item.get("mime"),
-                )
-        except Exception as exc:
-            print(f"allimages lookup failed for {prefix!r}: {exc}")
-
+def get_hswiki_art() -> tuple[bytes, str, str]:
+    candidates: list[tuple[str, str]] = []
     try:
         payload = api_get(
             {
                 "action": "query",
                 "format": "json",
-                "redirects": "1",
-                "generator": "images",
-                "titles": "Grand Magister Rommath",
-                "gimlimit": "max",
                 "prop": "imageinfo",
                 "iiprop": "url|size|mime",
+                "titles": WIKI_FILE,
             }
         )
         for page in payload.get("query", {}).get("pages", {}).values():
             info = page.get("imageinfo") or []
-            if not info:
-                continue
-            item = info[0]
-            add_candidate(
-                candidates,
-                title=page.get("title", ""),
-                url=item.get("url"),
-                width=item.get("width"),
-                height=item.get("height"),
-                mime=item.get("mime"),
-            )
+            if info and info[0].get("url"):
+                candidates.append((page.get("title", WIKI_FILE), info[0]["url"]))
     except Exception as exc:
-        print(f"page image generator lookup failed: {exc}")
+        print(f"Exact hswiki file lookup failed: {exc}")
 
-    try:
-        parsed = api_get(
-            {
-                "action": "parse",
-                "format": "json",
-                "page": "Grand Magister Rommath",
-                "prop": "images",
-                "redirects": "1",
-            }
-        )
-        names = parsed.get("parse", {}).get("images", [])
-        for start in range(0, len(names), 20):
-            titles = "|".join(f"File:{name}" for name in names[start : start + 20])
-            details = api_get(
-                {
-                    "action": "query",
-                    "format": "json",
-                    "titles": titles,
-                    "prop": "imageinfo",
-                    "iiprop": "url|size|mime",
-                }
-            )
-            for page in details.get("query", {}).get("pages", {}).values():
-                info = page.get("imageinfo") or []
-                if not info:
-                    continue
-                item = info[0]
-                add_candidate(
-                    candidates,
-                    title=page.get("title", ""),
-                    url=item.get("url"),
-                    width=item.get("width"),
-                    height=item.get("height"),
-                    mime=item.get("mime"),
-                )
-    except Exception as exc:
-        print(f"parse/images lookup failed: {exc}")
-
-    def score(item: dict[str, Any]) -> float:
-        title = str(item.get("title", "")).lower()
-        width = int(item.get("width") or 0)
-        height = int(item.get("height") or 0)
-        ratio = width / height if height else 0.0
-        value = 0.0
-        if "rommath" in title:
-            value += 80
-        if "rlk_803" in title:
-            value += 80
-        if "full art" in title or "full_art" in title:
-            value += 200
-        elif "art" in title:
-            value += 150
-        if 0.90 <= ratio <= 1.10:
-            value += 120
-        elif 0.75 <= ratio <= 1.25:
-            value += 60
-        value += min(width, height) / 100
-        for penalty in ("gold", "premium", "icon", "logo", "achievement", "mercenaries"):
-            if penalty in title:
-                value -= 300
-        return value
-
-    ranked = sorted(candidates.values(), key=score, reverse=True)
-    print("Discovered hswiki image candidates:")
-    for item in ranked[:30]:
-        print(
-            f"  score={score(item):.1f} size={item.get('width')}x{item.get('height')} "
-            f"title={item.get('title')} url={item.get('url')}"
-        )
-    return ranked
-
-
-def get_hswiki_art() -> tuple[bytes, str, str]:
+    candidates.append((WIKI_FILE, DIRECT_FALLBACK))
     errors: list[str] = []
-    for item in collect_hswiki_candidates():
-        title = str(item.get("title", ""))
-        url = str(item.get("url", ""))
-        if not url:
-            continue
+    for title, url in dict.fromkeys(candidates):
         try:
             response = requests.get(url, headers=HEADERS, timeout=60)
             response.raise_for_status()
@@ -343,21 +219,22 @@ def get_hswiki_art() -> tuple[bytes, str, str]:
             with Image.open(io.BytesIO(response.content)) as image:
                 image.load()
                 width, height = image.size
-            if width < 500 or height < 500:
+            if width < 2000 or height < 2000:
                 raise RuntimeError(f"image is too small: {width}x{height}")
-            if not 0.75 <= width / height <= 1.25:
-                raise RuntimeError(f"not square-ish full art: {width}x{height}")
+            if height <= width:
+                raise RuntimeError(f"expected portrait full art, got {width}x{height}")
+            ratio = width / height
+            if not 0.60 <= ratio <= 0.85:
+                raise RuntimeError(f"unexpected full-art ratio: {width}x{height}")
+            print(f"Selected hswiki art {title}: {width}x{height}")
             return response.content, url, title
         except Exception as exc:
             errors.append(f"{title} ({url}): {exc}")
 
-    raise RuntimeError(
-        "Could not locate a square Hearthstone full-art image for Grand Magister Rommath on hswiki.gg:\n"
-        + "\n".join(errors)
-    )
+    raise RuntimeError("Could not download the verified Rommath full art from hswiki.gg:\n" + "\n".join(errors))
 
 
-def crop_art(data: bytes) -> None:
+def crop_art(data: bytes) -> tuple[int, int, tuple[int, int, int, int]]:
     ART_BACKUP_PATH.parent.mkdir(parents=True, exist_ok=True)
     ART_BACKUP_PATH.write_bytes(data)
 
@@ -366,20 +243,13 @@ def crop_art(data: bytes) -> None:
         image = source.convert("RGB")
 
     width, height = image.size
-    if width < 500 or height < 500:
-        raise RuntimeError(f"hswiki art is unexpectedly small: {width}x{height}")
-    if not 0.75 <= width / height <= 1.25:
-        raise RuntimeError(
-            f"Downloaded image does not look like square Hearthstone full art: {width}x{height}"
-        )
-
     target_ratio = 1.37
     if width / height < target_ratio:
         crop_height = round(width / target_ratio)
         excess = height - crop_height
-        # Preserve the upper spell effects and staff while removing most of the
-        # lower empty area from the square Hearthstone full art.
-        top = max(0, round(excess * 0.15))
+        # Preserve Rommath's head, staff and spell effects; remove most of the
+        # lower portrait extension that does not fit Forge's art window.
+        top = max(0, min(excess, round(excess * 0.15)))
         box = (0, top, width, top + crop_height)
     else:
         crop_width = round(height * target_ratio)
@@ -389,7 +259,8 @@ def crop_art(data: bytes) -> None:
     crop = image.crop(box)
     ART_CROP_PATH.parent.mkdir(parents=True, exist_ok=True)
     crop.save(ART_CROP_PATH, format="JPEG", quality=95, subsampling=0, optimize=True)
-    print(f"Saved crop {ART_CROP_PATH.relative_to(ROOT)} at {crop.width}x{crop.height}")
+    print(f"Saved Rommath crop: {crop.width}x{crop.height}; box={box}")
+    return crop.width, crop.height, box
 
 
 def main() -> None:
@@ -408,13 +279,15 @@ def main() -> None:
     update_cards_doc()
 
     art_data, source_url, source_title = get_hswiki_art()
-    crop_art(art_data)
+    crop_width, crop_height, crop_box = crop_art(art_data)
     write_text(
         ART_SOURCE_PATH,
         f"Source page: {WIKI_PAGE}\n"
         f"MediaWiki file: {source_title}\n"
         f"Downloaded image: {source_url}\n"
         "Card ID: RLK_803\n"
+        f"Crop box: {crop_box}\n"
+        f"Crop size: {crop_width}x{crop_height}\n"
         "Use: personal, noncommercial Forge DIY card art crop.\n",
     )
 
@@ -425,6 +298,8 @@ def main() -> None:
                 "collector": 139,
                 "art_source": source_url,
                 "art_title": source_title,
+                "crop_box": crop_box,
+                "crop_size": [crop_width, crop_height],
             },
             ensure_ascii=False,
         )
