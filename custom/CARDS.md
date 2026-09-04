@@ -26,6 +26,7 @@
 
 | Card | Cost / type / stats | Script | Set / # | Behavior summary |
 |---|---|---|---:|---|
+| 大法师罗曼斯 | `{5}{U}{U}{U}{U}`，5/7 传奇生物～人类／法术师 | `cards/blue/大法师罗曼斯.txt` | 139 | 施放触发：将自己坟墓场中的每张瞬间牌和法术牌移回手上；仅这些被移回的牌可在本回合中不支付法术力费用施放。 |
 | 马克扎尔的小鬼 | `{B}{B}`，1/3 恶魔 | `cards/black/markzul_imp.txt` | 7 | 每当你弃一张牌，抓一张牌 |
 | 破链灾星霍格 | `{4}{R}{R}{R}{R}`，10/10 传奇豺狼人 | `cards/red/chainbreaker_hogger.txt` | 8 | 限一张；Superreach；开局复制其他传奇永久物并授予传奇规则徽记；Hearthstone Wiki 原画裁切，使用游戏默认动态牌框 |
 | 海盗帕奇斯 | `{R}`，1/1 传奇海盗／恶魔 | `cards/red/海盗帕奇斯.txt` | 10 | 敏捷；己方海盗进场时从手牌/牌库登场；Hearthstone Wiki 原画裁切，使用游戏默认动态牌框 |

@@ -529,3 +529,11 @@ Java 测试从 `D:\Forge\forge-latest` 执行，并使用实际模块和测试�
 - 确认当前桌面客户端确实加载最新聚合 JAR。
 - 中文本地化实现后，在中文界面逐卡检查名称、类别和规则文字。
 - 在客户端验证 `CardDiscover` 的 0、1、2、3 个选项、同名去重、数据库来源及双方牌库来源。
+
+## 2026-09-04 — 大法师罗曼斯
+
+- Card script: custom/cards/blue/大法师罗曼斯.txt.
+- Registration/localization: PH01 #139 with @Custom; full four-field cardnames-zh-CN.txt entry.
+- Art: the 3375×4725 Grand Magister Rommath full-art asset was obtained from hswiki.gg, preserved under 	ools/card-artwork/, then deterministically cropped to a 3375×2464 RGB JPEG (approximately 1.37:1) under cards/pictures/PH01/.
+- Validation run on GitHub windows-latest: targeted lint_card.py, all three 	ests.test_grand_magister_rommath checks, full DIY discovery suite classification, install_to_forge.ps1, and source/deployed crop SHA-256 comparison completed. The full suite retained only its two pre-existing localization consistency failures (法术反制 wording and 开进码头 punctuation); Rommath introduced no new test failure.
+- State boundary: source validation and isolated-profile deployment are verified; interactive desktop rendering and live-match behavior remain a separate client acceptance step.

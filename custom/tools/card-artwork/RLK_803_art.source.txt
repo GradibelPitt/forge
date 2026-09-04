@@ -1,0 +1,7 @@
+Source page: https://hearthstone.wiki.gg/wiki/Grand_Magister_Rommath
+MediaWiki file: File:Grand Magister Rommath full.jpg
+Downloaded image: https://hearthstone.wiki.gg/images/Grand_Magister_Rommath_full.jpg?1b0759
+Card ID: RLK_803
+Crop box: (0, 339, 3375, 2803)
+Crop size: 3375x2464
+Use: personal, noncommercial Forge DIY card art crop.
