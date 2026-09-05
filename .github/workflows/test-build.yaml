@@ -10,13 +10,16 @@ jobs:
   art_probe:
     if: github.ref == 'refs/heads/automation/dragon-breaths-20260905'
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
-      - name: Checkout diy source
+      - name: Checkout PH01 pictures only
         uses: actions/checkout@v4
         with:
           ref: diy
           fetch-depth: 1
+          sparse-checkout: |
+            custom/cards/pictures/PH01
+          sparse-checkout-cone-mode: false
       - name: Install Pillow
         shell: pwsh
         run: python -m pip install --disable-pip-version-check pillow
