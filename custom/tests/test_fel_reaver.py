@@ -24,7 +24,7 @@ OUTPAINT = (
 ART = ROOT / "cards" / "pictures" / "PH01" / "魔能机甲.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
-ORACLE = "威慑，践踏\\n每当任一对手施放一个咒语时，你磨三张牌。"
+ORACLE = "威慑，践踏\\n每当任一对手施放一个咒语时，放逐你牌库顶的三张牌。"
 
 
 class FelReaverContractTest(unittest.TestCase):
@@ -48,6 +48,7 @@ class FelReaverContractTest(unittest.TestCase):
         self.assertIn("DB$ Mill", mill)
         self.assertIn("Defined$ You", mill)
         self.assertIn("NumCards$ 3", mill)
+        self.assertIn("Destination$ Exile", mill)
         self.assertIn(f"Oracle:{ORACLE}", lines)
 
     def test_registration_localization_art_and_documentation(self):
@@ -59,7 +60,7 @@ class FelReaverContractTest(unittest.TestCase):
         self.assertIn(
             "| 魔能机甲 | `{3}{B}{B}`，8/8 神器生物 | "
             "`cards/colorless/魔能机甲.txt` | 95 | "
-            "威慑、践踏；每当任一对手施放一个咒语时，你磨三张牌。 |",
+            "威慑、践踏；每当任一对手施放一个咒语时，放逐你牌库顶的三张牌。 |",
             (ROOT / "CARDS.md").read_text(encoding="utf-8"),
         )
 

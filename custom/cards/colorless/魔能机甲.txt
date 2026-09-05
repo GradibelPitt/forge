@@ -4,6 +4,6 @@ Types:Artifact Creature
 PT:8/8
 K:Menace
 K:Trample
-T:Mode$ SpellCast | ValidCard$ Card | ValidActivatingPlayer$ Opponent | TriggerZones$ Battlefield | Execute$ TrigMill | TriggerDescription$ 每当任一对手施放一个咒语时，你磨三张牌。
-SVar:TrigMill:DB$ Mill | Defined$ You | NumCards$ 3
-Oracle:威慑，践踏\n每当任一对手施放一个咒语时，你磨三张牌。
+T:Mode$ SpellCast | ValidCard$ Card | ValidActivatingPlayer$ Opponent | TriggerZones$ Battlefield | Execute$ TrigMill | TriggerDescription$ 每当任一对手施放一个咒语时，放逐你牌库顶的三张牌。
+SVar:TrigMill:DB$ Mill | Defined$ You | NumCards$ 3 | Destination$ Exile
+Oracle:威慑，践踏\n每当任一对手施放一个咒语时，放逐你牌库顶的三张牌。

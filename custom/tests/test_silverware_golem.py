@@ -19,7 +19,7 @@ class SilverwareGolemContractTest(unittest.TestCase):
         self.assertIn("Types:Artifact Creature Golem", text)
         self.assertIn("PT:3/3", text)
         self.assertIn("K:Madness:0 ExileFromGrave<3/Card.Other/other cards>", text)
-        self.assertIn("Oracle:疯魔{0}，从你的坟墓场放逐三张其他牌。", text)
+        self.assertIn("Oracle:疯魔0，如果你以疯魔费用施放镀银魔像, 从你的坟墓场放逐三张其他牌。", text)
 
     def test_card_is_registered_with_backup_and_dynamic_art(self):
         self.assertIn("33 R 镀银魔像 @Custom", EDITION.read_text(encoding="utf-8"))
@@ -27,7 +27,7 @@ class SilverwareGolemContractTest(unittest.TestCase):
         self.assertTrue(ART.is_file())
 
     def test_zh_cn_display_text_matches_the_requested_description(self):
-        expected = "镀银魔像|镀银魔像|神器生物～魔像|疯魔{0}，从你的坟墓场放逐三张其他牌。"
+        expected = "镀银魔像|镀银魔像|神器生物～魔像|疯魔0，如果你以疯魔费用施放镀银魔像, 从你的坟墓场放逐三张其他牌。"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
 

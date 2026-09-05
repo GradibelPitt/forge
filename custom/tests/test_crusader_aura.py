@@ -19,25 +19,25 @@ class CrusaderAuraContractTest(unittest.TestCase):
         self.assertIn("Types:Enchantment", text)
         self.assertIn(
             "S:Mode$ Continuous | Affected$ Creature.YouCtrl | AddTrigger$ CrusaderAttack | AddSVar$ AE | "
-            "Description$ Creatures you control have \"Whenever this creature attacks, it gets +2/+1 permanently.\"",
+            "Description$ Creatures you control have \"Whenever this creature attacks, it gets +3/+2 permanently.\"",
             text,
         )
         self.assertIn(
             "SVar:CrusaderAttack:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigPump | "
-            "TriggerDescription$ Whenever this creature attacks, it gets +2/+1 permanently.",
+            "TriggerDescription$ Whenever this creature attacks, it gets +3/+2 permanently.",
             text,
         )
         self.assertIn(
-            "SVar:TrigPump:DB$ Pump | Defined$ TriggeredAttackerLKICopy | NumAtt$ +2 | NumDef$ +1 | "
+            "SVar:TrigPump:DB$ Pump | Defined$ TriggeredAttackerLKICopy | NumAtt$ +3 | NumDef$ +2 | "
             "Duration$ Permanent",
             text,
         )
 
     def test_card_uses_the_requested_chinese_wording(self):
-        oracle = "Oracle:你操控的生物具有「每当该生物攻击时，它永久获得+2/+1。」"
+        oracle = "Oracle:你操控的生物具有「每当该生物攻击时，它永久获得+3/+2。」"
         self.assertIn(oracle, CARD.read_text(encoding="utf-8"))
 
-        expected = "十字军光环|十字军光环|结界|你操控的生物具有「每当该生物攻击时，它永久获得+2/+1。」"
+        expected = "十字军光环|十字军光环|结界|你操控的生物具有「每当该生物攻击时，它永久获得+3/+2。」"
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
     def test_card_is_registered_with_standard_crop_art(self):

@@ -3,4 +3,4 @@ ManaCost:2 B
 Types:Artifact Creature Golem
 PT:3/3
 K:Madness:0 ExileFromGrave<3/Card.Other/other cards>
-Oracle:疯魔{0}，从你的坟墓场放逐三张其他牌。
+Oracle:疯魔0，如果你以疯魔费用施放镀银魔像, 从你的坟墓场放逐三张其他牌。

@@ -17,11 +17,11 @@ class MindVisionContractTest(unittest.TestCase):
         text = CARD.read_text(encoding="utf-8")
         self.assertIn("Name:心灵视界", text)
         self.assertIn("ManaCost:U", text)
-        self.assertIn("Types:Sorcery", text)
+        self.assertIn("Types:Instant", text)
         self.assertIn("39 C 心灵视界 @Custom", EDITION.read_text(encoding="utf-8"))
         expected = (
-            "心灵视界|心灵视界|法术|检视目标对手的手牌，然后从中选择一张牌。"
-            "将一张与该牌同名之牌化生到你手上。它永久减少{1}来施放。"
+            "心灵视界|心灵视界|瞬间|检视目标对手的手牌，然后从中选择一张牌。"
+            "将一张与该牌同名之牌化生到你手上。它永久具有调和，且减少{1}来施放。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 
@@ -52,6 +52,13 @@ class MindVisionContractTest(unittest.TestCase):
         self.assertIn("RememberMade$ True", conjure)
         self.assertIn("Defined$ Remembered", animate)
         self.assertIn("staticAbilities$ ReduceCost", animate)
+        self.assertIn("Keywords$ Harmony", animate)
+        choose = next(line for line in text.splitlines() if line.startswith("SVar:DBChooseCard:"))
+        forget = next(line for line in text.splitlines() if line.startswith("SVar:DBForgetRevealed:"))
+        self.assertIn("SubAbility$ DBForgetRevealed", choose)
+        self.assertIn("ClearRemembered$ True", forget)
+        self.assertNotIn("ClearChosenCard", forget)
+        self.assertIn("SubAbility$ DBConjure", forget)
         self.assertIn("Duration$ Perpetual", animate)
         self.assertIn("ValidCard$ Card.Self", reduce_cost)
         self.assertIn("Type$ Spell", reduce_cost)

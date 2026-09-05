@@ -18,7 +18,7 @@ ART_BACKUP = (
 ART = ROOT / "cards" / "pictures" / "PH01" / "液力压裂.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
-ORACLE = "检视你牌库底的三张牌。将其中一张置于你手上，其余两张则置入你的坟墓场。"
+ORACLE = "检视你牌库底的三张牌。将其中一张置于你手上，其余两张则放逐。"
 
 
 class FrackingContractTest(unittest.TestCase):
@@ -34,7 +34,7 @@ class FrackingContractTest(unittest.TestCase):
         self.assertIn("FromBottom$ True", ability)
         self.assertIn("ChangeValid$ Card", ability)
         self.assertIn("DestinationZone$ Hand", ability)
-        self.assertIn("DestinationZone2$ Graveyard", ability)
+        self.assertIn("DestinationZone2$ Exile", ability)
         self.assertIn("StackDescription$ SpellDescription", ability)
         self.assertIn(f"SpellDescription$ {ORACLE}", ability)
         self.assertIn(f"Oracle:{ORACLE}", lines)

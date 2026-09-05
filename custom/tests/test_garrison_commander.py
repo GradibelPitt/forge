@@ -22,7 +22,7 @@ ABILITY_TEXT = (
     "选择目标由你操控的鹏洛客。本回合中，你可以起动该鹏洛客的忠诚异能两次，"
     "而不是只能起动一次。"
 )
-ORACLE = f"{{2}}，{{T}}：{ABILITY_TEXT}"
+ORACLE = f"{{T}}：{ABILITY_TEXT}"
 
 
 class GarrisonCommanderContractTest(unittest.TestCase):
@@ -35,7 +35,7 @@ class GarrisonCommanderContractTest(unittest.TestCase):
         self.assertIn("PT:2/3", lines)
 
         ability = next(line for line in lines if line.startswith("A:AB$ Effect"))
-        self.assertIn("Cost$ 2 T", ability)
+        self.assertIn("Cost$ T", ability)
         self.assertIn("ValidTgts$ Planeswalker.YouCtrl", ability)
         self.assertIn("RememberObjects$ Targeted", ability)
         self.assertIn("StaticAbilities$ PWTwice", ability)

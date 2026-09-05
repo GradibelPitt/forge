@@ -25,7 +25,7 @@ class PilotPatchesParachuteContractTest(unittest.TestCase):
         for required in (
             "Name:飞行员帕奇斯",
             "ManaCost:U",
-            "Types:Creature Pirate",
+            "Types:Legendary Creature Pirate",
             "PT:1/1",
             "K:DeckLimit:1:你的套牌中只能包含一张名为CARDNAME的牌。",
             "K:Flying",
@@ -80,7 +80,7 @@ class PilotPatchesParachuteContractTest(unittest.TestCase):
             self.assertEqual(4, len(rows[0].split("|")), name)
 
         catalog = (ROOT / "CARDS.md").read_text(encoding="utf-8")
-        self.assertIn("| 飞行员帕奇斯 | `{U}`，1/1 生物～海盗 |", catalog)
+        self.assertIn("| 飞行员帕奇斯 | `{U}`，1/1 传奇生物～海盗 |", catalog)
         self.assertIn("| 帕奇斯的降落伞 | `{0}` 瞬间 |", catalog)
 
     def test_recovered_art_is_preserved(self):
