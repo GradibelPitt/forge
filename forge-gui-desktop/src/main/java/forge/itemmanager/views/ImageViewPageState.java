@@ -6,6 +6,11 @@ final class ImageViewPageState {
     private int totalCount;
     private int pageIndex;
 
+    static boolean shouldUsePaging(final boolean pagingEnabled, final boolean cardImageView,
+            final boolean incrementalLoading, final int totalItemCount) {
+        return pagingEnabled && cardImageView && !incrementalLoading && totalItemCount > PAGE_SIZE;
+    }
+
     void reset(final int totalCount0) {
         totalCount = Math.max(0, totalCount0);
         pageIndex = 0;

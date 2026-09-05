@@ -318,6 +318,7 @@ public abstract class ACEditorBase<TItem extends InventoryItem, TModel extends D
     @SuppressWarnings("serial")
     public void setDeckManager(final ItemManager<TItem> itemManager) {
         this.deckManager = itemManager;
+        itemManager.setImageViewPagingEnabled(false);
 
         btnRemove.setCommand((UiCommand) () -> CDeckEditorUI.SINGLETON_INSTANCE.removeSelectedCards(false, 1));
         btnRemove4.setCommand((UiCommand) () -> CDeckEditorUI.SINGLETON_INSTANCE.removeSelectedCards(false, 4));
@@ -343,6 +344,7 @@ public abstract class ACEditorBase<TItem extends InventoryItem, TModel extends D
     @SuppressWarnings("serial")
     public void setCatalogManager(final ItemManager<TItem> itemManager) {
         this.catalogManager = itemManager;
+        itemManager.setImageViewPagingEnabled(true);
 
         btnAdd.setCommand((UiCommand) () -> CDeckEditorUI.SINGLETON_INSTANCE.addSelectedCards(false, 1));
         btnAdd4.setCommand((UiCommand) () -> CDeckEditorUI.SINGLETON_INSTANCE.addSelectedCards(false, 4));

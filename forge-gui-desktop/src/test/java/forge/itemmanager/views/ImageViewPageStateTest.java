@@ -5,6 +5,15 @@ import org.testng.annotations.Test;
 
 public class ImageViewPageStateTest {
     @Test
+    public void pagingIsLimitedToEnabledCatalogCardViews() {
+        Assert.assertTrue(ImageViewPageState.shouldUsePaging(true, true, false, 80));
+        Assert.assertFalse(ImageViewPageState.shouldUsePaging(false, true, false, 80));
+        Assert.assertFalse(ImageViewPageState.shouldUsePaging(true, false, false, 80));
+        Assert.assertFalse(ImageViewPageState.shouldUsePaging(true, true, true, 80));
+        Assert.assertFalse(ImageViewPageState.shouldUsePaging(true, true, false, 50));
+    }
+
+    @Test
     public void largeResultSetStartsOnFirstFiftyItemPage() {
         final ImageViewPageState state = new ImageViewPageState();
 

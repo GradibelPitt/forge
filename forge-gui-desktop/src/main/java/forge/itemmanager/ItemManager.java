@@ -73,6 +73,7 @@ public abstract class ItemManager<T extends InventoryItem> extends JPanel implem
     private ContextMenuBuilder contextMenuBuilder;
     private final Class<T> genericType;
     private final CDetailPicture cDetailPicture;
+    private boolean imageViewPagingEnabled;
     private ItemManagerConfig config;
     private final List<ListSelectionListener> selectionListeners = new ArrayList<>();
 
@@ -156,6 +157,14 @@ public abstract class ItemManager<T extends InventoryItem> extends JPanel implem
 
     public final CDetailPicture getCDetailPicture() {
         return cDetailPicture;
+    }
+
+    public final boolean isImageViewPagingEnabled() {
+        return imageViewPagingEnabled;
+    }
+
+    public final void setImageViewPagingEnabled(final boolean enabled) {
+        imageViewPagingEnabled = enabled;
     }
 
     /**

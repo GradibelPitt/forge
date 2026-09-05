@@ -627,13 +627,13 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
             totalItemCount += itemEntry.getValue();
         }
 
-        final boolean supportsLimitedCardLoading = itemManager.getGenericType().equals(PaperCard.class)
-                && totalItemCount > IncrementalImageLoadState.BATCH_SIZE;
+        final boolean cardImageView = itemManager.getGenericType().equals(PaperCard.class);
         incrementalLoading = itemManager.getGenericType().equals(PaperCard.class)
                 && groupBy == null
                 && pileBy == null
                 && totalItemCount > IncrementalImageLoadState.BATCH_SIZE;
-        pagedLoading = supportsLimitedCardLoading && !incrementalLoading;
+        pagedLoading = ImageViewPageState.shouldUsePaging(itemManager.isImageViewPagingEnabled(),
+                cardImageView, incrementalLoading, totalItemCount);
         if (!preservePageOnRefresh || !pagedLoading) {
             pageState.reset(totalItemCount);
         }
