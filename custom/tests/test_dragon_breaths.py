@@ -21,6 +21,10 @@ class DragonBreathsContractTest(unittest.TestCase):
         self.assertIn("SVar:TrigReturn:AB$ ChangeZone | Cost$ Behold<1/Dragon>", text)
         self.assertIn("Origin$ Graveyard | Destination$ Hand", text)
         self.assertIn("ValidTgts$ Instant.YouOwn,Sorcery.YouOwn", text)
+        return_ability = next(line for line in text.splitlines() if line.startswith("SVar:TrigReturn:"))
+        self.assertIn("SubAbility$ DBOpponentsGainLife", return_ability)
+        self.assertIn("SVar:DBOpponentsGainLife:DB$ GainLife | Defined$ Opponent | LifeAmount$ 2", text)
+        self.assertIn("移回你手上，然后每位对手获得2点生命。", text)
 
     def test_arcane_breath_optional_behold_damage_and_draw(self):
         text = ARCANE.read_text(encoding="utf-8")
