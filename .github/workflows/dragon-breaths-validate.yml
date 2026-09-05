@@ -1,0 +1,125 @@
+name: Validate and publish Dragon Breaths trio
+
+on:
+  push:
+    branches:
+      - automation/dragon-breaths-20260905
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-publish-source:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - name: Check out transient automation
+        uses: actions/checkout@v4
+        with:
+          ref: automation/dragon-breaths-20260905
+          path: automation
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Check out authoritative DIY source
+        uses: actions/checkout@v4
+        with:
+          ref: diy
+          path: source
+          fetch-depth: 0
+
+      - name: Prepare Python dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check pillow requests
+
+      - name: Generate source changes on latest diy
+        shell: pwsh
+        run: |
+          python automation/.github/dragon_breaths_builder.py source
+          if ($LASTEXITCODE -ne 0) { throw 'Dragon Breaths source generator failed.' }
+          git -C source diff --check
+          if ($LASTEXITCODE -ne 0) { throw 'Generated source diff check failed.' }
+
+      - name: Run targeted card lint and tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Push-Location source/custom
+          python tools/lint_card.py 'cards/white/龙鳞祭司.txt'
+          if ($LASTEXITCODE -ne 0) { throw '龙鳞祭司 lint failed.' }
+          python tools/lint_card.py 'cards/multicolor/奥术吐息.txt'
+          if ($LASTEXITCODE -ne 0) { throw '奥术吐息 lint failed.' }
+          python tools/lint_card.py 'cards/multicolor/梦境吐息.txt'
+          if ($LASTEXITCODE -ne 0) { throw '梦境吐息 lint failed.' }
+          python -m unittest tests.test_dragon_breaths -v
+          if ($LASTEXITCODE -ne 0) { throw 'Dragon Breaths targeted tests failed.' }
+          Pop-Location
+
+      - name: Run full DIY Python regression suite
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Push-Location source/custom
+          python -m unittest discover -s tests -p 'test_*.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Full DIY Python regression suite failed.' }
+          Pop-Location
+
+      - name: Verify isolated Forge deployment
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Push-Location source/custom
+          & ./tools/install_to_forge.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'install_to_forge.ps1 failed.' }
+          Pop-Location
+
+      - name: Record validation boundary
+        shell: pwsh
+        run: |
+          $record = @'
+
+## 2026-09-05 — 龙鳞祭司 / 奥术吐息 / 梦境吐息
+
+- Source implementation uses Forge's existing `Behold<1/Dragon>` cost model: Sarkhan-style triggered behold for 龙鳞祭司 and TDM Exhale-style `OptionalCost` for 奥术吐息 / 梦境吐息.
+- GitHub `windows-latest`: all three `lint_card.py` checks passed; `tests.test_dragon_breaths` passed; full DIY Python discovery suite passed; `tools/install_to_forge.ps1` completed successfully on the isolated runner profile.
+- Source Git publication is performed only after the above gates pass. Runtime publication and runtime gates are recorded separately in `forge-diy-runtime`.
+- Interactive desktop rendering and live-match behavior remain a separate client acceptance state and are not claimed by these automated checks.
+'@
+          Add-Content -LiteralPath 'source/custom/VERIFICATION.md' -Value $record -Encoding utf8
+
+      - name: Commit only authoritative source files and push diy
+        id: publish_source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Push-Location source
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- `
+            'custom/cards/white/龙鳞祭司.txt' `
+            'custom/cards/multicolor/奥术吐息.txt' `
+            'custom/cards/multicolor/梦境吐息.txt' `
+            'custom/tests/test_dragon_breaths.py' `
+            'custom/editions/Placeholder_Set.txt' `
+            'custom/CARDS.md' `
+            'custom/VERIFICATION.md' `
+            'forge-gui/res/languages/cardnames-zh-CN.txt'
+          git diff --cached --check
+          if ($LASTEXITCODE -ne 0) { throw 'Final staged source diff check failed.' }
+          git commit -m 'feat(custom): add Dragon Behold trio'
+          if ($LASTEXITCODE -ne 0) { throw 'Source commit failed.' }
+          $sha = (git rev-parse HEAD).Trim()
+          git push origin HEAD:diy
+          if ($LASTEXITCODE -ne 0) { throw 'Source push to diy failed.' }
+          "source_sha=$sha" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Pop-Location
+
+      - name: Report source SHA
+        shell: pwsh
+        run: |
+          Write-Host "Published forge:diy source commit ${{ steps.publish_source.outputs.source_sha }}"
