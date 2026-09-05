@@ -551,3 +551,8 @@ Java 测试从 `D:\Forge\forge-latest` 执行，并使用实际模块和测试�
 - 两份原画及两份 960×700 裁图的 SHA-256 与保存的原始契约一致；唯一源位置为 custom/cards/pictures/TOKEN_HS。
 - runtime 新增登记、脚本、汉化、原画哈希与 manifest 检查；独立样本验证正常文件通过，缺图、删登记、坏图均被拒绝。Windows CRLF 检查修复也验证仍会拒绝真实行尾空格。
 - 此记录只说明源码和独立检查已通过；远端发布、本机同步、客户端显示分开验收，不以静态检查冒充对局实测。
+
+### 请援龙脚本复核
+
+- 龙鳞祭司的进场 AB + Behold 费用与官方 Sarkhan, Dragon Ascendant 一致；两张吐息的 OptionalCost / ConditionOptionalPaid 与官方 Osseous Exhale 一致。CostBehold 使用 Hand,Battlefield；ChangeZone 的 Origin 自动约束目标区域。
+- 修正梦境吐息多余的 ShuffleNonMandatory 参数：已请援后，按官方 Rampant Growth 的搜地／强制洗牌语义处理；被禁止搜库时也不跳过“然后洗牌”。回归断言先失败，删除参数后 8 项目标测试和梦境吐息 lint 全部通过。

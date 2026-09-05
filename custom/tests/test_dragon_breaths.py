@@ -41,7 +41,11 @@ class DragonBreathsContractTest(unittest.TestCase):
         self.assertIn("SVar:DBRamp:DB$ ChangeZone | Condition$ OptionalCost | ConditionOptionalPaid$ True", text)
         self.assertIn("Origin$ Library | Destination$ Battlefield | Tapped$ True", text)
         self.assertIn("ChangeType$ Land.Basic", text)
-        self.assertIn("ShuffleNonMandatory$ True", text)
+        # Behold gates the whole search ability. Once that condition passes,
+        # "then shuffle" still applies when another effect prohibits searching.
+        self.assertNotIn("ShuffleNonMandatory", text)
+        self.assertNotIn("NoShuffle", text)
+        self.assertNotIn("Shuffle$ False", text)
 
     def test_registration_and_localization(self):
         edition = EDITION.read_text(encoding="utf-8")
