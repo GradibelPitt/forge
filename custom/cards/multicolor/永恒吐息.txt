@@ -1,0 +1,10 @@
+Name:永恒吐息
+ManaCost:1 W B
+Types:Sorcery
+S:Mode$ OptionalCost | EffectZone$ All | ValidCard$ Card.Self | ValidSA$ Spell | Cost$ Behold<1/Dragon> | Description$ 你可以请援龙，以作为施放此咒语的额外费用。
+A:SP$ PumpAll | ValidCards$ Creature | NumAtt$ -3 | NumDef$ -3 | IsCurse$ True | SubAbility$ DBExileOppGy | SpellDescription$ 所有生物得-3/-3直到回合结束。如果已请援龙，则改为由对手操控的生物得-3/-3直到回合结束。放逐所有对手的坟墓场。
+SVar:DBExileOppGy:DB$ ChangeZoneAll | ChangeType$ Card.OppCtrl | Origin$ Graveyard | Destination$ Exile | SubAbility$ DBRestoreYours
+SVar:DBRestoreYours:DB$ PumpAll | ValidCards$ Creature.YouCtrl | NumAtt$ +3 | NumDef$ +3 | Condition$ OptionalCost | ConditionOptionalPaid$ True
+DeckHints:Type$Dragon
+DeckHas:Ability$Graveyard
+Oracle:你可以请援龙，以作为施放此咒语的额外费用。\n所有生物得-3/-3直到回合结束。如果已请援龙，则改为由对手操控的生物得-3/-3直到回合结束。\n放逐所有对手的坟墓场。

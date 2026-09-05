@@ -1,0 +1,8 @@
+Name:龙族研习
+ManaCost:W
+Types:Sorcery
+K:AlternateAdditionalCost:Behold<1/Dragon>:1
+A:SP$ Dig | DigNum$ 5 | ChangeNum$ 1 | Optional$ True | ChangeValid$ Dragon | SubAbility$ DBDragonMana | SpellDescription$ 检视你牌库顶的五张牌。你可以展示其中一张龙牌并置于你手上。然后将其余的牌以任意顺序置于你牌库底。加一点任意颜色的法术力。此法术力只能用来施放龙咒语。
+SVar:DBDragonMana:DB$ Mana | Produced$ Any | Amount$ 1 | RestrictValid$ Spell.Creature+Dragon
+DeckHints:Type$Dragon
+Oracle:请援龙或支付{1}，以作为施放此咒语的额外费用。\n检视你牌库顶的五张牌。你可以展示其中一张龙牌并置于你手上。然后将其余的牌以任意顺序置于你牌库底。加一点任意颜色的法术力。此法术力只能用来施放龙咒语。

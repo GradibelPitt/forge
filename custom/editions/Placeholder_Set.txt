@@ -134,3 +134,7 @@ Type=Custom_Set
 140 U 龙鳞祭司 @Custom
 141 C 奥术吐息 @Custom
 142 C 梦境吐息 @Custom
+143 U 永恒吐息 @Custom
+144 C 龙族研习 @Custom
+145 U 燃棘枪兵 @Custom
+146 U 琥珀雏龙 @Custom

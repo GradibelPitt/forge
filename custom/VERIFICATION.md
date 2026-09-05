@@ -1,5 +1,7 @@
 # Forge DIY Verification Status
 
+- 2026-09-05 新增 PH01 #143–146 请援龙小套牌：永恒吐息、龙族研习、燃棘枪兵、琥珀雏龙。四张牌的脚本、PH01 登记、简中四字段、卡表和定向契约一并加入；4/4 单卡 lint 与新增契约 5/5 通过。DIY 全量在改动树运行 523 项、远端基线 `0accd700` 运行 518 项，两边均为同样的 3 个既有失败与 4 个既有错误，新增五项全部通过且回归失败增量为零。未提供这四张牌的原画，因此本次不包含原图备份、artcrop、图片缓存或客户端牌面验收；本机运行载荷同步、Forge 重启及实际对局仍分别待确认。
+
 - 2026-09-05 九卡定向修订：飞行员帕奇斯为传奇；要塞指挥官仅横置起动；十字军光环攻击永久加成 +3/+2；魔能机甲放逐牌库顶三张；心灵视界为瞬间，化生牌永久具有 Harmony 并保留减 {1}，化生前清除对手手牌记忆以免误授予；镀银魔像与虚触侍从只改描述。源码/运行远端基线 7aa8d834 / 582f7252 内容一致，运行清单基线校验通过。液力压裂将未选两张放逐；八组目标 Python 契约 24/24、八卡 lint、diff 检查通过；未登记的 3/4 超世之杰曹操仅残留本机 Profile，按用户要求定向移除。殒命暗影脚本及已发布描述保留。客户端重启与对局实测待确认。
 
 - 2026-09-05 龙鳞祭司（PH01 #140）：保持 {W}、1/2 与请援龙条件，在 TrigReturn 的回收效果后串联 GainLife，Defined 为 Opponent，每位对手各获得2点生命。Oracle、简中与卡表同步更新；test_dragon_breaths.py 4/4 和单卡 lint 通过。脚本已定向同步到本机 managed 与 Profile，字节一致；客户端重启和新对局实测待完成。
@@ -550,6 +552,15 @@ Java 测试从 `D:\Forge\forge-latest` 执行，并使用实际模块和测试�
 - Source implementation reuses Forge's verified `Behold<1/Dragon>` models: Sarkhan-style triggered behold for 龙鳞祭司 and TDM Exhale-style `OptionalCost` for 奥术吐息 / 梦境吐息.
 - GitHub `windows-latest`: all three `lint_card.py` checks and all four targeted contract tests passed. The complete DIY Python suite was run both before and after this change with `resvg_py` available; the post-change failure/error set exactly matched the clean `diy` baseline, with zero regression delta. The two classified pre-existing failures are the `法术反制` wording-order contract and `开进码头` punctuation contract.
 - `tools/install_to_forge.ps1` completed successfully on the isolated runner profile. Runtime publication is gated separately. Interactive desktop rendering and live-match behavior remain separate client acceptance states.
+
+## 2026-09-05 — PH01 #143–146 请援龙小套牌
+
+- 永恒吐息使用单一结算链：先令所有生物得 -3/-3，放逐 `Card.OppCtrl` 的全部坟墓场牌；若已支付请援费用，再令结算时由你操控的生物得 +3/+3。状态动作在整个咒语结算后检查，因此已请援时的最终效果等同于只令对手生物得 -3/-3，同时坟场放逐不受条件分支影响。
+- 龙族研习沿用 Caustic Exhale 的 `AlternateAdditionalCost:Behold<1/Dragon>:1`、Commune with Nature／Orb of Dragonkind 的顶五 `Dig` 与 Haven of the Spirit Dragon 的受限任意色法术力格式；该法术力只可支付龙生物咒语。
+- 燃棘枪兵沿用 Sarkhan, Dragon Ascendant／龙鳞祭司的进场 `AB$ ... | Cost$ Behold<1/Dragon>` 可选动作，并使用官方 `Creature.tapped` 目标过滤。
+- 琥珀雏龙不从进场能力直接读取 `ConditionOptionalPaid`；它沿用已验证的戏水雏龙／Graven Archfiend 桥接，在 `ChangesZone` 触发上通过 `CastSA>Count$OptionalGenericCostPaid.1.0` 与 `NoResolvingCheck$ True` 读取施放期请援状态。
+- 四张单卡 lint 全部通过；`test_ph01_dragon_support_batch.py` 5/5 通过。全量 DIY 测试的改动树为 523 项、基线为 518 项，两边的失败集合一致（3 个既有断言失败、4 个由浅检出缺文件／模块造成的既有错误），所以本批次的五项新增契约没有引入回归。
+- 这批未收到原画输入，故不虚构四张 `.artcrop.jpg`。原画备份、约 1.37:1 的 RGB JPEG 裁图、缓存同步、Forge 重启与真实对局验收仍待原画到位后执行。
 
 ## 2026-09-05 — TOKEN_HS 两张卡扎库斯药水恢复
 

@@ -1,0 +1,9 @@
+Name:琥珀雏龙
+ManaCost:1 R W
+Types:Creature Dragon
+PT:3/3
+S:Mode$ OptionalCost | EffectZone$ All | ValidCard$ Card.Self | ValidSA$ Spell | Cost$ Behold<1/Dragon> | Description$ 你可以请援龙，以作为施放此咒语的额外费用。
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | CheckSVar$ CastSA>Count$OptionalGenericCostPaid.1.0 | NoResolvingCheck$ True | Execute$ TrigDamage | TriggerDescription$ 于琥珀雏龙进场时，如果已请援龙，则它对任意一个目标造成3点伤害。
+SVar:TrigDamage:DB$ DealDamage | ValidTgts$ Any | TgtPrompt$ 选择任意一个目标 | NumDmg$ 3
+DeckHints:Type$Dragon
+Oracle:你可以请援龙，以作为施放此咒语的额外费用。\n于琥珀雏龙进场时，如果已请援龙，则它对任意一个目标造成3点伤害。

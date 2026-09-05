@@ -1,0 +1,10 @@
+Name:燃棘枪兵
+ManaCost:2 R
+Types:Creature Orc Warrior
+PT:3/2
+K:First Strike
+K:Menace
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigDestroy | TriggerDescription$ 当燃棘枪兵进场时，你可以请援龙。若你如此作，消灭目标已横置的生物。
+SVar:TrigDestroy:AB$ Destroy | Cost$ Behold<1/Dragon> | ValidTgts$ Creature.tapped | TgtPrompt$ 选择目标已横置的生物
+DeckHints:Type$Dragon
+Oracle:先攻，威慑\n当燃棘枪兵进场时，你可以请援龙。若你如此作，消灭目标已横置的生物。
