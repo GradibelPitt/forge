@@ -1,4 +1,4 @@
-name: Dragon Breaths art probe
+name: Publish Dragon Breaths artwork
 
 on: [push]
 
@@ -7,39 +7,136 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  art_probe:
+  publish_art:
     if: github.ref == 'refs/heads/automation/dragon-breaths-20260905'
     runs-on: windows-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
     steps:
-      - name: Checkout PH01 pictures only
+      - name: Checkout transient automation
+        uses: actions/checkout@v4
+        with:
+          ref: automation/dragon-breaths-20260905
+          path: automation
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Checkout authoritative diy picture tree
         uses: actions/checkout@v4
         with:
           ref: diy
+          path: source
           fetch-depth: 1
           sparse-checkout: |
             custom/cards/pictures/PH01
           sparse-checkout-cone-mode: false
-      - name: Install Pillow
+
+      - name: Install image helpers
         shell: pwsh
-        run: python -m pip install --disable-pip-version-check pillow
-      - name: Inspect PH01 artcrop dimensions
+        run: python -m pip install --disable-pip-version-check pillow requests
+
+      - name: Download exact labeled source art and crop
         shell: python
         run: |
-          from collections import Counter
+          from __future__ import annotations
+          import hashlib
+          import io
+          import json
           from pathlib import Path
+          from urllib.parse import quote
+          import requests
           from PIL import Image
-          files = sorted(Path('custom/cards/pictures/PH01').glob('*.artcrop.jpg'))
-          counts = Counter()
-          ratios = Counter()
-          for p in files:
-              with Image.open(p) as im:
-                  w, h = im.size
-              counts[(w, h)] += 1
-              ratios[round(w / h, 4)] += 1
-          print('ARTCROP_COUNT=', len(files))
-          print('TOP_SIZES=', counts.most_common(20))
-          print('TOP_RATIOS=', ratios.most_common(20))
-          for p in files[-20:]:
-              with Image.open(p) as im:
-                  print('SAMPLE', p.name, im.size, round(im.width/im.height,4))
+
+          API = 'https://warcraft.wiki.gg/api.php'
+          UA = 'GradibelPitt-Forge-DIY/1.0 (art synchronization)'
+          OUT = Path('source/custom/cards/pictures/PH01')
+          OUT.mkdir(parents=True, exist_ok=True)
+          TARGET = (1024, 748)
+          EXPECTED = {
+              '龙鳞祭司': ('Cleric of Scales HS.jpg', (900, 1200), 0.42),
+              '奥术吐息': ('Arcane Breath HS.jpg', (1024, 831), 0.50),
+              '梦境吐息': ('Breath of Dreams HS.jpg', (1022, 826), 0.50),
+          }
+
+          session = requests.Session()
+          session.headers.update({'User-Agent': UA})
+
+          def file_url(filename: str) -> str:
+              params = {
+                  'action': 'query',
+                  'format': 'json',
+                  'prop': 'imageinfo',
+                  'iiprop': 'url',
+                  'titles': f'File:{filename}',
+              }
+              r = session.get(API, params=params, timeout=30)
+              r.raise_for_status()
+              data = r.json()
+              pages = data['query']['pages']
+              page = next(iter(pages.values()))
+              info = page.get('imageinfo')
+              if not info:
+                  raise RuntimeError(f'No imageinfo returned for {filename}: {data}')
+              return info[0]['url']
+
+          def crop_to_target(im: Image.Image, focus_y: float) -> Image.Image:
+              tw, th = TARGET
+              target_ratio = tw / th
+              w, h = im.size
+              src_ratio = w / h
+              if src_ratio > target_ratio:
+                  crop_w = round(h * target_ratio)
+                  left = max(0, min(w - crop_w, round((w - crop_w) / 2)))
+                  box = (left, 0, left + crop_w, h)
+              else:
+                  crop_h = round(w / target_ratio)
+                  center_y = round(h * focus_y)
+                  top = center_y - crop_h // 2
+                  top = max(0, min(h - crop_h, top))
+                  box = (0, top, w, top + crop_h)
+              cropped = im.crop(box)
+              return cropped.resize(TARGET, Image.Resampling.LANCZOS)
+
+          for card, (filename, expected_size, focus_y) in EXPECTED.items():
+              url = file_url(filename)
+              r = session.get(url, timeout=60)
+              r.raise_for_status()
+              source_bytes = r.content
+              with Image.open(io.BytesIO(source_bytes)) as raw:
+                  raw.load()
+                  actual = raw.size
+                  if actual != expected_size:
+                      raise RuntimeError(f'{filename}: expected {expected_size}, got {actual}')
+                  rgb = raw.convert('RGB')
+                  out_im = crop_to_target(rgb, focus_y)
+              out_path = OUT / f'{card}.artcrop.jpg'
+              out_im.save(out_path, 'JPEG', quality=94, subsampling=0, optimize=True)
+              with Image.open(out_path) as check:
+                  check.verify()
+              with Image.open(out_path) as check:
+                  if check.format != 'JPEG' or check.size != TARGET:
+                      raise RuntimeError(f'{out_path}: invalid output {check.format} {check.size}')
+              digest = hashlib.sha256(out_path.read_bytes()).hexdigest()
+              print(f'ART_OK {card} source={actual} output={TARGET} sha256={digest}')
+
+      - name: Commit only the three authoritative art crops
+        shell: pwsh
+        run: |
+          Set-Location source
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- 'custom/cards/pictures/PH01/龙鳞祭司.artcrop.jpg' 'custom/cards/pictures/PH01/奥术吐息.artcrop.jpg' 'custom/cards/pictures/PH01/梦境吐息.artcrop.jpg'
+          git status --short
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host 'Artwork already matches diy; nothing to commit.'
+            exit 0
+          }
+          git commit -m 'art(custom): add Dragon Behold trio artwork'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git push origin HEAD:diy
+          exit $LASTEXITCODE
