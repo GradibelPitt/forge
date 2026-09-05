@@ -61,21 +61,21 @@ jobs:
         shell: pwsh
         run: python -m pip install --disable-pip-version-check pillow requests resvg_py
 
-      - name: Classify clean diy regression baseline
+      - name: Confirm only the two known baseline failures remain
         shell: pwsh
         run: |
           python automation/.github/dragon_breaths_regression_gate.py baseline source "$env:RUNNER_TEMP/dragon-breaths-baseline.json"
           exit $LASTEXITCODE
 
-      - name: Generate final source files
+      - name: Repair pre-existing source wording contracts
         shell: pwsh
         run: |
-          python automation/.github/dragon_breaths_builder.py source
+          python automation/.github/dragon_breaths_source_hygiene.py source
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git -C source diff --check
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          exit $LASTEXITCODE
 
-      - name: Lint three cards
+      - name: Re-lint Dragon Behold trio
         shell: pwsh
         run: |
           Set-Location source/custom
@@ -86,17 +86,18 @@ jobs:
           python tools/lint_card.py 'cards/multicolor/梦境吐息.txt'
           exit $LASTEXITCODE
 
-      - name: Run targeted tests
+      - name: Re-run Dragon Behold targeted tests
         shell: pwsh
         run: |
           Set-Location source/custom
           python -m unittest tests.test_dragon_breaths -v
           exit $LASTEXITCODE
 
-      - name: Require zero regression delta
+      - name: Require fully green DIY Python suite
         shell: pwsh
         run: |
-          python automation/.github/dragon_breaths_regression_gate.py compare source "$env:RUNNER_TEMP/dragon-breaths-baseline.json"
+          Set-Location source/custom
+          python -m unittest discover -s tests -p 'test_*.py' -v
           exit $LASTEXITCODE
 
       - name: Verify isolated deployment
@@ -106,24 +107,24 @@ jobs:
           & ./tools/install_to_forge.ps1
           exit $LASTEXITCODE
 
-      - name: Record automated validation
+      - name: Record source gate cleanup
         shell: pwsh
         run: |
           $path = (Resolve-Path 'source/custom/VERIFICATION.md').Path
-          $record = "`n`n## 2026-09-05 — 龙鳞祭司 / 奥术吐息 / 梦境吐息`n`n- Source implementation reuses Forge's verified ``Behold<1/Dragon>`` models: Sarkhan-style triggered behold for 龙鳞祭司 and TDM Exhale-style ``OptionalCost`` for 奥术吐息 / 梦境吐息.`n- GitHub ``windows-latest``: all three ``lint_card.py`` checks and all four targeted contract tests passed. The complete DIY Python suite was run both before and after this change with ``resvg_py`` available; the post-change failure/error set exactly matched the clean ``diy`` baseline, with zero regression delta. The two classified pre-existing failures are the ``法术反制`` wording-order contract and ``开进码头`` punctuation contract.`n- ``tools/install_to_forge.ps1`` completed successfully on the isolated runner profile. Runtime publication is gated separately. Interactive desktop rendering and live-match behavior remain separate client acceptance states.`n"
+          $record = "`n`n## 2026-09-05 — Dragon Behold runtime-gate source cleanup`n`n- Before cleanup, the complete DIY Python suite reproduced exactly two pre-existing source failures: ``法术反制`` used ``法术或瞬间`` instead of ``瞬间或法术``, and the ``开进码头`` localization used curved quotes around ``毁灭战舰``.`n- Those two wording-only issues were corrected without changing card mechanics. With ``resvg_py`` installed, the complete DIY Python suite then passed with zero failures/errors; the Dragon Behold trio lints and four targeted contract tests also passed again.`n- ``tools/install_to_forge.ps1`` completed successfully on the isolated runner profile. This makes the authoritative source compatible with the permanent runtime publisher's strict all-tests-pass gate.`n"
           [System.IO.File]::AppendAllText($path, $record, [System.Text.UTF8Encoding]::new($false))
 
-      - name: Commit and push authoritative source
+      - name: Commit and push source hygiene
         shell: pwsh
         run: |
           Set-Location source
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- 'custom/cards/white/龙鳞祭司.txt' 'custom/cards/multicolor/奥术吐息.txt' 'custom/cards/multicolor/梦境吐息.txt' 'custom/tests/test_dragon_breaths.py' 'custom/editions/Placeholder_Set.txt' 'custom/CARDS.md' 'custom/VERIFICATION.md' 'forge-gui/res/languages/cardnames-zh-CN.txt'
+          git add -- 'custom/cards/blue/法术反制.txt' 'custom/VERIFICATION.md' 'forge-gui/res/languages/cardnames-zh-CN.txt'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git diff --cached --check
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          git commit -m 'feat(custom): add Dragon Behold trio'
+          git commit -m 'fix(custom): satisfy Chinese wording contracts'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git push origin HEAD:diy
           exit $LASTEXITCODE
