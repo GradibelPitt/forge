@@ -27,3 +27,94 @@ jobs:
           export DISPLAY=":1"
           Xvfb :1 -screen 0 800x600x8 &
           mvn -U -B clean test
+
+  dragon_breaths:
+    if: github.ref == 'refs/heads/automation/dragon-breaths-20260905'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    env:
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
+    steps:
+      - name: Checkout transient automation
+        uses: actions/checkout@v4
+        with:
+          ref: automation/dragon-breaths-20260905
+          path: automation
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Checkout authoritative diy source
+        uses: actions/checkout@v4
+        with:
+          ref: diy
+          path: source
+          fetch-depth: 0
+
+      - name: Install Python helpers
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pillow requests
+
+      - name: Generate final source files
+        shell: pwsh
+        run: |
+          python automation/.github/dragon_breaths_builder.py source
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git -C source diff --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Lint three cards
+        shell: pwsh
+        run: |
+          Set-Location source/custom
+          python tools/lint_card.py 'cards/white/龙鳞祭司.txt'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/lint_card.py 'cards/multicolor/奥术吐息.txt'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/lint_card.py 'cards/multicolor/梦境吐息.txt'
+          exit $LASTEXITCODE
+
+      - name: Run targeted tests
+        shell: pwsh
+        run: |
+          Set-Location source/custom
+          python -m unittest tests.test_dragon_breaths -v
+          exit $LASTEXITCODE
+
+      - name: Run full DIY regression suite
+        shell: pwsh
+        run: |
+          Set-Location source/custom
+          python -m unittest discover -s tests -p 'test_*.py'
+          exit $LASTEXITCODE
+
+      - name: Verify isolated deployment
+        shell: pwsh
+        run: |
+          Set-Location source/custom
+          & ./tools/install_to_forge.ps1
+          exit $LASTEXITCODE
+
+      - name: Record automated validation
+        shell: pwsh
+        run: |
+          $path = (Resolve-Path 'source/custom/VERIFICATION.md').Path
+          $record = "`n`n## 2026-09-05 — 龙鳞祭司 / 奥术吐息 / 梦境吐息`n`n- Source implementation reuses Forge's verified ``Behold<1/Dragon>`` models: Sarkhan-style triggered behold for 龙鳞祭司 and TDM Exhale-style ``OptionalCost`` for 奥术吐息 / 梦境吐息.`n- GitHub ``windows-latest``: all three ``lint_card.py`` checks passed; ``tests.test_dragon_breaths`` passed; full DIY Python discovery suite passed; ``tools/install_to_forge.ps1`` completed successfully on the isolated runner profile.`n- Automated source validation and isolated deployment are verified. Runtime publication is gated separately. Interactive desktop rendering and live-match behavior remain separate client acceptance states.`n"
+          [System.IO.File]::AppendAllText($path, $record, [System.Text.UTF8Encoding]::new($false))
+
+      - name: Commit and push authoritative source
+        shell: pwsh
+        run: |
+          Set-Location source
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- 'custom/cards/white/龙鳞祭司.txt' 'custom/cards/multicolor/奥术吐息.txt' 'custom/cards/multicolor/梦境吐息.txt' 'custom/tests/test_dragon_breaths.py' 'custom/editions/Placeholder_Set.txt' 'custom/CARDS.md' 'custom/VERIFICATION.md' 'forge-gui/res/languages/cardnames-zh-CN.txt'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --cached --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git commit -m 'feat(custom): add Dragon Behold trio'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git push origin HEAD:diy
+          exit $LASTEXITCODE
