@@ -537,3 +537,10 @@ Java 测试从 `D:\Forge\forge-latest` 执行，并使用实际模块和测试�
 - 卡牌脚本位于 `custom/cards/blue/大法师罗曼斯.txt`，并在 `custom/editions/Placeholder_Set.txt` 注册为 PH01 #139。
 - hswiki.gg 的 3375×4725 高清原画保存在 `custom/tools/card-artwork/RLK_803_art.jpg`；实际游戏裁图位于 `custom/cards/pictures/PH01/大法师罗曼斯.artcrop.jpg`，尺寸 3375×2464，RGB JPEG，约 1.37:1。
 - GitHub Actions 已运行该牌 lint 与三项定向契约测试；图片源文件、PH01 裁图、注册和汉化均纳入同一提交。
+
+
+## 2026-09-05 — 龙鳞祭司 / 奥术吐息 / 梦境吐息
+
+- Source implementation reuses Forge's verified `Behold<1/Dragon>` models: Sarkhan-style triggered behold for 龙鳞祭司 and TDM Exhale-style `OptionalCost` for 奥术吐息 / 梦境吐息.
+- GitHub `windows-latest`: all three `lint_card.py` checks and all four targeted contract tests passed. The complete DIY Python suite was run both before and after this change with `resvg_py` available; the post-change failure/error set exactly matched the clean `diy` baseline, with zero regression delta. The two classified pre-existing failures are the `法术反制` wording-order contract and `开进码头` punctuation contract.
+- `tools/install_to_forge.ps1` completed successfully on the isolated runner profile. Runtime publication is gated separately. Interactive desktop rendering and live-match behavior remain separate client acceptance states.

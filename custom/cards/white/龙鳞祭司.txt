@@ -1,0 +1,8 @@
+Name:龙鳞祭司
+ManaCost:W
+Types:Creature Human Cleric
+PT:1/2
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigReturn | TriggerDescription$ 当龙鳞祭司进场时，你可以请援龙。若你如此作，将目标瞬间或法术牌从你的坟墓场移回你手上。
+SVar:TrigReturn:AB$ ChangeZone | Cost$ Behold<1/Dragon> | Origin$ Graveyard | Destination$ Hand | ValidTgts$ Instant.YouOwn,Sorcery.YouOwn | TgtPrompt$ 选择目标你坟墓场中的瞬间或法术牌
+DeckHas:Ability$Graveyard
+Oracle:当龙鳞祭司进场时，你可以请援龙。若你如此作，将目标瞬间或法术牌从你的坟墓场移回你手上。

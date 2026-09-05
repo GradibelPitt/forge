@@ -1,0 +1,7 @@
+Name:梦境吐息
+ManaCost:G U
+Types:Sorcery
+S:Mode$ OptionalCost | EffectZone$ All | ValidCard$ Card.Self | ValidSA$ Spell | Cost$ Behold<1/Dragon> | Description$ 你可以请援龙，以作为施放此咒语的额外费用。
+A:SP$ Draw | Defined$ You | NumCards$ 1 | SubAbility$ DBRamp | SpellDescription$ 抓一张牌。如果已请援龙，则从你牌库中搜寻一张基本地牌，将该牌横置放进战场，然后洗牌。
+SVar:DBRamp:DB$ ChangeZone | Condition$ OptionalCost | ConditionOptionalPaid$ True | Origin$ Library | Destination$ Battlefield | Tapped$ True | ChangeType$ Land.Basic | ChangeTypeDesc$ 基本地牌 | ShuffleNonMandatory$ True
+Oracle:你可以请援龙，以作为施放此咒语的额外费用。\n抓一张牌。如果已请援龙，则从你牌库中搜寻一张基本地牌，将该牌横置放进战场，然后洗牌。

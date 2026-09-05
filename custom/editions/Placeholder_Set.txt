@@ -131,3 +131,6 @@ Type=Custom_Set
 137 C 玩具船 @BOSi Studio
 138 R 法术反制 @Jason Chan
 139 M 大法师罗曼斯 @Custom
+140 U 龙鳞祭司 @Custom
+141 C 奥术吐息 @Custom
+142 C 梦境吐息 @Custom
