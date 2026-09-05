@@ -59,7 +59,13 @@ jobs:
 
       - name: Install Python helpers
         shell: pwsh
-        run: python -m pip install --disable-pip-version-check pillow requests
+        run: python -m pip install --disable-pip-version-check pillow requests resvg_py
+
+      - name: Classify clean diy regression baseline
+        shell: pwsh
+        run: |
+          python automation/.github/dragon_breaths_regression_gate.py baseline source "$env:RUNNER_TEMP/dragon-breaths-baseline.json"
+          exit $LASTEXITCODE
 
       - name: Generate final source files
         shell: pwsh
@@ -87,11 +93,10 @@ jobs:
           python -m unittest tests.test_dragon_breaths -v
           exit $LASTEXITCODE
 
-      - name: Run full DIY regression suite
+      - name: Require zero regression delta
         shell: pwsh
         run: |
-          Set-Location source/custom
-          python -m unittest discover -s tests -p 'test_*.py'
+          python automation/.github/dragon_breaths_regression_gate.py compare source "$env:RUNNER_TEMP/dragon-breaths-baseline.json"
           exit $LASTEXITCODE
 
       - name: Verify isolated deployment
@@ -105,7 +110,7 @@ jobs:
         shell: pwsh
         run: |
           $path = (Resolve-Path 'source/custom/VERIFICATION.md').Path
-          $record = "`n`n## 2026-09-05 — 龙鳞祭司 / 奥术吐息 / 梦境吐息`n`n- Source implementation reuses Forge's verified ``Behold<1/Dragon>`` models: Sarkhan-style triggered behold for 龙鳞祭司 and TDM Exhale-style ``OptionalCost`` for 奥术吐息 / 梦境吐息.`n- GitHub ``windows-latest``: all three ``lint_card.py`` checks passed; ``tests.test_dragon_breaths`` passed; full DIY Python discovery suite passed; ``tools/install_to_forge.ps1`` completed successfully on the isolated runner profile.`n- Automated source validation and isolated deployment are verified. Runtime publication is gated separately. Interactive desktop rendering and live-match behavior remain separate client acceptance states.`n"
+          $record = "`n`n## 2026-09-05 — 龙鳞祭司 / 奥术吐息 / 梦境吐息`n`n- Source implementation reuses Forge's verified ``Behold<1/Dragon>`` models: Sarkhan-style triggered behold for 龙鳞祭司 and TDM Exhale-style ``OptionalCost`` for 奥术吐息 / 梦境吐息.`n- GitHub ``windows-latest``: all three ``lint_card.py`` checks and all four targeted contract tests passed. The complete DIY Python suite was run both before and after this change with ``resvg_py`` available; the post-change failure/error set exactly matched the clean ``diy`` baseline, with zero regression delta. The two classified pre-existing failures are the ``法术反制`` wording-order contract and ``开进码头`` punctuation contract.`n- ``tools/install_to_forge.ps1`` completed successfully on the isolated runner profile. Runtime publication is gated separately. Interactive desktop rendering and live-match behavior remain separate client acceptance states.`n"
           [System.IO.File]::AppendAllText($path, $record, [System.Text.UTF8Encoding]::new($false))
 
       - name: Commit and push authoritative source
