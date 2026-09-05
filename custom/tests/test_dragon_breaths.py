@@ -28,7 +28,7 @@ class DragonBreathsContractTest(unittest.TestCase):
         self.assertIn("Types:Instant", text)
         self.assertIn("Cost$ Behold<1/Dragon>", text)
         self.assertIn("A:SP$ DealDamage | ValidTgts$ Creature", text)
-        self.assertIn("NumDmg$ 2", text)
+        self.assertIn("NumDmg$ 4", text)
         self.assertIn("SubAbility$ DBDraw", text)
         self.assertIn("SVar:DBDraw:DB$ Draw | Condition$ OptionalCost | ConditionOptionalPaid$ True | Defined$ You | NumCards$ 1", text)
 

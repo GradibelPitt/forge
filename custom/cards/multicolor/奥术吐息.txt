@@ -2,6 +2,6 @@ Name:奥术吐息
 ManaCost:U R
 Types:Instant
 S:Mode$ OptionalCost | EffectZone$ All | ValidCard$ Card.Self | ValidSA$ Spell | Cost$ Behold<1/Dragon> | Description$ 你可以请援龙，以作为施放此咒语的额外费用。
-A:SP$ DealDamage | ValidTgts$ Creature | TgtPrompt$ 选择目标生物 | NumDmg$ 2 | SubAbility$ DBDraw | SpellDescription$ 奥术吐息对目标生物造成2点伤害。如果已请援龙，则你抓一张牌。
+A:SP$ DealDamage | ValidTgts$ Creature | TgtPrompt$ 选择目标生物 | NumDmg$ 4 | SubAbility$ DBDraw | SpellDescription$ 奥术吐息对目标生物造成4点伤害。如果已请援龙，则你抓一张牌。
 SVar:DBDraw:DB$ Draw | Condition$ OptionalCost | ConditionOptionalPaid$ True | Defined$ You | NumCards$ 1
-Oracle:你可以请援龙，以作为施放此咒语的额外费用。\n奥术吐息对目标生物造成2点伤害。如果已请援龙，则你抓一张牌。
+Oracle:你可以请援龙，以作为施放此咒语的额外费用。\n奥术吐息对目标生物造成4点伤害。如果已请援龙，则你抓一张牌。
