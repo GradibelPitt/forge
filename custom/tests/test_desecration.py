@@ -19,32 +19,40 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "亵渎.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "亵渎对所有生物造成1点伤害。若有生物因亵渎死去，则直到你的回合结束，"
+    "你失去1点生命。所有生物得-0/-1直到回合结束。若有生物因亵渎的效果死去，则直到你的回合结束，"
     "你可以从你的坟墓场施放亵渎，且不需支付其法术力费用。"
 )
 
 
 class DesecrationContractTest(unittest.TestCase):
-    def test_damage_and_causal_death_watcher(self):
+    def test_life_loss_and_toughness_reduction_with_causal_death_watcher(self):
         lines = CARD.read_text(encoding="utf-8").splitlines()
 
         self.assertIn("Name:亵渎", lines)
         self.assertIn("ManaCost:B B", lines)
         self.assertIn("Types:Sorcery", lines)
-        spell = next(line for line in lines if line.startswith("A:SP$ DamageAll"))
-        self.assertIn("ValidCards$ Creature", spell)
-        self.assertIn("NumDmg$ 1", spell)
-        self.assertIn("SubAbility$ DBWatchDeaths", spell)
+        spell = next(line for line in lines if line.startswith("A:SP$ LoseLife"))
+        self.assertIn("Defined$ You", spell)
+        self.assertIn("LifeAmount$ 1", spell)
+        self.assertIn("SubAbility$ DBWeaken", spell)
+        weaken = next(line for line in lines if line.startswith("SVar:DBWeaken:"))
+        for field in ("DB$ PumpAll", "ValidCards$ Creature", "NumAtt$ 0", "NumDef$ -1",
+                      "Duration$ UntilEndOfTurn", "RememberPumped$ True", "SubAbility$ DBWatchDeaths"):
+            self.assertIn(field, weaken)
 
         watcher = next(line for line in lines if line.startswith("SVar:DBWatchDeaths:"))
         self.assertIn("DB$ Effect", watcher)
         self.assertIn("Triggers$ TrigDeath", watcher)
         self.assertIn("RememberObjects$ Self", watcher)
+        self.assertIn("ImprintCards$ Remembered", watcher)
+        self.assertIn("Duration$ UntilStateBasedActionChecked", watcher)
+        self.assertIn("SubAbility$ DBCleanup", watcher)
+        self.assertIn("SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True", lines)
         death = next(line for line in lines if line.startswith("SVar:TrigDeath:"))
         self.assertIn("Mode$ ChangesZone", death)
         self.assertIn("Origin$ Battlefield", death)
         self.assertIn("Destination$ Graveyard", death)
-        self.assertIn("ValidCard$ Creature.DamagedBy RememberedLKI", death)
+        self.assertIn("ValidCard$ Creature.IsImprinted", death)
         self.assertIn("ActivationLimit$ 1", death)
         self.assertIn("Execute$ DBGrantRecast", death)
 

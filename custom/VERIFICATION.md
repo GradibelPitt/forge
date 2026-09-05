@@ -1,5 +1,7 @@
 # Forge DIY Verification Status
 
+- 2026-09-05 亵渎（PH01 #94）：费用保持 {B}{B}；结算时你失去1点生命，所有生物得 -0/-1 直到回合结束。以 PumpAll 记录受影响生物，死亡监听只持续到本次状态动作检查结束，复用官方 Skyshroud Ambush 的 UntilStateBasedActionChecked 写法；死亡后仍只允许该张亵渎从坟墓场免费再施放，权限至本回合结束。Python 定向契约 3/3、单卡 lint、基于本机实际运行 JAR 的 DesecrationTest 1/1 通过，覆盖生命损失、非伤害减防、后进场生物排除、再施放权限、监听到期、减防叠加及回合结束清理。客户端重启和新对局实测待完成。
+
 - 2026-09-05 收紧 `Mystery`（奥秘）翻面与退场边界：翻面特殊动作现在会先检查 `MysteryEffect` 各能力节点的强制目标数量；没有足够合法候选时不可翻面，无目标或目标下限为零的效果仍可正常翻面。翻回正面后不再提前牺牲来源，`MysteryEffect` 触发会正常进入并留在堆叠中完成结算；触发结算、目标失效或被反击而离开堆叠后，下一次状态检查才令正面奥秘牺牲，因此不会在效果处理完后留作无效摆设。TDD 红阶段准确得到无目标限制、提前牺牲结构与结算后留场三项失败；实现后 `MysteryTest` 10/10、`forge-game` Checkstyle 0 与 `git diff --check` 通过。按用户要求停止继续扩大战场压力回归；真实客户端中的不可翻面提示、目标选择、响应窗口和结算后退场仍待实际对局验收。
 
 - 2026-09-04 新增首张正式奥秘牌 PH01 #138 `法术反制`：真实卡面为 `{1}{U}{U}` 蓝色 `结界～奥秘`，具有 `K:Mystery`，翻回正面并牺牲后只可选择并反击堆叠中的目标瞬间或法术咒语。同步把奥秘 DSL 示例与 `MysteryTest` 测试牌改为标准 `Counter | TargetType$ Spell | ValidTgts$ Instant,Sorcery` 目标链，并断言生成的奥秘效果保留这两个合法目标类别。Jason Chan 的 1548×1200 RGB JPEG 原画逐字节保存在 `tools/card-artwork/Counterspell_full_original.jpg`，SHA-256 为 `A5F4BFABB5623C7F6040328CDF0A091ED426A6A81684852F20C27C2684527825`；中心裁成 1548×1130、约 1.37:1 的 RGB JPEG `PH01/法术反制.artcrop.jpg`，SHA-256 为 `F04D36B82913BF8A627E458B7339C738D341620F99FF383083D886D0CE19DFC9`。单卡合同 2/2、单卡 lint、相关 lint 基础测试 60/60、`forge-game` Checkstyle 0 与 `MysteryTest` 6/6 全部通过。尚未用真实客户端完成隐藏施放、对手视角、翻面选取堆叠咒语和反击结算的对局验收。

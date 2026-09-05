@@ -1,10 +1,12 @@
 Name:亵渎
 ManaCost:B B
 Types:Sorcery
-A:SP$ DamageAll | ValidCards$ Creature | NumDmg$ 1 | SubAbility$ DBWatchDeaths | SpellDescription$ 亵渎对所有生物造成1点伤害。若有生物因亵渎死去，则直到你的回合结束，你可以从你的坟墓场施放亵渎，且不需支付其法术力费用。
-SVar:DBWatchDeaths:DB$ Effect | Triggers$ TrigDeath | RememberObjects$ Self
-SVar:TrigDeath:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Creature.DamagedBy RememberedLKI | TriggerZones$ Command | ActivationLimit$ 1 | Execute$ DBGrantRecast | TriggerDescription$ 若有生物因亵渎死去，则直到你的回合结束，你可以从你的坟墓场施放亵渎，且不需支付其法术力费用。
+A:SP$ LoseLife | Defined$ You | LifeAmount$ 1 | SubAbility$ DBWeaken | SpellDescription$ 你失去1点生命。所有生物得-0/-1直到回合结束。若有生物因亵渎的效果死去，则直到你的回合结束，你可以从你的坟墓场施放亵渎，且不需支付其法术力费用。
+SVar:DBWeaken:DB$ PumpAll | ValidCards$ Creature | NumAtt$ 0 | NumDef$ -1 | Duration$ UntilEndOfTurn | IsCurse$ True | RememberPumped$ True | SubAbility$ DBWatchDeaths
+SVar:DBWatchDeaths:DB$ Effect | Triggers$ TrigDeath | RememberObjects$ Self | ImprintCards$ Remembered | Duration$ UntilStateBasedActionChecked | SubAbility$ DBCleanup
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+SVar:TrigDeath:Mode$ ChangesZone | Origin$ Battlefield | Destination$ Graveyard | ValidCard$ Creature.IsImprinted | TriggerZones$ Command | ActivationLimit$ 1 | Execute$ DBGrantRecast | TriggerDescription$ 若有生物因亵渎的效果死去，则直到你的回合结束，你可以从你的坟墓场施放亵渎，且不需支付其法术力费用。
 SVar:DBGrantRecast:DB$ Effect | RememberObjects$ Remembered | StaticAbilities$ FreeCastFromGrave | ForgetOnMoved$ Graveyard | Duration$ UntilEndOfTurn
 SVar:FreeCastFromGrave:Mode$ Continuous | Affected$ Sorcery.IsRemembered | MayPlay$ True | MayPlayWithoutManaCost$ True | AffectedZone$ Graveyard | Description$ 直到你的回合结束，你可以从你的坟墓场施放亵渎，且不需支付其法术力费用。
 DeckHas:Ability$Graveyard
-Oracle:亵渎对所有生物造成1点伤害。若有生物因亵渎死去，则直到你的回合结束，你可以从你的坟墓场施放亵渎，且不需支付其法术力费用。
+Oracle:你失去1点生命。所有生物得-0/-1直到回合结束。若有生物因亵渎的效果死去，则直到你的回合结束，你可以从你的坟墓场施放亵渎，且不需支付其法术力费用。

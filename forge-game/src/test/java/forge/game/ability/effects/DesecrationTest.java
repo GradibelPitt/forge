@@ -37,7 +37,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 public class DesecrationTest {
@@ -62,7 +61,7 @@ public class DesecrationTest {
     }
 
     @Test
-    public void damagedCreatureDeathGrantsOnlyTheRememberedCardAFreeGraveyardCast()
+    public void toughnessReductionDeathGrantsOnlyTheRememberedCardAFreeGraveyardCast()
             throws Exception {
         final GameRules rules = new GameRules(GameType.Constructed);
         final Game game = new Game(Collections.emptyList(), rules,
@@ -75,6 +74,8 @@ public class DesecrationTest {
         opponent.setTeam(2);
         game.getPhaseHandler().setPlayerTurn(controller);
         game.setAge(GameStage.Play);
+        controller.setLife(20, null);
+        opponent.setLife(20, null);
 
         final Path script = Paths.get("..", "custom", "cards", "black", "亵渎.txt")
                 .toAbsolutePath().normalize();
@@ -85,29 +86,37 @@ public class DesecrationTest {
         desecration = game.getAction().moveTo(ZoneType.Stack, desecration, null, null);
 
         final Card damagedCreature = addCreature(
-                game, opponent, "Creature damaged by Desecration");
-        final Card unrelatedCreature = addCreature(
-                game, opponent, "Creature not damaged by Desecration");
-        desecration.getDamageHistory().registerDamage(
-                1, false, desecration, damagedCreature, new HashMap<>());
+                game, opponent, "Creature weakened by Desecration");
+        final Card survivor = addCreature(game, controller, "Surviving creature");
+        survivor.addPTBoost(0, 2, game.getNextTimestamp(), 0);
 
-        final SpellAbility watcherAbility = AbilityFactory.getAbility(
-                desecration.getSVar("DBWatchDeaths"), desecration);
-        watcherAbility.setActivatingPlayer(controller);
-        AbilityUtils.resolve(watcherAbility);
+        final SpellAbility spell = desecration.getFirstSpellAbility();
+        spell.setActivatingPlayer(controller);
+        AbilityUtils.resolve(spell);
+        Assert.assertEquals(controller.getLife(), 19);
+        Assert.assertEquals(opponent.getLife(), 20);
+        Assert.assertEquals(damagedCreature.getNetToughness(), 0);
+        Assert.assertEquals(damagedCreature.getNetPower(), 1);
+        Assert.assertEquals(damagedCreature.getDamage(), 0);
+        Assert.assertEquals(survivor.getNetToughness(), 2);
+        Assert.assertEquals(desecration.getRememberedCount(), 0);
+        final Card unrelatedCreature = addCreature(
+                game, opponent, "Creature entering after Desecration");
+        Assert.assertEquals(unrelatedCreature.getNetToughness(), 1);
 
         final Card watcher = controller.getCardsIn(ZoneType.Command).stream()
                 .filter(card -> !card.getTriggers().isEmpty())
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("the spell did not create its death watcher"));
         Assert.assertEquals(watcher.getRememberedCount(), 1);
+        Assert.assertEquals(watcher.getImprintedCards().size(), 2);
         final Trigger deathTrigger = watcher.getTriggers().get(0);
 
         final Card graveyardDesecration = game.getAction().moveTo(
                 ZoneType.Graveyard, desecration, null, null);
         final Map<AbilityKey, Object> damagedDies = zoneChangeParams(damagedCreature);
         Assert.assertTrue(deathTrigger.performTest(damagedDies),
-                "a creature damaged by the remembered spell should satisfy the death condition");
+                "a creature weakened by the spell should satisfy the immediate death condition");
         Assert.assertFalse(deathTrigger.performTest(zoneChangeParams(unrelatedCreature)),
                 "an unrelated creature death must not grant the graveyard cast");
 
@@ -138,6 +147,23 @@ public class DesecrationTest {
         Assert.assertEquals(option.getPayManaCost(), CardPlayOption.PayManaCost.NO);
         Assert.assertTrue(option.grantsZonePermissions(),
                 "the permission must allow casting the remembered card from the graveyard");
+
+        game.runSBACheckedCommands();
+        Assert.assertFalse(controller.getCardsIn(ZoneType.Command).contains(watcher),
+                "later unrelated deaths must not be watched");
+        Assert.assertTrue(controller.getCardsIn(ZoneType.Command).contains(permissionEffect),
+                "the earned recast permission must survive the death watcher");
+
+        final SpellAbility secondWeaken = AbilityFactory.getAbility(
+                desecration.getSVar("DBWeaken"), graveyardDesecration);
+        secondWeaken.setActivatingPlayer(controller);
+        AbilityUtils.resolve(secondWeaken);
+        Assert.assertEquals(survivor.getNetToughness(), 1,
+                "successive reductions must stack until end of turn");
+        game.runSBACheckedCommands();
+        game.getEndOfTurn().executeUntil();
+        Assert.assertEquals(survivor.getNetToughness(), 3);
+        Assert.assertFalse(controller.getCardsIn(ZoneType.Command).contains(permissionEffect));
     }
 
     private static Map<AbilityKey, Object> zoneChangeParams(final Card card) {
