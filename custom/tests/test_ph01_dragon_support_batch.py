@@ -1,6 +1,8 @@
 from pathlib import Path
 import unittest
 
+from PIL import Image
+
 
 CUSTOM = Path(__file__).resolve().parents[1]
 ROOT = CUSTOM.parent
@@ -8,6 +10,7 @@ ETERNAL = CUSTOM / "cards" / "multicolor" / "永恒吐息.txt"
 STUDY = CUSTOM / "cards" / "white" / "龙族研习.txt"
 LANCER = CUSTOM / "cards" / "red" / "燃棘枪兵.txt"
 WHELP = CUSTOM / "cards" / "multicolor" / "琥珀雏龙.txt"
+PICTURES = CUSTOM / "cards" / "pictures" / "PH01"
 EDITION = CUSTOM / "editions" / "Placeholder_Set.txt"
 LOCALIZATION = ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 CARDS = CUSTOM / "CARDS.md"
@@ -111,6 +114,22 @@ class Ph01DragonSupportBatchContractTest(unittest.TestCase):
         ):
             self.assertIn(f"| {name} |", catalog)
             self.assertIn(f"| {number} |", catalog)
+
+    def test_official_full_art_crops_are_present_and_loadable(self):
+        expected = (
+            "永恒吐息.artcrop.jpg",
+            "龙族研习.artcrop.jpg",
+            "燃棘枪兵.artcrop.jpg",
+            "琥珀雏龙.artcrop.jpg",
+        )
+        for filename in expected:
+            with self.subTest(filename=filename):
+                path = PICTURES / filename
+                self.assertTrue(path.is_file(), path)
+                with Image.open(path) as image:
+                    self.assertEqual("JPEG", image.format)
+                    self.assertEqual("RGB", image.mode)
+                    self.assertEqual((1024, 748), image.size)
 
 
 if __name__ == "__main__":

@@ -562,6 +562,12 @@ Java 测试从 `D:\Forge\forge-latest` 执行，并使用实际模块和测试�
 - 四张单卡 lint 全部通过；`test_ph01_dragon_support_batch.py` 5/5 通过。全量 DIY 测试的改动树为 523 项、基线为 518 项，两边的失败集合一致（3 个既有断言失败、4 个由浅检出缺文件／模块造成的既有错误），所以本批次的五项新增契约没有引入回归。
 - 这批未收到原画输入，故不虚构四张 `.artcrop.jpg`。原画备份、约 1.37:1 的 RGB JPEG 裁图、缓存同步、Forge 重启与真实对局验收仍待原画到位后执行。
 
+## 2026-09-05 — PH01 #143–146 官方原画补齐
+
+- 已从 Hearthstone Wiki 的对应 `full art` 文件取得原画并保存到 `custom/tools/card-artwork/`：`Breath_of_the_Infinite_full.jpg`（Anton Zemskov）、`Draconic_Studies_full.jpg`（Kagi）、`Smolderthorn_Lancer_full.jpg`（Dave Allsop）及 `Amber_Whelp_full.jpg`（Adam Byrne）。对应条目分别为 [Breath of the Infinite](https://hearthstone.wiki.gg/wiki/Breath_of_the_Infinite)、[Draconic Studies](https://hearthstone.wiki.gg/wiki/Draconic_Studies)、[Smolderthorn Lancer](https://hearthstone.wiki.gg/wiki/Smolderthorn_Lancer) 和 [Amber Whelp](https://hearthstone.wiki.gg/wiki/Amber_Whelp)。
+- 未使用 AI 生成或扩画。四张游戏裁图均为从原画取景后缩放的 `1024×748` RGB JPEG（约 1.37:1），位于 `custom/cards/pictures/PH01/`，文件名分别对应四张中文牌名。
+- 该记录仅确认原画来源、裁图文件和静态图像验证；runtime 发布、本机同步、客户端重启和界面显示仍需分别验收。
+
 ## 2026-09-05 — TOKEN_HS 两张卡扎库斯药水恢复
 
 - 已复现远端缺少脚本与 #1/#3 登记导致的四项契约失败；恢复最新原生恶魔版本后，两张药水及龙鳞祭司/奥术吐息/梦境吐息共 8 项定向测试通过，两张药水 lint 通过。
