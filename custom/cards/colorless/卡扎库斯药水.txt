@@ -1,0 +1,18 @@
+Name:卡扎库斯药水
+ManaCost:3
+Types:Sorcery
+A:SP$ Charm | Choices$ DBToken,DBDiscover,DBDraw,DBDamage,DBFreeze,DBBuff,DBDebuff,DBReanimate,DBLife,DBSheep | CharmNum$ 2
+SVar:DBToken:DB$ Token | TokenScript$ b_3_3_demon | TokenPower$ 5 | TokenToughness$ 5 | TokenOwner$ You | TokenAmount$ 1 | SpellDescription$ 派出一个5/5的恶魔衍生生物。
+SVar:DBDiscover:DB$ CardDiscover | Defined$ You | Source$ CardDatabase | ExcludeSets$ TOKEN_HS | ValidCards$ Creature.Demon | OptionCount$ 3 | Destination$ Hand | SubAbility$ DBDiscoverSecond | SpellDescription$ 发现两张恶魔牌。
+SVar:DBDiscoverSecond:DB$ CardDiscover | Defined$ You | Source$ CardDatabase | ExcludeSets$ TOKEN_HS | ValidCards$ Creature.Demon | OptionCount$ 3 | Destination$ Hand
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 2 | SpellDescription$ 抓两张牌。
+SVar:DBDamage:DB$ DealDamage | ValidTgts$ Any | NumDmg$ 5 | SpellDescription$ CARDNAME对任一目标造成5点伤害。
+SVar:DBFreeze:DB$ Tap | ValidTgts$ Creature | TargetMin$ 0 | TargetMax$ 2 | TgtPrompt$ 选择至多两个目标生物 | SubAbility$ DBFreezeLock | SpellDescription$ 横置至多两个目标生物。它们在各自操控者的下个重置步骤中不能重置。
+SVar:DBFreezeLock:DB$ Pump | Defined$ Targeted | KW$ HIDDEN This card doesn't untap during your next untap step. | Duration$ Permanent
+SVar:DBBuff:DB$ PumpAll | ValidCards$ Creature.YouCtrl | NumAtt$ +0 | NumDef$ +4 | Duration$ Perpetual | SpellDescription$ 你的每个生物永久得+0/+4。
+SVar:DBDebuff:DB$ PumpAll | ValidCards$ Creature | NumDef$ -4 | SpellDescription$ 所有生物得-0/-4直到回合结束。
+SVar:DBReanimate:DB$ ChangeZone | Origin$ Graveyard | Destination$ Battlefield | ChangeType$ Creature.YouOwn | ChangeNum$ 2 | Hidden$ True | Mandatory$ True | AtRandom$ True | SpellDescription$ 随机将两个生物从你的坟墓场移回战场。
+SVar:DBLife:DB$ GainLife | Defined$ You | LifeAmount$ 7 | SpellDescription$ 获得7点生命。
+SVar:DBSheep:DB$ Animate | ValidTgts$ Creature | TgtPrompt$ 选择目标生物 | Power$ 1 | Toughness$ 1 | RemoveAllAbilities$ True | Colors$ Green | OverwriteColors$ True | Types$ Sheep | RemoveCreatureTypes$ True | Duration$ Permanent | IsCurse$ True | SpellDescription$ 目标生物失去所有异能且成为1/1的绿色羊生物。
+DeckHas:Ability$Token|LifeGain & Type$Demon
+Oracle:选择两项：\n• 派出一个5/5的恶魔衍生生物。\n• 发现两张恶魔牌。\n• 抓两张牌。\n• 卡扎库斯药水对任一目标造成5点伤害。\n• 横置至多两个目标生物。它们在各自操控者的下个重置步骤中不能重置。\n• 你的每个生物永久得+0/+4。\n• 所有生物得-0/-4直到回合结束。\n• 随机将两个生物从你的坟墓场移回战场。\n• 获得7点生命。\n• 目标生物失去所有异能且成为1/1的绿色羊生物。

@@ -11,3 +11,5 @@ Type=Custom_Set
 5 C Emblem — Aya's Jade Treasure @Custom
 6 C Emblem — Aya's Burst Treasure @Custom
 7 C Emblem — Aya's Cunning Treasure @Custom
+1 C 小型卡扎库斯药水 @Konstantin Turovec
+3 C 卡扎库斯药水 @Konstantin Turovec

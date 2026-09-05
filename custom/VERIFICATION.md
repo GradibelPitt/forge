@@ -544,3 +544,10 @@ Java 测试从 `D:\Forge\forge-latest` 执行，并使用实际模块和测试�
 - Source implementation reuses Forge's verified `Behold<1/Dragon>` models: Sarkhan-style triggered behold for 龙鳞祭司 and TDM Exhale-style `OptionalCost` for 奥术吐息 / 梦境吐息.
 - GitHub `windows-latest`: all three `lint_card.py` checks and all four targeted contract tests passed. The complete DIY Python suite was run both before and after this change with `resvg_py` available; the post-change failure/error set exactly matched the clean `diy` baseline, with zero regression delta. The two classified pre-existing failures are the `法术反制` wording-order contract and `开进码头` punctuation contract.
 - `tools/install_to_forge.ps1` completed successfully on the isolated runner profile. Runtime publication is gated separately. Interactive desktop rendering and live-match behavior remain separate client acceptance states.
+
+## 2026-09-05 — TOKEN_HS 两张卡扎库斯药水恢复
+
+- 已复现远端缺少脚本与 #1/#3 登记导致的四项契约失败；恢复最新原生恶魔版本后，两张药水及龙鳞祭司/奥术吐息/梦境吐息共 8 项定向测试通过，两张药水 lint 通过。
+- 两份原画及两份 960×700 裁图的 SHA-256 与保存的原始契约一致；唯一源位置为 custom/cards/pictures/TOKEN_HS。
+- runtime 新增登记、脚本、汉化、原画哈希与 manifest 检查；独立样本验证正常文件通过，缺图、删登记、坏图均被拒绝。Windows CRLF 检查修复也验证仍会拒绝真实行尾空格。
+- 此记录只说明源码和独立检查已通过；远端发布、本机同步、客户端显示分开验收，不以静态检查冒充对局实测。

@@ -1,0 +1,16 @@
+Name:小型卡扎库斯药水
+ManaCost:1
+Types:Sorcery
+A:SP$ Charm | Choices$ DBToken,DBDiscover,DBDraw,DBDamage,DBFreeze,DBBuff,DBDebuff,DBReanimate,DBLife | CharmNum$ 2
+SVar:DBToken:DB$ Token | TokenScript$ b_3_3_demon | TokenPower$ 2 | TokenToughness$ 2 | TokenOwner$ You | TokenAmount$ 1 | SpellDescription$ 派出一个2/2的恶魔衍生生物。
+SVar:DBDiscover:DB$ CardDiscover | Defined$ You | Source$ CardDatabase | ExcludeSets$ TOKEN_HS | ValidCards$ Creature.Demon | OptionCount$ 3 | Destination$ Hand | SpellDescription$ 发现一张恶魔牌。
+SVar:DBDraw:DB$ Draw | Defined$ You | NumCards$ 1 | SpellDescription$ 抓一张牌。
+SVar:DBDamage:DB$ DealDamage | ValidTgts$ Any | NumDmg$ 3 | SpellDescription$ CARDNAME对任一目标造成3点伤害。
+SVar:DBFreeze:DB$ Tap | ValidTgts$ Creature | TgtPrompt$ 选择目标生物 | SubAbility$ DBFreezeLock | SpellDescription$ 横置目标生物。它在其操控者的下个重置步骤中不能重置。
+SVar:DBFreezeLock:DB$ Pump | Defined$ Targeted | KW$ HIDDEN This card doesn't untap during your next untap step. | Duration$ Permanent
+SVar:DBBuff:DB$ PumpAll | ValidCards$ Creature.YouCtrl | NumAtt$ +0 | NumDef$ +2 | Duration$ Perpetual | SpellDescription$ 你的每个生物永久得+0/+2。
+SVar:DBDebuff:DB$ PumpAll | ValidCards$ Creature | NumDef$ -2 | SpellDescription$ 所有生物得-0/-2直到回合结束。
+SVar:DBReanimate:DB$ ChangeZone | Origin$ Graveyard | Destination$ Battlefield | ChangeType$ Creature.YouOwn | ChangeNum$ 1 | Hidden$ True | Mandatory$ True | AtRandom$ True | SpellDescription$ 随机将一个生物从你的坟墓场移回战场。
+SVar:DBLife:DB$ GainLife | Defined$ You | LifeAmount$ 4 | SpellDescription$ 获得4点生命。
+DeckHas:Ability$Token|LifeGain & Type$Demon
+Oracle:选择两项：\n• 派出一个2/2的恶魔衍生生物。\n• 发现一张恶魔牌。\n• 抓一张牌。\n• 小型卡扎库斯药水对任一目标造成3点伤害。\n• 横置目标生物。它在其操控者的下个重置步骤中不能重置。\n• 你的每个生物永久得+0/+2。\n• 所有生物得-0/-2直到回合结束。\n• 随机将一个生物从你的坟墓场移回战场。\n• 获得4点生命。

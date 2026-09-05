@@ -176,3 +176,9 @@
 ## Approved cards awaiting implementation
 
 当前没有已批准但尚未创建脚本的卡牌。
+
+## TOKEN_HS 药水原画恢复（2026-09-05）
+
+- 小型卡扎库斯药水：TOKEN_HS #1，1 费法术，九项选择两项。
+- 卡扎库斯药水：TOKEN_HS #3，3 费法术，十项选择两项。
+- 两张均保留 Konstantin Turovec 原画备份与 960×700 的 artcrop；派出恶魔沿用原生 b_3_3_demon 并覆盖为 2/2 或 5/5。脚本、版本登记、中文、原画和测试共同提交，避免只存在于本机而在更新时丢失。
