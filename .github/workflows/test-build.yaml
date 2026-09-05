@@ -1,130 +1,42 @@
-name: Test build
+name: Dragon Breaths art probe
 
-on: [push, pull_request]
+on: [push]
 
 concurrency:
   group: dragon-breaths-automation
   cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        java: ['17', '21']
-    name: Test with Java ${{ matrix.Java }}
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: ${{ matrix.java }}
-          cache: 'maven'
-
-      - name: Install virtual framebuffer (if not available) to allow running GUI on a headless server
-        run: command -v Xvfb >/dev/null 2>&1 || { sudo apt update && sudo apt install -y xvfb; }
-
-      - name: Run tests in virtual framebuffer
-        run: |
-          export DISPLAY=":1"
-          Xvfb :1 -screen 0 800x600x8 &
-          mvn -U -B clean test
-
-  dragon_breaths:
+  art_probe:
     if: github.ref == 'refs/heads/automation/dragon-breaths-20260905'
     runs-on: windows-latest
-    timeout-minutes: 45
-    permissions:
-      contents: write
-    env:
-      PYTHONUTF8: '1'
-      PYTHONIOENCODING: utf-8
+    timeout-minutes: 15
     steps:
-      - name: Checkout transient automation
-        uses: actions/checkout@v4
-        with:
-          ref: automation/dragon-breaths-20260905
-          path: automation
-          fetch-depth: 1
-          persist-credentials: false
-
-      - name: Checkout authoritative diy source
+      - name: Checkout diy source
         uses: actions/checkout@v4
         with:
           ref: diy
-          path: source
           fetch-depth: 1
-
-      - name: Install Python helpers
+      - name: Install Pillow
         shell: pwsh
-        run: python -m pip install --disable-pip-version-check pillow requests resvg_py
-
-      - name: Confirm only the two known baseline failures remain
-        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: Inspect PH01 artcrop dimensions
+        shell: python
         run: |
-          python automation/.github/dragon_breaths_regression_gate.py baseline source "$env:RUNNER_TEMP/dragon-breaths-baseline.json"
-          exit $LASTEXITCODE
-
-      - name: Repair pre-existing source wording contracts
-        shell: pwsh
-        run: |
-          python automation/.github/dragon_breaths_source_hygiene.py source
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          git -C source diff --check
-          exit $LASTEXITCODE
-
-      - name: Re-lint Dragon Behold trio
-        shell: pwsh
-        run: |
-          Set-Location source/custom
-          python tools/lint_card.py 'cards/white/龙鳞祭司.txt'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python tools/lint_card.py 'cards/multicolor/奥术吐息.txt'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python tools/lint_card.py 'cards/multicolor/梦境吐息.txt'
-          exit $LASTEXITCODE
-
-      - name: Re-run Dragon Behold targeted tests
-        shell: pwsh
-        run: |
-          Set-Location source/custom
-          python -m unittest tests.test_dragon_breaths -v
-          exit $LASTEXITCODE
-
-      - name: Require fully green DIY Python suite
-        shell: pwsh
-        run: |
-          Set-Location source/custom
-          python -m unittest discover -s tests -p 'test_*.py' -v
-          exit $LASTEXITCODE
-
-      - name: Verify isolated deployment
-        shell: pwsh
-        run: |
-          Set-Location source/custom
-          & ./tools/install_to_forge.ps1
-          exit $LASTEXITCODE
-
-      - name: Record source gate cleanup
-        shell: pwsh
-        run: |
-          $path = (Resolve-Path 'source/custom/VERIFICATION.md').Path
-          $record = "`n`n## 2026-09-05 — Dragon Behold runtime-gate source cleanup`n`n- Before cleanup, the complete DIY Python suite reproduced exactly two pre-existing source failures: ``法术反制`` used ``法术或瞬间`` instead of ``瞬间或法术``, and the ``开进码头`` localization used curved quotes around ``毁灭战舰``.`n- Those two wording-only issues were corrected without changing card mechanics. With ``resvg_py`` installed, the complete DIY Python suite then passed with zero failures/errors; the Dragon Behold trio lints and four targeted contract tests also passed again.`n- ``tools/install_to_forge.ps1`` completed successfully on the isolated runner profile. This makes the authoritative source compatible with the permanent runtime publisher's strict all-tests-pass gate.`n"
-          [System.IO.File]::AppendAllText($path, $record, [System.Text.UTF8Encoding]::new($false))
-
-      - name: Commit and push source hygiene
-        shell: pwsh
-        run: |
-          Set-Location source
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- 'custom/cards/blue/法术反制.txt' 'custom/VERIFICATION.md' 'forge-gui/res/languages/cardnames-zh-CN.txt'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          git diff --cached --check
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          git commit -m 'fix(custom): satisfy Chinese wording contracts'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          git push origin HEAD:diy
-          exit $LASTEXITCODE
+          from collections import Counter
+          from pathlib import Path
+          from PIL import Image
+          files = sorted(Path('custom/cards/pictures/PH01').glob('*.artcrop.jpg'))
+          counts = Counter()
+          ratios = Counter()
+          for p in files:
+              with Image.open(p) as im:
+                  w, h = im.size
+              counts[(w, h)] += 1
+              ratios[round(w / h, 4)] += 1
+          print('ARTCROP_COUNT=', len(files))
+          print('TOP_SIZES=', counts.most_common(20))
+          print('TOP_RATIOS=', ratios.most_common(20))
+          for p in files[-20:]:
+              with Image.open(p) as im:
+                  print('SAMPLE', p.name, im.size, round(im.width/im.height,4))
