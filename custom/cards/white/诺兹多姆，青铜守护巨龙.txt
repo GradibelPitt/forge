@@ -1,0 +1,8 @@
+Name:诺兹多姆，青铜守护巨龙
+ManaCost:2 W W W
+Types:Legendary Creature Human Dragon
+PT:4/4
+T:Mode$ Phase | Phase$ End of Turn | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ GrowShielded | TriggerDescription$ At the beginning of your end step, put three +1/+1 counters on each creature you control with a shield counter on it. Then put a shield counter on each creature you control without a shield counter on it.
+SVar:GrowShielded:DB$ PutCounterAll | ValidCards$ Creature.YouCtrl+counters_GE1_SHIELD | CounterType$ P1P1 | CounterNum$ 3 | SubAbility$ ShieldUnshielded
+SVar:ShieldUnshielded:DB$ PutCounterAll | ValidCards$ Creature.YouCtrl+counters_EQ0_SHIELD | CounterType$ SHIELD | CounterNum$ 1
+Oracle:At the beginning of your end step, put three +1/+1 counters on each creature you control with a shield counter on it. Then put a shield counter on each creature you control without a shield counter on it.

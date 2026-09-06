@@ -613,3 +613,11 @@ Java 测试从 `D:\Forge\forge-latest` 执行，并使用实际模块和测试�
 - 瑞亚斯塔萨原画来自 Hearthstone Wiki 的 `Rheastrasza_full.jpg`，官方卡牌 ID 为 `WW_824`、画师 Patrik Bjorkstrom；逐字节备份为 `tools/card-artwork/WW_824_Rheastrasza_full_hswiki.jpg`，3000×4000 RGB JPEG，SHA-256 `BD4BCC9239184DFF718B454BEB7E7755B80635080489A30705BE41B7C3F0DB04`。动态牌框裁图为 3000×2190 RGB JPEG（约 1.37:1），SHA-256 `43884AAA390038ABDDF956C6E43C88D49AE066BE77F6E583D1EDB9A191F18353`。
 - 纯净龙巢原画来自同站的 `Purified_Dragon_Nest_full.jpg`，官方卡牌 ID 为 `WW_824t`、画师 Patrik Bjorkstrom；逐字节备份为 `tools/card-artwork/WW_824t_Purified_Dragon_Nest_full_hswiki.jpg`，900×1200 RGB JPEG，SHA-256 `2EE8435F52F207BEDAB720132E591D22865EF4A99B88BD1D7DAB6A0B4F4DFF9E`。去除底部标志后的 `TOKEN_HS` 动态牌框裁图为 900×657 RGB JPEG（约 1.37:1），SHA-256 `6C4E5D5A7F3B3BB1CE320EEB334030F71E087FAC2405A3DC16E51507A7473FCA`。本次没有使用生成图或扩图。
 - 为保护运行目录已有的 PH01 #147–185 与其他并行文件，本次仍采用定向部署。瑞亚斯塔萨脚本 SHA-256 为 `1B6393737B7A37CC312956E83CEB43337AA0B83DDDCA2C72EF1C461FB04BB6B8`，纯净龙巢实体徽记脚本为 `145CD6DB7DB7AC71557CA75C76FAD0464D612B06062A67AE6B9FA749562B67F9`；客户端中文牌框、请援选择、高地条件与实体徽记交互仍待实际对局验收。
+
+## 2026-09-06 — 诺兹多姆，青铜守护巨龙
+
+- PH01 #189，{2}{W}{W}{W}，4/4 传奇人类／龙。按用户最终要求移除可选性，两段 PutCounterAll 顺序结算，不设目标。
+- 单卡 lint 通过；安装版聚合 JAR 与全部 overlays 上执行 NozdormuShieldRegression，11 项实际行为检查通过，覆盖自身、多个后盾、当次新获后盾、失去后盾后的补充、对手与非战场对象排除及后续成长。未修改生产 Java。
+- 新牌原图保留于 tools/card-artwork/CATA_473_Nozdormu_Bronze_Aspect_original.png，裁图经实际查看为仅含插画的 377×275 JPEG。源码与运行目录存在其他并行制卡内容，因此本次只合并本牌登记、简中、脚本及图片，不执行会删除其他内容的镜像同步。
+- 本机部署与 Git 发布在验证后单独完成；运行中的客户端启动早于本次更新，重启后的牌面和对局实测仍待确认。
+- 本机定向部署已完成：新牌脚本与插画在源码、managed、Profile／缓存一致，系列登记与简中已逐条合并；保留其他并行牌张。完整 DIY Python 套件 527 项，仍有 3 项既有失败及缺少 resvg_py 的 1 项环境错误；本牌单卡 lint 与 11 项实际引擎行为检查通过。

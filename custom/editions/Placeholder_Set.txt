@@ -143,3 +143,5 @@ Type=Custom_Set
 186 M 瑞亚斯塔萨 @Custom
 187 C 先觉蜿变幼龙 @Edgar Hidalgo
 188 C 沙尘吐息 @Anton Zemskov
+
+189 M 诺兹多姆，青铜守护巨龙 @Custom
