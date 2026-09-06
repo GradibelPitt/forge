@@ -138,3 +138,4 @@ Type=Custom_Set
 144 C 龙族研习 @Custom
 145 U 燃棘枪兵 @Custom
 146 U 琥珀雏龙 @Custom
+184 U 末日枭兽 @Mooncolony

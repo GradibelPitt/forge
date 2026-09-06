@@ -1,0 +1,8 @@
+Name:末日枭兽
+ManaCost:3 U G
+Types:Creature Bird Bear
+PT:3/4
+K:Flying
+T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigGainControl | TriggerDescription$ 当末日枭兽进战场时，获得至多一个目标地的操控权。
+SVar:TrigGainControl:DB$ GainControl | ValidTgts$ Land | TargetMin$ 0 | TargetMax$ 1 | TgtPrompt$ 选择至多一个目标地
+Oracle:飞行\n当末日枭兽进战场时，获得至多一个目标地的操控权。

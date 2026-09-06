@@ -579,3 +579,11 @@ Java 测试从 `D:\Forge\forge-latest` 执行，并使用实际模块和测试�
 
 - 龙鳞祭司的进场 AB + Behold 费用与官方 Sarkhan, Dragon Ascendant 一致；两张吐息的 OptionalCost / ConditionOptionalPaid 与官方 Osseous Exhale 一致。CostBehold 使用 Hand,Battlefield；ChangeZone 的 Origin 自动约束目标区域。
 - 修正梦境吐息多余的 ShuffleNonMandatory 参数：已请援后，按官方 Rampant Growth 的搜地／强制洗牌语义处理；被禁止搜库时也不跳过“然后洗牌”。回归断言先失败，删除参数后 8 项目标测试和梦境吐息 lint 全部通过。
+
+## 2026-09-06 — 末日枭兽（PH01 #184）
+
+- 新增 `{3}{U}{G}` 3/4 生物～鸟／熊“末日枭兽”并赋予飞行。进战场触发以 Forge 现有 `DB$ GainControl` 实现，`ValidTgts$ Land`、`TargetMin$ 0` 与 `TargetMax$ 1` 使其可以选择零或一个任意目标地；未声明 `LoseControl$`，因此获得的操控权没有结束时限。脚本、PH01 #184 登记、简中四字段资源与 `CARDS.md` 已同步更新。
+- TDD 红阶段因脚本、登记、中文与裁图尚不存在而得到预期失败；完成后新卡 3/3 契约测试与包含通用 lint 契约在内的目标测试 61/61 通过，单卡 `lint_card.py` 通过。完整 DIY 套件运行 527 项，其中 3 个既有失败分别来自既有中文措辞、`殒命暗影` 中文契约和 `开进码头` 引号，另有 1 个因当前环境缺少 `resvg_py` 的既有导入错误；末日枭兽的新增测试全部通过。
+- 原画取自 HearthstoneJSON 的 `JAM_029` 原始资源，画师为 Mooncolony；512×512 RGB PNG 备份 SHA-256 为 `9B6FBFF18E8E73318FEE559D9ABA68956120D50668BBB3483BF5E7337A281BBF`。实际游戏图只从原图裁切白边和下部画面，保存为 370×270 RGB JPEG，约 1.37:1，SHA-256 为 `20FB43FE2D657FF4CCE031E491A1B743950C134F80E20B20898C0615B68BC002`。
+- 为保护运行仓库中已存在、但当前 `origin/diy` 源树尚未包含的 PH01 #147–183 内容，本次未执行会镜像整棵 custom 目录的广泛同步，而是把 #184 行定向合并到运行版和 profile 版本表。脚本在源码、运行受管目录和 profile 三处 SHA-256 均为 `ADB6AE88196DD3560083E5C41835D6DC82BC623EA0DED3A31859382BF16F9CFA`；裁图在源码、运行受管目录和图片缓存三处 SHA-256 均为 `20FB43FE2D657FF4CCE031E491A1B743950C134F80E20B20898C0615B68BC002`；运行版与 profile 版本表哈希一致。
+- 运行包清单生成时排除了既有未跟踪的 `app/managed/custom/tokens/pictures/mystery.jpg`，没有修改或暂存该文件；运行时门禁最终返回 `TOKEN_HS_POTIONS=OK` 与 `SCRIPT_TESTS=OK`。部署时未检测到运行中的 Forge 进程，下次启动会加载新脚本和卡图；中文动态牌框与实际夺地交互仍待客户端启动后的人工验收。
