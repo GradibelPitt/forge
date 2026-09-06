@@ -12,6 +12,29 @@ LINTER = ROOT / "tools" / "lint_card.py"
 
 
 class LintCardEncodingTest(unittest.TestCase):
+    def test_linter_accepts_a_special_action_api_prefix(self):
+        script = (
+            "Name:Special Action Card\n"
+            "ManaCost:1 U U\n"
+            "Types:Creature Dragon\n"
+            "PT:3/3\n"
+            "A:ST$ Clone | Cost$ U\n"
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            card = Path(temp_dir) / "special_action_card.txt"
+            card.write_text(script, encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(LINTER), str(card)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn("Ability line missing", result.stdout)
+
     def test_linter_handles_a_unicode_card_name_with_a_legacy_console_encoding(self):
         script = "Name:马克扎尔的小鬼\nManaCost:B B\nTypes:Creature Demon\n"
 

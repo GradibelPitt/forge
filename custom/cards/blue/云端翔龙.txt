@@ -1,0 +1,6 @@
+Name:云端翔龙
+ManaCost:1 U U
+Types:Creature Dragon
+PT:3/3
+A:ST$ Clone | Cost$ U Behold<1/Dragon.Other> | CostDesc$ {U}, behold a Dragon | ActivationZone$ Hand | Defined$ Revealed | CloneZone$ Hand | KeepCloneOnStack$ True | SpellDescription$ CARDNAME becomes a copy of the card revealed or permanent chosen this way. Activate only while CARDNAME is in your hand.
+Oracle:{U}, Behold a Dragon: CARDNAME becomes a copy of the card revealed or permanent chosen this way. Activate only while CARDNAME is in your hand.

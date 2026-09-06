@@ -560,7 +560,7 @@ def lint_file(file_path):
                 if key == "A":
                     # Check ApiType
                     api_type = None
-                    for ab_prefix in ("AB", "SP", "DB"):
+                    for ab_prefix in ("AB", "SP", "ST", "DB"):
                         if ab_prefix in params:
                             api_type = params.get(ab_prefix)
                             break
@@ -570,7 +570,7 @@ def lint_file(file_path):
                         if clean_api not in VALID_API_TYPES:
                             errors.append(f"Line {line_num}: Invalid ApiType '{api_type}' in ability script.")
                     else:
-                        warnings.append(f"Line {line_num}: Ability line missing AB$, SP$, or DB$ prefix definition.")
+                        warnings.append(f"Line {line_num}: Ability line missing AB$, SP$, ST$, or DB$ prefix definition.")
 
                 elif key == "T":
                     # Check TriggerType

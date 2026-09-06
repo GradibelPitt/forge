@@ -296,6 +296,18 @@ public class GameAction {
             copied.setGameTimestamp(c.getGameTimestamp());
 
             if (zoneTo.is(ZoneType.Stack)) {
+                // A small number of effects deliberately turn a card in a hidden
+                // zone into another card before it is cast. Preserve only a clone
+                // that explicitly opts in; ordinary clone effects still end on a
+                // zone change as normal.
+                if (!c.getCloneStates().isEmpty()) {
+                    final Map.Entry<Long, CardCloneStates> clone = c.getCloneStates()
+                            .entrySet().stream().max(Map.Entry.comparingByKey()).orElseThrow();
+                    if (clone.getValue().getSource().hasParam("KeepCloneOnStack")) {
+                        copied.addCloneState(clone.getValue().copy(copied, false), clone.getKey());
+                    }
+                }
+
                 // try not to copy changed stats when moving to stack
 
                 // copy exiled properties when adding to stack

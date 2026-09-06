@@ -662,6 +662,10 @@ public class Cost implements Serializable {
     }
     public final Cost copyWithDefinedMana(ManaCost manaCost) {
         Cost toRet = copyWithNoMana();
+        // copyWithNoMana intentionally leaves an explicit zero-mana part.
+        // Replace it instead of appending a second mana part, since callers of
+        // getTotalMana use the first mana part as the payable spell cost.
+        toRet.costParts.removeIf(CostPartMana.class::isInstance);
         toRet.costParts.add(new CostPartMana(manaCost, null));
         toRet.cacheTapCost();
         return toRet;
