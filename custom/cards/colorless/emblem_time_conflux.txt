@@ -1,0 +1,7 @@
+Name:Emblem — 时光流汇
+ManaCost:no cost
+Types:Emblem
+T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Command | Execute$ AddTimeConfluxMana | TriggerDescription$ 在你的维持开始时，加十点任意颜色的法术力，你可以随意分配。以此法获得的法术力在本回合中不会被清除。
+SVar:AddTimeConfluxMana:DB$ Mana | Defined$ TriggeredPlayer | Produced$ Combo Any | Amount$ 10 | PersistentMana$ True
+Oracle:在你的维持开始时，加十点任意颜色的法术力，你可以随意分配。以此法获得的法术力在本回合中不会被清除。
+AI:RemoveDeck:All

@@ -1,0 +1,9 @@
+Name:时光巨龙诺兹多姆
+ManaCost:W W G G
+Types:Legendary Creature Dragon
+PT:8/8
+T:Mode$ SpellCast | ValidCard$ Card.Self | TriggerZones$ Stack | Execute$ EndYourTurn | TriggerDescription$ 当你施放时光巨龙诺兹多姆时，结束你的回合，放逐所有地，每位牌手各获得一个名为时光流汇且具有「在你的维持开始时，加十点任意颜色的法术力，你可以随意分配。以此法获得的法术力在本回合中不会被清除。」的徽记。
+SVar:EndYourTurn:DB$ EndTurn | SubAbility$ ExileAllLands
+SVar:ExileAllLands:DB$ ChangeZoneAll | ChangeType$ Land | Origin$ Battlefield | Destination$ Exile | SubAbility$ GrantTimeConfluxToEachPlayer
+SVar:GrantTimeConfluxToEachPlayer:DB$ MakeCard | Defined$ Player | Name$ Emblem — 时光流汇 | Zone$ Command | AsEmblem$ True
+Oracle:当你施放时光巨龙诺兹多姆时，结束你的回合，放逐所有地，每位牌手各获得一个名为时光流汇且具有「在你的维持开始时，加十点任意颜色的法术力，你可以随意分配。以此法获得的法术力在本回合中不会被清除。」的徽记。
