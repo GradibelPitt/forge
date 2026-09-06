@@ -600,3 +600,12 @@ Java 测试从 `D:\Forge\forge-latest` 执行，并使用实际模块和测试�
 - 卡牌脚本、PH01 #185 登记、简中四字段资源、`CARDS.md` 与 4 项定向契约已经加入；定向测试 4/4 与单卡 lint 通过。完整 DIY 套件运行 531 项，仍是此前相同的 3 个既有断言失败与 1 个缺少 `resvg_py` 的既有环境错误；本卡新增测试全部通过。
 - 原画为 Hearthstone `DEEP_025` 的 512×512 RGB PNG，画师 Vladimir Kafanov，备份 SHA-256 为 `181B5C25593D8614B6B80A66E7015D665A6F1AE98F72303C47D42833FBC5AE92`。游戏图仅从原画裁切为 512×374 RGB JPEG（约 1.37:1），SHA-256 为 `10A9A6E5137640606A9CE33CFF4283EE995990773956E4F07D3CDA38E8A206B6`，未使用 AI 生成或扩画。
 - 为保留运行仓库中源分支尚未包含的 PH01 #147–183，本次只定向同步 #185 的脚本、裁图、版本表新增行、简中新增行和运行门禁。脚本在源码、运行受管目录与 profile 三处 SHA-256 均为 `5ED98D5F4B6AB0233865F87C1F07B4621F5D80C0654B0131FBE4FAE1AF22E64B`；裁图在源码、运行受管目录与图片缓存三处 SHA-256 均为 `10A9A6E5137640606A9CE33CFF4283EE995990773956E4F07D3CDA38E8A206B6`。部署时 Forge Java 进程 PID 25628 已在同步前启动，因此仍需重启客户端后完成中文牌框与实际对局验收。
+
+## 2026-09-06 — 瑞亚斯塔萨（PH01 #186）
+
+- 按用户最终修订新增 `{3}{G}{G}{G}` 6/6 传奇龙“瑞亚斯塔萨”，具有飞行。卡面和脚本均保留施放时可选请援龙的真实入口：`OptionalCost | Cost$ Behold<1/Dragon>` 暴露选择，`SpellCast` 触发再通过 `CastSA>Count$OptionalGenericCostPaid.1.0` 读取该次施放是否已请援；不能用规则文字代替该机制。
+- 只有已请援且注册起始主牌中每张非地牌均不同名时，瑞亚斯塔萨才以 `MakeCard | Zone$ Command | AsEmblem$ True` 把 `TOKEN_HS` #9 的实体牌 `Emblem — 纯净龙巢` 放进统帅区；母卡不再临时建立匿名 `DB$ Effect`。徽记牌自己的脚本在每个己方 `Main1` 开始时先产生三点任意颜色组合、仅可用于 `Spell.Dragon` 的法术力，再从卡牌数据库发现一张 `Dragon` 牌到手上，并沿用既有永久 `Harmony` 实现令实际选中的牌可用任意颜色的法术力支付。
+- TDD 红阶段因脚本、登记和中文不存在而得到 5 个缺文件错误与 1 个登记失败；实现后含两张牌、实体徽记登记与两套原画合同在内的目标契约 7/7 通过，瑞亚斯塔萨 lint 无错误，纯净龙巢实体徽记 lint 无错误并仅保留与现有艾雅实体徽记相同的文件名提示。加入原画与实体徽记前的完整 DIY 套件运行 537 项，失败集合仍为此前相同的 3 个既有断言失败与 1 个缺少 `resvg_py` 的既有环境错误。
+- 瑞亚斯塔萨原画来自 Hearthstone Wiki 的 `Rheastrasza_full.jpg`，官方卡牌 ID 为 `WW_824`、画师 Patrik Bjorkstrom；逐字节备份为 `tools/card-artwork/WW_824_Rheastrasza_full_hswiki.jpg`，3000×4000 RGB JPEG，SHA-256 `BD4BCC9239184DFF718B454BEB7E7755B80635080489A30705BE41B7C3F0DB04`。动态牌框裁图为 3000×2190 RGB JPEG（约 1.37:1），SHA-256 `43884AAA390038ABDDF956C6E43C88D49AE066BE77F6E583D1EDB9A191F18353`。
+- 纯净龙巢原画来自同站的 `Purified_Dragon_Nest_full.jpg`，官方卡牌 ID 为 `WW_824t`、画师 Patrik Bjorkstrom；逐字节备份为 `tools/card-artwork/WW_824t_Purified_Dragon_Nest_full_hswiki.jpg`，900×1200 RGB JPEG，SHA-256 `2EE8435F52F207BEDAB720132E591D22865EF4A99B88BD1D7DAB6A0B4F4DFF9E`。去除底部标志后的 `TOKEN_HS` 动态牌框裁图为 900×657 RGB JPEG（约 1.37:1），SHA-256 `6C4E5D5A7F3B3BB1CE320EEB334030F71E087FAC2405A3DC16E51507A7473FCA`。本次没有使用生成图或扩图。
+- 为保护运行目录已有的 PH01 #147–185 与其他并行文件，本次仍采用定向部署。瑞亚斯塔萨脚本 SHA-256 为 `1B6393737B7A37CC312956E83CEB43337AA0B83DDDCA2C72EF1C461FB04BB6B8`，纯净龙巢实体徽记脚本为 `145CD6DB7DB7AC71557CA75C76FAD0464D612B06062A67AE6B9FA749562B67F9`；客户端中文牌框、请援选择、高地条件与实体徽记交互仍待实际对局验收。

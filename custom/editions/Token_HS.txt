@@ -13,3 +13,4 @@ Type=Custom_Set
 7 C Emblem — Aya's Cunning Treasure @Custom
 1 C 小型卡扎库斯药水 @Konstantin Turovec
 3 C 卡扎库斯药水 @Konstantin Turovec
+9 C Emblem — 纯净龙巢 @Custom

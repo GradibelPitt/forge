@@ -1,0 +1,10 @@
+Name:Emblem — 纯净龙巢
+ManaCost:no cost
+Types:Emblem
+T:Mode$ Phase | Phase$ Main1 | ValidPlayer$ You | TriggerZones$ Command | Execute$ AddDragonMana | TriggerDescription$ 在你的战斗前行动阶段开始时，加三点任意颜色组合的法术力。此法术力只能用于施放龙咒语。发现一张龙牌。你可以用任意颜色的法术力支付以此法发现之牌的法术力费用。
+SVar:AddDragonMana:DB$ Mana | Produced$ Combo Any | Amount$ 3 | RestrictValid$ Spell.Dragon | SubAbility$ DiscoverDragon
+SVar:DiscoverDragon:DB$ CardDiscover | Defined$ You | Source$ CardDatabase | ValidCards$ Dragon | OptionCount$ 3 | Destination$ Hand | RememberChosen$ True | SubAbility$ GrantHarmony
+SVar:GrantHarmony:DB$ Pump | Defined$ Remembered | PumpZone$ Hand | KW$ Harmony | Duration$ Perpetual | SubAbility$ Cleanup
+SVar:Cleanup:DB$ Cleanup | ClearRemembered$ True
+AI:RemoveDeck:All
+Oracle:在你的战斗前行动阶段开始时，加三点任意颜色组合的法术力。此法术力只能用于施放龙咒语。发现一张龙牌。你可以用任意颜色的法术力支付以此法发现之牌的法术力费用。

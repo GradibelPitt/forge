@@ -1,0 +1,11 @@
+Name:瑞亚斯塔萨
+ManaCost:3 G G G
+Types:Legendary Creature Dragon
+PT:6/6
+K:Flying
+S:Mode$ OptionalCost | EffectZone$ All | ValidCard$ Card.Self | ValidSA$ Spell | Cost$ Behold<1/Dragon> | Description$ 作为施放此咒语的额外费用，你可以请援龙。（你可以选择一个由你操控的龙，或从你手上展示一张龙牌。）
+T:Mode$ SpellCast | ValidCard$ Card.Self | TriggerZones$ Stack | CheckSVar$ CastSA>Count$OptionalGenericCostPaid.1.0 | Execute$ CreatePureNest | TriggerDescription$ 当你施放瑞亚斯塔萨时，如果你的起始套牌中每张非地牌的名称均不相同且你施放此咒语时请援了龙，则你获得名为纯净龙巢的徽记，其具有「在你的战斗前行动阶段开始时，加三点任意颜色组合的法术力。此法术力只能用于施放龙咒语。发现一张龙牌。你可以用任意颜色的法术力支付以此法发现之牌的法术力费用。」
+SVar:CreatePureNest:DB$ MakeCard | Defined$ You | Name$ Emblem — 纯净龙巢 | Zone$ Command | AsEmblem$ True | ConditionCheckSVar$ StartingDeckDuplicateNonlandNames | ConditionSVarCompare$ EQ0
+SVar:StartingDeckDuplicateNonlandNames:Count$StartingDeckDuplicateNonlandNames
+DeckHints:Type$Dragon
+Oracle:飞行\n作为施放此咒语的额外费用，你可以请援龙。（你可以选择一个由你操控的龙，或从你手上展示一张龙牌。）\n当你施放瑞亚斯塔萨时，如果你的起始套牌中每张非地牌的名称均不相同且你施放此咒语时请援了龙，则你获得名为纯净龙巢的徽记，其具有「在你的战斗前行动阶段开始时，加三点任意颜色组合的法术力。此法术力只能用于施放龙咒语。发现一张龙牌。你可以用任意颜色的法术力支付以此法发现之牌的法术力费用。」
