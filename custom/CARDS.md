@@ -191,3 +191,8 @@
 - 小型卡扎库斯药水：TOKEN_HS #1，1 费法术，九项选择两项。
 - 卡扎库斯药水：TOKEN_HS #3，3 费法术，十项选择两项。
 - 两张均保留 Konstantin Turovec 原画备份与 960×700 的 artcrop；派出恶魔沿用原生 b_3_3_demon 并覆盖为 2/2 或 5/5。脚本、版本登记、中文、原画和测试共同提交，避免只存在于本机而在更新时丢失。
+
+## 沙尘吐息（2026-09-06）
+
+- PH01 #188，{W}，普通瞬间，`cards/white/沙尘吐息.txt`。目标生物获得一个 +1/+1 指示物；施放时可选请援龙，支付后在同一生物上额外放置一个后盾指示物。判定使用已支付的施放额外费用，结算时不重新检查龙。
+- 原画：Anton Zemskov，HearthstoneJSON `DRG_233`，原始 JPEG 保留在 `tools/card-artwork/Sand_Breath_DRG_233_original.jpg`；动态牌框使用同一原画。

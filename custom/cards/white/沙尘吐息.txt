@@ -1,0 +1,8 @@
+Name:沙尘吐息
+ManaCost:W
+Types:Instant
+S:Mode$ OptionalCost | EffectZone$ All | ValidCard$ Card.Self | ValidSA$ Spell | Cost$ Behold<1/Dragon> | Description$ 你可以请援龙，以作为施放此咒语的额外费用。
+A:SP$ PutCounter | ValidTgts$ Creature | TgtPrompt$ 选择目标生物 | CounterType$ P1P1 | CounterNum$ 1 | SubAbility$ DBShield | SpellDescription$ 在目标生物上放置一个+1/+1指示物。如果你施放此咒语时请援了龙，则额外在其上放置一个后盾指示物。
+SVar:DBShield:DB$ PutCounter | Defined$ Targeted | CounterType$ SHIELD | CounterNum$ 1 | Condition$ OptionalCost | ConditionOptionalPaid$ True
+DeckHints:Type$Dragon
+Oracle:你可以请援龙，以作为施放此咒语的额外费用。\n在目标生物上放置一个+1/+1指示物。如果你施放此咒语时请援了龙，则额外在其上放置一个后盾指示物。
