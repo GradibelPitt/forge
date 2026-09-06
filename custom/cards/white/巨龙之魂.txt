@@ -1,0 +1,7 @@
+Name:巨龙之魂
+ManaCost:1 W W
+Types:Legendary Kindred Artifact Dragon
+T:Mode$ SpellCast | ValidCard$ Card.Dragon+wasCastFromYourHandByYou | ValidActivatingPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigPutCounter | TriggerDescription$ 每当你从手上施放一个龙咒语时，在巨龙之魂上放置一个龙魂指示物。
+A:AB$ Token | Cost$ SubCounter<3/Dragon Soul> | TokenScript$ c_5_5_dragon | TokenAmount$ 1 | TokenOwner$ You | SpellDescription$ 派出一个5/5的龙衍生生物。
+SVar:TrigPutCounter:DB$ PutCounter | Defined$ Self | CounterType$ Dragon Soul | CounterNum$ 1
+Oracle:每当你从手上施放一个龙咒语时，在巨龙之魂上放置一个龙魂指示物。\n从巨龙之魂上移去三个龙魂指示物：派出一个5/5的龙衍生生物。

@@ -1,0 +1,5 @@
+Name:Dragon Token
+ManaCost:no cost
+Types:Creature Dragon
+PT:5/5
+Oracle:

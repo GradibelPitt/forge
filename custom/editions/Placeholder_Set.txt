@@ -145,3 +145,7 @@ Type=Custom_Set
 188 C 沙尘吐息 @Anton Zemskov
 
 189 M 诺兹多姆，青铜守护巨龙 @Custom
+190 M 巨龙之魂 @Tyler Walpole
+
+[tokens]
+c_5_5_dragon

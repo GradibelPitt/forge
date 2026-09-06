@@ -24,6 +24,8 @@ def edition_card_names(path):
     cards_index = lines.index("[cards]")
     names = []
     for line in lines[cards_index + 1 :]:
+        if line.startswith("[") and line.endswith("]"):
+            break
         if not line.strip():
             continue
         fields = line.split(maxsplit=3)
