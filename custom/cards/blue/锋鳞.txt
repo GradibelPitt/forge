@@ -1,0 +1,12 @@
+Name:锋鳞
+ManaCost:2 U
+Types:Creature Dragon
+PT:2/4
+S:Mode$ OptionalCost | EffectZone$ All | ValidCard$ Card.Self | ValidSA$ Spell | Cost$ Behold<1/Dragon> | Description$ 作为施放此咒语的额外费用，你可以请援龙。（你可以选择一个由你操控的龙，或从你手上展示一张龙牌。）
+R:Event$ Counter | ValidCard$ Card.Self | ValidSA$ Spell | Layer$ CantHappen | CheckSVar$ CastSA>Count$OptionalGenericCostPaid.1.0 | Description$ 如果你在施放锋鳞时支付了请援龙此费用，则锋鳞不能被反击。
+T:Mode$ SpellCast | ValidCard$ Instant | ValidActivatingPlayer$ Opponent | TriggerZones$ Battlefield | Execute$ TrigCounter | TriggerDescription$ 每当一个对手施放瞬间咒语时，除非其操控者支付{2}，否则反击之。
+SVar:TrigCounter:DB$ Counter | Defined$ TriggeredSpellAbility | UnlessCost$ 2 | UnlessPayer$ TriggeredActivator
+S:Mode$ SetCost | ValidCard$ Card | Type$ Spell | Amount$ 2 | RaiseTo$ True | Description$ 每个施放时要支付的法术力少于两点的咒语均需支付两点法术力来施放。
+SVar:NonStackingEffect:True
+DeckHints:Type$Dragon
+Oracle:作为施放此咒语的额外费用，你可以请援龙。（你可以选择一个由你操控的龙，或从你手上展示一张龙牌。）\n如果你在施放锋鳞时支付了请援龙此费用，则锋鳞不能被反击。\n每当一个对手施放瞬间咒语时，除非其操控者支付{2}，否则反击之。\n每个施放时要支付的法术力少于两点的咒语均需支付两点法术力来施放。

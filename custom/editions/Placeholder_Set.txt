@@ -146,6 +146,7 @@ Type=Custom_Set
 
 189 M 诺兹多姆，青铜守护巨龙 @Custom
 190 M 巨龙之魂 @Tyler Walpole
+191 R 锋鳞 @L. Lullabi & K. Turovec
 
 [tokens]
 c_5_5_dragon
