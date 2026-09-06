@@ -1,0 +1,9 @@
+Name:先觉蜿变幼龙
+ManaCost:1 G G G
+Types:Creature Dragon
+PT:6/8
+K:AlternateAdditionalCost:Behold<1/Dragon>:3
+K:Flying
+K:Hexproof
+DeckHints:Type$Dragon
+Oracle:请援龙或支付{3}，以作为施放此咒语的额外费用。\n飞行，辟邪

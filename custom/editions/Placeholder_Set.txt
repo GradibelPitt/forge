@@ -141,4 +141,5 @@ Type=Custom_Set
 184 U 末日枭兽 @Mooncolony
 185 R 破碎映像 @Vladimir Kafanov
 186 M 瑞亚斯塔萨 @Custom
+187 C 先觉蜿变幼龙 @Edgar Hidalgo
 188 C 沙尘吐息 @Anton Zemskov
