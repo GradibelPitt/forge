@@ -1,17 +1,14 @@
 Name:破碎映像
 ManaCost:2 U W G
 Types:Sorcery
-A:SP$ MakeCard | Defined$ You | Conjure$ True | TgtPrompt$ 选择至多一个目标非衍生生物 | ValidTgts$ Creature.!token | TargetMin$ 0 | TargetMax$ 1 | DefinedName$ Targeted | Zone$ None | RememberMade$ True | SubAbility$ RemoveLegendaryBattlefield | SpellDescription$ 选择至多一个目标非衍生生物。分别在你的战场、手上和牌库中各化生一张该生物的复制品，然后将你的牌库洗牌。以此法化生的牌不是传奇。
-SVar:RemoveLegendaryBattlefield:DB$ Animate | Defined$ Remembered | RemoveTypes$ Legendary | Duration$ Perpetual | SubAbility$ MoveBattlefield | StackDescription$ None
-SVar:MoveBattlefield:DB$ ChangeZone | Defined$ Remembered | Origin$ None | Destination$ Battlefield | SubAbility$ ClearBattlefield
+A:SP$ MakeCard | Defined$ You | Conjure$ True | TgtPrompt$ 选择至多一个目标非衍生生物 | ValidTgts$ Creature.!token | TargetMin$ 0 | TargetMax$ 1 | DefinedName$ Targeted | Zone$ Battlefield | RememberMade$ True | SubAbility$ RemoveLegendaryBattlefield | SpellDescription$ 选择至多一个目标非衍生生物。分别在你的战场、手上和牌库中各化生一张该生物的复制品，然后将你的牌库洗牌。以此法化生的牌不是传奇。
+SVar:RemoveLegendaryBattlefield:DB$ Animate | Defined$ Remembered | RemoveTypes$ Legendary | Duration$ Perpetual | SubAbility$ ClearBattlefield | StackDescription$ None
 SVar:ClearBattlefield:DB$ Cleanup | ClearRemembered$ True | SubAbility$ MakeHand
-SVar:MakeHand:DB$ MakeCard | Defined$ You | Conjure$ True | DefinedName$ Targeted | Zone$ None | RememberMade$ True | SubAbility$ RemoveLegendaryHand
-SVar:RemoveLegendaryHand:DB$ Animate | Defined$ Remembered | RemoveTypes$ Legendary | Duration$ Perpetual | SubAbility$ MoveHand | StackDescription$ None
-SVar:MoveHand:DB$ ChangeZone | Defined$ Remembered | Origin$ None | Destination$ Hand | SubAbility$ ClearHand
+SVar:MakeHand:DB$ MakeCard | Defined$ You | Conjure$ True | DefinedName$ Targeted | Zone$ Hand | RememberMade$ True | SubAbility$ RemoveLegendaryHand
+SVar:RemoveLegendaryHand:DB$ Animate | Defined$ Remembered | RemoveTypes$ Legendary | Duration$ Perpetual | SubAbility$ ClearHand | StackDescription$ None
 SVar:ClearHand:DB$ Cleanup | ClearRemembered$ True | SubAbility$ MakeLibrary
-SVar:MakeLibrary:DB$ MakeCard | Defined$ You | Conjure$ True | DefinedName$ Targeted | Zone$ None | RememberMade$ True | SubAbility$ RemoveLegendaryLibrary
-SVar:RemoveLegendaryLibrary:DB$ Animate | Defined$ Remembered | RemoveTypes$ Legendary | Duration$ Perpetual | SubAbility$ MoveLibrary | StackDescription$ None
-SVar:MoveLibrary:DB$ ChangeZone | Defined$ Remembered | Origin$ None | Destination$ Library | LibraryPosition$ 0 | SubAbility$ ShuffleLibrary
+SVar:MakeLibrary:DB$ MakeCard | Defined$ You | Conjure$ True | DefinedName$ Targeted | Zone$ Library | LibraryPosition$ 0 | RememberMade$ True | SubAbility$ RemoveLegendaryLibrary
+SVar:RemoveLegendaryLibrary:DB$ Animate | Defined$ Remembered | RemoveTypes$ Legendary | Duration$ Perpetual | SubAbility$ ShuffleLibrary | StackDescription$ None
 SVar:ShuffleLibrary:DB$ Shuffle | Defined$ You | SubAbility$ Cleanup
 SVar:Cleanup:DB$ Cleanup | ClearRemembered$ True
 Oracle:选择至多一个目标非衍生生物。分别在你的战场、手上和牌库中各化生一张该生物的复制品，然后将你的牌库洗牌。\n以此法化生的牌不是传奇。

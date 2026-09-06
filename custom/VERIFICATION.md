@@ -1,5 +1,7 @@
 # Forge DIY Verification Status
 
+- 2026-09-06 修复 PH01 #185 `破碎映像` 结算后无事发生：初版把化生牌暂存在 `Zone$ None`，而普通 `Animate`／`ChangeZone` 无法从该区域重新取得牌，导致整条链静默跳过。现改为直接化生到战场、手牌、牌库，再在同一结算链永久移除三张牌的 `Legendary`；仍是非 token 化生，不是禁止传奇目标，也没有改成无视传奇规则。定向契约 4/4、单卡 lint、真实引擎结算探针、运行目标门禁与 Profile 同步均通过；源码／managed／Profile 脚本 SHA-256 同为 `640D4C04712D2B8584D912BEDB6B236699ED5A06392F8B8A251B6297C740CF27`，运行包提交为 `d398b208`。完整 `test_scripts.ps1` 的逐文件 Git 校验运行约三分半仍无结果输出，已停止，因此广泛运行门禁不记为通过。部署时原 Forge `javaw` PID 34724 尚在运行，最终复核时已无 Forge／Java 进程；下次启动会加载修复，实际对局验收仍待完成。
+
 - 2026-09-06 新增 PH01 #190 `巨龙之魂`：`{1}{W}{W}` 传奇亲缘神器～龙；仅当你从手上施放龙咒语时放置一个独立的 `Dragon Soul` 指示物，移去三个该指示物可派出一个无色、无额外异能的 5/5 龙衍生生物。单卡脚本 lint 无错误，专用 Token lint 无错误并仅有符合 TokenScript 命名规范的预期文件名提示；17 项目标／龙相关 Python 契约与安装版真实脚本、登记及图片键 43 项检查通过。完整 DIY 套件 547 项仍仅有 3 个既有失败、1 个缺少 `resvg_py` 的既有环境错误及 1 个跳过项，无新增回归。卡牌及 Dragon Spirit 衍生物均采用经 hswiki.gg 核对的 Blizzard GamesPress 官方高分辨率原档。已定向部署至 managed、Profile 与图片缓存，运行包门禁返回 `TOKEN_HS_POTIONS=OK`、`SCRIPT_TESTS=OK`；源码与运行包分别提交并推送，仅发布本牌目标文件。部署时 Forge 未运行，下次启动后的牌面和实际对局验收仍待完成。
 
 - 2026-09-06 合并待发布的 PH01 #185 `破碎映像`、#186 `瑞亚斯塔萨`、#187 `先觉蜿变幼龙`、#188 `沙尘吐息` 与 TOKEN_HS #9 `Emblem — 纯净龙巢`。以前两项已有的本地提交为基底，保留瑞亚斯塔萨的 3GGG、6/6、施放时可选请援与实体徽记 `MakeCard | AsEmblem` 逻辑。先觉蜿变幼龙沿用其任务已验证的 1GGG、6/8、`AlternateAdditionalCost:Behold<1/Dragon>:3`、飞行与辟邪脚本和官方原画；补回本地共享文件中缺失的简中记录与两条运行清单记录。瑞亚斯塔萨 7 项、破碎映像 4 项、整合运行载荷中的先觉蜿变幼龙 4 项检查通过；先觉蜿变幼龙 lint 通过。沙尘吐息逻辑未变，沿用本次已通过的五组真实引擎结算验证。源码和运行包在独立工作区整合，保留现有本地提交的先后关系，不夹带其他未跟踪的 mystery 图片或 forge-gui 联接；最终远端 ref、完整运行包门禁和本地保留核对由本次发布回执记录。客户端未做新的重启或实战验收。
@@ -602,10 +604,11 @@ Java 测试从 `D:\Forge\forge-latest` 执行，并使用实际模块和测试�
 
 ## 2026-09-06 — 破碎映像（PH01 #185）
 
-- 新增 `{2}{U}{W}{G}` 法术“破碎映像”。选择零或一个目标非衍生生物后，依次在隐藏区化生三张该牌复制品，先以 `Animate | RemoveTypes$ Legendary | Duration$ Perpetual` 永久移除传奇类别，再分别移入你的战场、手上和牌库，最后洗牌。隐藏区预处理确保战场复制品从实际进场时起就不是传奇。Forge 现有 `DefinedName$ Targeted` 化生路径只能解析有牌库记录的实体，因此目标明确排除 token，避免衍生生物的空 `PaperCard` 路径。
+- 新增 `{2}{U}{W}{G}` 法术“破碎映像”。选择零或一个目标非衍生生物后，在你的战场、手上和牌库中各化生一张该牌复制品，并以 `Animate | RemoveTypes$ Legendary | Duration$ Perpetual` 令三张牌永久失去传奇类别，最后洗牌。Forge 现有 `DefinedName$ Targeted` 化生路径只能解析有牌库记录的实体，因此目标明确排除 token，避免衍生生物的空 `PaperCard` 路径。
 - 卡牌脚本、PH01 #185 登记、简中四字段资源、`CARDS.md` 与 4 项定向契约已经加入；定向测试 4/4 与单卡 lint 通过。完整 DIY 套件运行 531 项，仍是此前相同的 3 个既有断言失败与 1 个缺少 `resvg_py` 的既有环境错误；本卡新增测试全部通过。
 - 原画为 Hearthstone `DEEP_025` 的 512×512 RGB PNG，画师 Vladimir Kafanov，备份 SHA-256 为 `181B5C25593D8614B6B80A66E7015D665A6F1AE98F72303C47D42833FBC5AE92`。游戏图仅从原画裁切为 512×374 RGB JPEG（约 1.37:1），SHA-256 为 `10A9A6E5137640606A9CE33CFF4283EE995990773956E4F07D3CDA38E8A206B6`，未使用 AI 生成或扩画。
 - 为保留运行仓库中源分支尚未包含的 PH01 #147–183，本次只定向同步 #185 的脚本、裁图、版本表新增行、简中新增行和运行门禁。脚本在源码、运行受管目录与 profile 三处 SHA-256 均为 `5ED98D5F4B6AB0233865F87C1F07B4621F5D80C0654B0131FBE4FAE1AF22E64B`；裁图在源码、运行受管目录与图片缓存三处 SHA-256 均为 `10A9A6E5137640606A9CE33CFF4283EE995990773956E4F07D3CDA38E8A206B6`。部署时 Forge Java 进程 PID 25628 已在同步前启动，因此仍需重启客户端后完成中文牌框与实际对局验收。
+- 客户端复现确认初版的隐藏区链不可用：`MakeCard | Zone$ None` 生成的牌不在 `Game.getCardState` 的可检索区域中，后续普通 `Animate` 与 `ChangeZone` 因而静默跳过。修复改为沿用 Forge 现有的非衍生化生模式，直接 `MakeCard` 到 `Battlefield`、`Hand`、`Library`，再在同一结算链逐张 `RemoveTypes$ Legendary`；没有禁止复制传奇目标，也没有用“无视传奇规则”替代失去牌张类别。定向 Python 契约、单卡 lint 与 `ShatteredReflectionsResolutionProbe` 真实结算均通过；探针确认三个区域各新增一张非 token 复制品，三张均不再具有 Legendary，且 remembered 已清理。修复脚本在源码、运行受管目录与 Profile 三处 SHA-256 均为 `640D4C04712D2B8584D912BEDB6B236699ED5A06392F8B8A251B6297C740CF27`；运行目标门禁与 Profile 同步通过，完整运行门禁因逐文件 Git 校验耗时而中止。部署时客户端进程仍是修复前启动的 PID 34724，最终复核时已退出；下一次启动会载入新脚本，实际对局验收仍待完成。
 
 ## 2026-09-06 — 瑞亚斯塔萨（PH01 #186）
 

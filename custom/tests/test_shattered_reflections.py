@@ -38,11 +38,12 @@ class ShatteredReflectionsContractTest(unittest.TestCase):
             "TargetMin$ 0",
             "TargetMax$ 1",
             "DefinedName$ Targeted",
-            "Zone$ None",
+            "Zone$ Battlefield",
             "RememberMade$ True",
             "SubAbility$ RemoveLegendaryBattlefield",
         ):
             self.assertIn(field, spell)
+        self.assertNotIn("Zone$ None", spell)
 
         make_hand = next(line for line in lines if line.startswith("SVar:MakeHand:"))
         for field in (
@@ -50,11 +51,12 @@ class ShatteredReflectionsContractTest(unittest.TestCase):
             "Defined$ You",
             "Conjure$ True",
             "DefinedName$ Targeted",
-            "Zone$ None",
+            "Zone$ Hand",
             "RememberMade$ True",
             "SubAbility$ RemoveLegendaryHand",
         ):
             self.assertIn(field, make_hand)
+        self.assertNotIn("Zone$ None", make_hand)
 
         make_library = next(
             line for line in lines if line.startswith("SVar:MakeLibrary:")
@@ -64,42 +66,29 @@ class ShatteredReflectionsContractTest(unittest.TestCase):
             "Defined$ You",
             "Conjure$ True",
             "DefinedName$ Targeted",
-            "Zone$ None",
+            "Zone$ Library",
+            "LibraryPosition$ 0",
             "RememberMade$ True",
             "SubAbility$ RemoveLegendaryLibrary",
         ):
             self.assertIn(field, make_library)
-
-        moves = {
-            prefix: next(line for line in lines if line.startswith(prefix))
-            for prefix in (
-                "SVar:MoveBattlefield:",
-                "SVar:MoveHand:",
-                "SVar:MoveLibrary:",
-            )
-        }
-        for move in moves.values():
-            self.assertIn("DB$ ChangeZone", move)
-            self.assertIn("Defined$ Remembered", move)
-            self.assertIn("Origin$ None", move)
-        self.assertIn("Destination$ Battlefield", moves["SVar:MoveBattlefield:"])
-        self.assertIn("Destination$ Hand", moves["SVar:MoveHand:"])
-        self.assertIn("Destination$ Library", moves["SVar:MoveLibrary:"])
-        self.assertIn("LibraryPosition$ 0", moves["SVar:MoveLibrary:"])
+        self.assertNotIn("Zone$ None", make_library)
+        self.assertFalse(any(line.startswith("SVar:Move") for line in lines))
 
         shuffle = next(
             line for line in lines if line.startswith("SVar:ShuffleLibrary:")
         )
         self.assertIn("DB$ Shuffle", shuffle)
         self.assertIn("Defined$ You", shuffle)
+        self.assertIn("SubAbility$ Cleanup", shuffle)
 
     def test_every_conjured_copy_perpetually_loses_only_legendary(self):
         lines = CARD.read_text(encoding="utf-8").splitlines()
 
         for suffix, next_step in (
-            ("Battlefield", "MoveBattlefield"),
-            ("Hand", "MoveHand"),
-            ("Library", "MoveLibrary"),
+            ("Battlefield", "ClearBattlefield"),
+            ("Hand", "ClearHand"),
+            ("Library", "ShuffleLibrary"),
         ):
             remove_legendary = next(
                 line
@@ -116,6 +105,19 @@ class ShatteredReflectionsContractTest(unittest.TestCase):
         cleanup = next(line for line in lines if line.startswith("SVar:Cleanup:"))
         self.assertIn("DB$ Cleanup", cleanup)
         self.assertIn("ClearRemembered$ True", cleanup)
+
+        for suffix, next_step in (
+            ("Battlefield", "MakeHand"),
+            ("Hand", "MakeLibrary"),
+        ):
+            cleanup_between_copies = next(
+                line for line in lines if line.startswith(f"SVar:Clear{suffix}:")
+            )
+            self.assertIn("DB$ Cleanup", cleanup_between_copies)
+            self.assertIn("ClearRemembered$ True", cleanup_between_copies)
+            self.assertIn(f"SubAbility$ {next_step}", cleanup_between_copies)
+
+        self.assertNotIn("IgnoreLegendRule", "\n".join(lines))
 
     def test_registration_localization_art_and_documentation(self):
         self.assertIn(
