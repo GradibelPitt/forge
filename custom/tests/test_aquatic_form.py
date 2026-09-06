@@ -20,13 +20,14 @@ ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
     "检视你牌库底的三张牌，选择其中一张置于你的牌库顶。"
-    "如果你有足够的法术力可以施放该咒语，则你可以改为展示该牌，然后将其置于你手上。"
+    "如果你有足够的法术力可以施放该咒语，或者如果以此法选择的牌为地牌，"
+    "则你可以改为展示该牌，然后将其置于你手上。"
 )
 SOURCE_ART_SHA256 = "F76C13762A5D1F3D73EA0232866B1492DC8D668F720DD99E4862D757BB52C26C"
 
 
 class AquaticFormContractTest(unittest.TestCase):
-    def test_bottom_three_top_or_affordable_hand_contract(self):
+    def test_bottom_three_top_or_land_or_affordable_hand_contract(self):
         lines = CARD.read_text(encoding="utf-8").splitlines()
 
         self.assertEqual("Name:水栖形态", lines[0])
@@ -43,9 +44,9 @@ class AquaticFormContractTest(unittest.TestCase):
             lines,
         )
         self.assertIn(
-            "SVar:CheckSpell:DB$ Branch | BranchConditionSVar$ RememberedNonland | "
-            "BranchConditionSVarCompare$ GE1 | TrueSubAbility$ CheckMana | "
-            "FalseSubAbility$ Cleanup",
+            "SVar:CheckSpell:DB$ Branch | BranchConditionSVar$ RememberedLand | "
+            "BranchConditionSVarCompare$ GE1 | TrueSubAbility$ MoveToHand | "
+            "FalseSubAbility$ CheckMana",
             lines,
         )
         self.assertIn(
@@ -70,9 +71,10 @@ class AquaticFormContractTest(unittest.TestCase):
             "SVar:RememberedManaValue:Remembered$CardManaCost", lines
         )
         self.assertIn(
-            "SVar:RememberedNonland:Count$ValidLibrary Card.IsRemembered+nonLand",
+            "SVar:RememberedLand:Count$ValidLibrary Card.IsRemembered+land",
             lines,
         )
+        self.assertNotIn("RememberedNonland", "\n".join(lines))
         self.assertIn(
             "SVar:Cleanup:DB$ Cleanup | ClearRemembered$ True", lines
         )
