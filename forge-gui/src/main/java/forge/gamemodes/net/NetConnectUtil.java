@@ -9,6 +9,8 @@ import forge.gamemodes.net.event.IdentifiableNetEvent;
 import forge.gamemodes.net.event.MessageEvent;
 import forge.gamemodes.net.event.NetEvent;
 import forge.gamemodes.net.server.FServerManager;
+import forge.gamemodes.net.server.TunnelStatusInspector;
+import forge.gamemodes.net.server.WindowsFirewallInspector;
 import forge.gamemodes.net.server.ServerGameLobby;
 import forge.localinstance.properties.ForgeNetPreferences;
 import forge.gui.GuiBase;
@@ -53,15 +55,11 @@ public class NetConnectUtil {
     }
 
     public static ChatMessage host(final IOnlineLobby onlineLobby, final IOnlineChatInterface chatInterface) {
-        final int port = FModel.getNetPreferences().getPrefInt(ForgeNetPreferences.FNetPref.NET_PORT);
         final FServerManager server = FServerManager.getInstance();
         final ServerGameLobby lobby = new ServerGameLobby();
         final ILobbyView view = onlineLobby.setLobby(lobby);
 
-        NetworkLogConfig.activateNetworkLogging();
-        server.startServer(port);
         server.setLobby(lobby);
-
         lobby.setListener(new IUpdateable() {
             @Override
             public void update(final boolean fullUpdate) {
@@ -111,21 +109,86 @@ public class NetConnectUtil {
             }
         });
 
+        NetworkLogConfig.activateNetworkLogging();
+        final int actualPort;
+        try {
+            actualPort = server.startServer();
+        } catch (final RuntimeException e) {
+            NetworkLogConfig.deactivateNetworkLogging();
+            throw e;
+        }
+
         view.update(true);
 
         server.broadcast(new MessageEvent(server.formatAfkTimeoutMessage()));
 
-        return new ChatMessage(null, Localizer.getInstance().getMessage("lblHostingPortOnN", String.valueOf(port)));
+        final Localizer localizer = Localizer.getInstance();
+        final String hostingMessage = localizer.getMessage("lblHostingPortOnN", String.valueOf(actualPort));
+        final WindowsFirewallInspector.Result firewall = WindowsFirewallInspector.inspect(actualPort);
+        final String firewallMessage = switch (firewall.state()) {
+            case DISABLED -> localizer.getMessageorUseDefault("lblFirewallDisabledForHost",
+                    "Windows Firewall: disabled for the active network profile(s).");
+            case ENABLED_WITH_ALLOW_RULE -> localizer.getMessageorUseDefault("lblFirewallAllowRuleForHost",
+                    "Windows Firewall: enabled; an inbound allow rule matches Forge/Java or TCP port {0}.", actualPort);
+            case ENABLED_WITHOUT_ALLOW_RULE -> localizer.getMessageorUseDefault("lblFirewallNoAllowRuleForHost",
+                    "Windows Firewall: enabled, but no inbound allow rule was found for Forge/Java or TCP port {0}. Incoming connections may be blocked.", actualPort);
+            case NOT_WINDOWS -> localizer.getMessageorUseDefault("lblFirewallUnsupportedForHost",
+                    "Firewall status: automatic inspection is available on Windows only.");
+            case UNKNOWN -> localizer.getMessageorUseDefault("lblFirewallUnknownForHost",
+                    "Windows Firewall: status could not be read ({0}).", firewall.detail());
+        };
+        final String tunnelMessage = formatTunnelStatus(localizer, TunnelStatusInspector.inspect());
+        return new ChatMessage(null, hostingMessage + "\n" + firewallMessage
+                + (tunnelMessage.isEmpty() ? "" : "\n" + tunnelMessage));
+    }
+
+    private static String formatTunnelStatus(final Localizer localizer, final TunnelStatusInspector.Result tunnel) {
+        return switch (tunnel.state()) {
+            case NOT_CONFIGURED -> "";
+            case CLASH_TUN_ACTIVE -> {
+                if ("CONFIG_MISSING".equals(tunnel.code())) {
+                    yield localizer.getMessageorUseDefault("lblClashTunConfigMissingForHost",
+                            "Proxy path: active Clash Verge / Meta Tunnel detected (DNS {0}, relay TCP {1}). "
+                                    + "The long-lived relay still needs a registered account and fixed public port.",
+                            tunnel.relayDns(), tunnel.relayTcp());
+                }
+                if ("SSH_CONNECTED".equals(tunnel.code())) {
+                    yield localizer.getMessageorUseDefault("lblClashTunConnectedForHost",
+                            "Proxy path: Clash TUN is active; the long-lived tunnel is connected at {0}:{1} "
+                                    + "and forwards to local TCP {2}.",
+                            tunnel.publicHost(), tunnel.publicPort(), tunnel.localPort());
+                }
+                if ("FAIL".equals(tunnel.relayDns()) || "FAIL".equals(tunnel.relayTcp())) {
+                    yield localizer.getMessageorUseDefault("lblClashTunRelayBlockedForHost",
+                            "Proxy path: Clash TUN is active, but the relay path stopped at {0} ({1}).",
+                            tunnel.blockedAt(), tunnel.detail());
+                }
+                yield localizer.getMessageorUseDefault("lblClashTunReadyForHost",
+                        "Proxy path: active Clash Verge / Meta Tunnel detected; reverse-tunnel state is {0}.",
+                        tunnel.code());
+            }
+            case CLASH_TUN_BLOCKED -> localizer.getMessageorUseDefault("lblClashTunBlockedForHost",
+                    "Proxy path: Clash/Mihomo is running, but no active Meta Tunnel default route was found. "
+                            + "Stopped at {0}; the reverse tunnel was not started.", tunnel.blockedAt());
+            case SYSTEM_ROUTE -> localizer.getMessageorUseDefault("lblSystemTunnelRouteForHost",
+                    "Proxy path: no active Clash TUN route was found; the relay would use the current system route.");
+            case UNKNOWN -> localizer.getMessageorUseDefault("lblTunnelStatusUnknownForHost",
+                    "Proxy path: runtime route status is not available yet ({0}).", tunnel.detail());
+        };
     }
 
     public static void copyHostedServerUrl() {
         final Localizer localizer = Localizer.getInstance();
         String internalAddress = FServerManager.getLocalAddress();
         String externalAddress = FServerManager.getExternalAddress();
-        String internalUrl = internalAddress + ":" + FModel.getNetPreferences().getPrefInt(ForgeNetPreferences.FNetPref.NET_PORT);
+        final int port = FServerManager.getInstance().getPort();
+        if (port <= 0) {
+            return;
+        }
+        String internalUrl = internalAddress + ":" + port;
         String externalUrl = null;
         if (externalAddress != null) {
-            externalUrl = externalAddress + ":" + FModel.getNetPreferences().getPrefInt(ForgeNetPreferences.FNetPref.NET_PORT);
+            externalUrl = externalAddress + ":" + port;
             GuiBase.getInterface().copyToClipboard(externalUrl);
         } else {
             GuiBase.getInterface().copyToClipboard(internalUrl);

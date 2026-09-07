@@ -31,6 +31,7 @@ import java.util.Date;
  * Provides access to information about the current version and build ID.
  */
 public class BuildInfo {
+    private static final String RUNTIME_VERSION_PROPERTY = "forge.runtime.version";
     private static Date timestamp = null;
 
     // disable instantiation
@@ -43,6 +44,10 @@ public class BuildInfo {
      * @return a String representing the version specifier, or "GIT" if unknown.
      */
     public static String getVersionString() {
+        final String runtimeVersion = System.getProperty(RUNTIME_VERSION_PROPERTY);
+        if (StringUtils.isNotBlank(runtimeVersion)) {
+            return runtimeVersion.trim();
+        }
         String version = BuildInfo.class.getPackage().getImplementationVersion();
         if (StringUtils.isEmpty(version)) {
             return "GIT";

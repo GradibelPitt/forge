@@ -59,10 +59,9 @@ public enum CSubmenuOnlineLobby implements ICDoc, IMenuProvider {
             try {
                 host();
             } catch (Exception ex) {
-                // IntelliJ swears that BindException isn't thrown in this try block, but it is!
-                if (ex.getClass() == BindException.class) {
+                SwingUtilities.invokeLater(SOverlayUtils::hideOverlay);
+                if (hasCause(ex, BindException.class)) {
                     SOptionPane.showErrorDialog(Localizer.getInstance().getMessage("lblUnableStartServerPortAlreadyUse"));
-                    SOverlayUtils.hideOverlay();
                 } else {
                     BugReporter.reportException(ex);
                 }
@@ -91,13 +90,29 @@ public enum CSubmenuOnlineLobby implements ICDoc, IMenuProvider {
             if (CHomeUI.SINGLETON_INSTANCE.getCurrentDocID() == EDocID.HOME_NETWORK) {
                 VSubmenuOnlineLobby.SINGLETON_INSTANCE.populate();
             }
-            showServerAddressesDialog();
+            if (FServerManager.getInstance().isHosting()) {
+                showServerAddressesDialog();
+            }
         });
+    }
+
+    private static boolean hasCause(final Throwable throwable, final Class<? extends Throwable> causeType) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (causeType.isInstance(current)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     static void showServerAddressesDialog() {
         final ForgeNetPreferences netPrefs = FModel.getNetPreferences();
-        final int port = netPrefs.getPrefInt(ForgeNetPreferences.FNetPref.NET_PORT);
+        final int port = FServerManager.getInstance().getPort();
+        if (port <= 0) {
+            return;
+        }
         final LinkedHashMap<String, String> addresses = FServerManager.getAllLocalAddresses();
         final String externalAddress = FServerManager.getExternalAddress();
         final Localizer localizer = Localizer.getInstance();

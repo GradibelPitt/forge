@@ -60,6 +60,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -76,20 +82,24 @@ public final class FServerManager implements IHasForgeLog {
     private static final int OUTBOUND_BUFFER_LOW_WATER = 64 * 1024;
     private static final int OUTBOUND_BUFFER_HIGH_WATER = 1024 * 1024;
     private static final int RECONNECT_TIMEOUT_SECONDS = 300;
+    private static final String ACTIVE_PORT_FILE_PROPERTY = "forge.net.activePortFile";
 
     private static FServerManager instance = null;
     private final Map<Channel, RemoteClient> clients = new ConcurrentHashMap<>();
     private final Map<String, RemoteClient> disconnectedClients = new ConcurrentHashMap<>();
     private final Map<String, Timer> reconnectTimers = new ConcurrentHashMap<>();
-    private boolean isHosting = false;
+    private volatile boolean isHosting = false;
     private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     private EventLoopGroup workerGroup = new NioEventLoopGroup();
     private UpnpService upnpService = null;
+    private Channel serverChannel = null;
     private ServerGameLobby localLobby;
     private ILobbyListener lobbyListener;
     private IDraftEventHandler draftHandler;
-    private boolean UPnPMapped = false;
-    private int port;
+    private volatile boolean UPnPMapped = false;
+    private volatile int port = -1;
+    private boolean shutdownHookRegistered = false;
+    private long hostSessionId = 0;
     private static final Localizer localizer = Localizer.getInstance();
     private final Thread shutdownHook = new Thread(() -> {
         if (isHosting()) {
@@ -158,14 +168,9 @@ public final class FServerManager implements IHasForgeLog {
         return byteTracker;
     }
 
-    public void startServer(final int port) {
-        this.port = port;
-        String UPnPOption = FModel.getNetPreferences().getPref(ForgeNetPreferences.FNetPref.UPnP);
-        boolean startUPnP;
-        if (UPnPOption.equalsIgnoreCase("ASK")) {
-            startUPnP = callUPnPDialog();
-        } else {
-            startUPnP = UPnPOption.equalsIgnoreCase("ALWAYS");
+    public synchronized int startServer() {
+        if (isHosting) {
+            throw new IllegalStateException("Multiplayer server is already running on port " + port);
         }
         netLog.info("Starting Multiplayer Server");
         try {
@@ -192,24 +197,121 @@ public final class FServerManager implements IHasForgeLog {
                         }
                     });
 
-            // Bind and start to accept incoming connections.
-            final ChannelFuture ch = b.bind(port).sync().channel().closeFuture();
-            new Thread(() -> {
+            // Port 0 asks the operating system to allocate a currently available
+            // listening port. Never use a remembered preference for hosting.
+            final Channel channel = b.bind(0).sync().channel();
+            final int actualPort = boundPort(channel);
+            final long sessionId = ++hostSessionId;
+            serverChannel = channel;
+            port = actualPort;
+            isHosting = true;
+            UPnPMapped = false;
+            publishBoundPort(actualPort);
+
+            if (!shutdownHookRegistered) {
+                Runtime.getRuntime().addShutdownHook(shutdownHook);
+                shutdownHookRegistered = true;
+            }
+
+            final ChannelFuture closeFuture = channel.closeFuture();
+            final Thread closeWaiter = new Thread(() -> {
                 try {
-                    ch.sync();
+                    closeFuture.sync();
                 } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     netLog.error(e, "Server channel error");
                 } finally {
                     stopServer();
                 }
-            }).start();
+            }, "Forge-Net-Server-Close");
+            closeWaiter.setDaemon(true);
+            closeWaiter.start();
+
+            final String UPnPOption = FModel.getNetPreferences().getPref(ForgeNetPreferences.FNetPref.UPnP);
+            final boolean startUPnP = UPnPOption.equalsIgnoreCase("ASK")
+                    ? callUPnPDialog()
+                    : UPnPOption.equalsIgnoreCase("ALWAYS");
             if (startUPnP) {
-                mapNatPort();
+                mapNatPort(actualPort, sessionId);
             }
-            Runtime.getRuntime().addShutdownHook(shutdownHook);
-            isHosting = true;
+            return actualPort;
         } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
             netLog.error(e, "Server start interrupted");
+            throw new IllegalStateException("Server start interrupted", e);
+        }
+    }
+
+    static int boundPort(final Channel channel) {
+        final SocketAddress localAddress = channel.localAddress();
+        if (!(localAddress instanceof InetSocketAddress socketAddress) || socketAddress.getPort() <= 0) {
+            throw new IllegalStateException("Server channel has no allocated TCP port");
+        }
+        return socketAddress.getPort();
+    }
+
+    private void publishBoundPort(final int actualPort) {
+        final Path marker = getActivePortPath();
+        if (marker == null) {
+            return;
+        }
+        try {
+            writeBoundPortMarker(marker, actualPort);
+        } catch (final IOException e) {
+            netLog.error(e, "Unable to publish active server port " + actualPort);
+        }
+    }
+
+    private void clearBoundPort(final int stoppedPort) {
+        final Path marker = getActivePortPath();
+        if (marker == null) {
+            return;
+        }
+        try {
+            clearBoundPortMarker(marker, stoppedPort);
+        } catch (final IOException e) {
+            netLog.error(e, "Unable to clear active server port " + stoppedPort);
+        }
+    }
+
+    private static Path getActivePortPath() {
+        final String configuredPath = System.getProperty(ACTIVE_PORT_FILE_PROPERTY);
+        return configuredPath == null || configuredPath.isBlank()
+                ? null
+                : Paths.get(configuredPath).toAbsolutePath();
+    }
+
+    static void writeBoundPortMarker(final Path marker, final int actualPort) throws IOException {
+        if (actualPort <= 0 || actualPort > 65535) {
+            throw new IllegalArgumentException("Invalid active server port: " + actualPort);
+        }
+        final Path absoluteMarker = marker.toAbsolutePath();
+        final Path parent = absoluteMarker.getParent();
+        if (parent == null) {
+            throw new IOException("Active server port marker has no parent directory");
+        }
+        Files.createDirectories(parent);
+        final Path temporaryMarker = Files.createTempFile(parent, absoluteMarker.getFileName().toString(), ".tmp");
+        try {
+            Files.writeString(temporaryMarker, actualPort + System.lineSeparator(), StandardCharsets.UTF_8);
+            try {
+                Files.move(temporaryMarker, absoluteMarker,
+                        StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (final AtomicMoveNotSupportedException e) {
+                Files.move(temporaryMarker, absoluteMarker, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(temporaryMarker);
+        }
+    }
+
+    static void clearBoundPortMarker(final Path marker, final int stoppedPort) throws IOException {
+        if (!Files.isRegularFile(marker)) {
+            return;
+        }
+        final String currentValue = Files.readString(marker, StandardCharsets.UTF_8).trim();
+        if (Integer.toString(stoppedPort).equals(currentValue)) {
+            Files.deleteIfExists(marker);
         }
     }
 
@@ -240,7 +342,16 @@ public final class FServerManager implements IHasForgeLog {
         stopServer(true);
     }
 
-    private void stopServer(final boolean removeShutdownHook) {
+    private synchronized void stopServer(final boolean removeShutdownHook) {
+        if (!isHosting && serverChannel == null && upnpService == null) {
+            return;
+        }
+        isHosting = false;
+        final int stoppedPort = port;
+        port = -1;
+        final Channel channel = serverChannel;
+        serverChannel = null;
+
         // Cancel all reconnect timers
         for (final Timer timer : reconnectTimers.values()) {
             timer.cancel();
@@ -250,6 +361,9 @@ public final class FServerManager implements IHasForgeLog {
         clients.clear();
         afkSlots.clear();
 
+        if (channel != null) {
+            channel.close().syncUninterruptibly();
+        }
         try {
             bossGroup.shutdownGracefully().sync();
             workerGroup.shutdownGracefully().sync();
@@ -260,15 +374,22 @@ public final class FServerManager implements IHasForgeLog {
             upnpService.shutdown();
             upnpService = null;
         }
-        if (removeShutdownHook) {
-            Runtime.getRuntime().removeShutdownHook(shutdownHook);
+        if (removeShutdownHook && shutdownHookRegistered) {
+            try {
+                Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            } catch (final IllegalStateException ignored) {
+                // JVM shutdown is already in progress.
+            }
+            shutdownHookRegistered = false;
         }
-        isHosting = false;
+        clearBoundPort(stoppedPort);
         UPnPMapped = false;
         NetworkLogConfig.deactivateNetworkLogging();
-        // create new EventLoopGroups for potential restart
-        bossGroup = new NioEventLoopGroup(1);
-        workerGroup = new NioEventLoopGroup();
+        if (removeShutdownHook) {
+            // Create new EventLoopGroups only when another in-process host may start.
+            bossGroup = new NioEventLoopGroup(1);
+            workerGroup = new NioEventLoopGroup();
+        }
     }
 
     public boolean isHosting() {
@@ -277,6 +398,10 @@ public final class FServerManager implements IHasForgeLog {
 
     public boolean isUPnPMapped() {
         return UPnPMapped;
+    }
+
+    public int getPort() {
+        return port;
     }
 
     public int getTotalSendErrors() {
@@ -677,9 +802,9 @@ public final class FServerManager implements IHasForgeLog {
         return null;
     }
 
-    private void mapNatPort() {
+    private void mapNatPort(final int mappedPort, final long sessionId) {
         final String localAddress = getLocalAddress();
-        final PortMapping portMapping = new PortMapping(port, localAddress, PortMapping.Protocol.TCP, "Forge");
+        final PortMapping portMapping = new PortMapping(mappedPort, localAddress, PortMapping.Protocol.TCP, "Forge");
         // Shutdown existing UPnP service if already running
         if (upnpService != null) {
             upnpService.shutdown();
@@ -690,7 +815,7 @@ public final class FServerManager implements IHasForgeLog {
             upnpService = new UpnpServiceImpl(GuiBase.getInterface().getUpnpPlatformService());
             upnpService.startup();
 
-            final ForgePortMappingListener listener = new ForgePortMappingListener(portMapping);
+            final ForgePortMappingListener listener = new ForgePortMappingListener(portMapping, mappedPort, sessionId);
             upnpService.getRegistry().addListener(listener);
             // Trigger device discovery
             upnpService.getControlPoint().search();
@@ -699,21 +824,27 @@ public final class FServerManager implements IHasForgeLog {
             new Timer("upnp-timeout", true).schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    if (!listener.isCompleted()) {
-                        listener.setCompleted();
-                        onUPnPResult(false);
+                    if (listener.completeIfPending()) {
+                        onUPnPResult(false, mappedPort, sessionId);
                     }
                 }
             }, 5000);
         } catch (Exception e) {
             netLog.error(e, "UPnP mapping error");
+            onUPnPResult(false, mappedPort, sessionId);
         }
     }
 
-    private void onUPnPResult(boolean success) {
+    private void onUPnPResult(final boolean success, final int mappedPort, final long sessionId) {
+        if (!isHosting || port != mappedPort || hostSessionId != sessionId) {
+            return;
+        }
+        if (success) {
+            UPnPMapped = true;
+        }
         String msg = success
-            ? localizer.getMessage("lblUPnPSuccess", String.valueOf(port))
-            : localizer.getMessage("lblUPnPFailed", String.valueOf(port));
+            ? localizer.getMessage("lblUPnPSuccess", String.valueOf(mappedPort))
+            : localizer.getMessage("lblUPnPFailed", String.valueOf(mappedPort));
         if (lobbyListener != null) {
             broadcast(success ? new MessageEvent(msg) : MessageEvent.warning(msg));
         }
@@ -725,10 +856,14 @@ public final class FServerManager implements IHasForgeLog {
      * so by the time super.deviceAdded() returns, the result is known.
      */
     private class ForgePortMappingListener extends PortMappingListener {
-        private volatile boolean completed = false;
+        private boolean completed = false;
+        private final int mappedPort;
+        private final long sessionId;
 
-        ForgePortMappingListener(PortMapping portMapping) {
+        ForgePortMappingListener(final PortMapping portMapping, final int mappedPort, final long sessionId) {
             super(portMapping);
+            this.mappedPort = mappedPort;
+            this.sessionId = sessionId;
         }
 
         @Override
@@ -740,24 +875,26 @@ public final class FServerManager implements IHasForgeLog {
         @Override
         public synchronized void deviceAdded(Registry registry, Device device) {
             super.deviceAdded(registry, device);
-            if (!completed && !activePortMappings.isEmpty()) {
-                completed = true;
-                UPnPMapped = true;
-                onUPnPResult(true);
+            if (!activePortMappings.isEmpty() && completeIfPending()) {
+                onUPnPResult(true, mappedPort, sessionId);
             }
         }
 
         @Override
         protected void handleFailureMessage(String message) {
             super.handleFailureMessage(message);
-            if (!completed) {
-                completed = true;
-                onUPnPResult(false);
+            if (completeIfPending()) {
+                onUPnPResult(false, mappedPort, sessionId);
             }
         }
 
-        boolean isCompleted() { return completed; }
-        void setCompleted() { completed = true; }
+        synchronized boolean completeIfPending() {
+            if (completed) {
+                return false;
+            }
+            completed = true;
+            return true;
+        }
     }
 
     static Service<?, ?> discoverIgdV2ConnectionService(final Device<?, ?, ?> device) {
