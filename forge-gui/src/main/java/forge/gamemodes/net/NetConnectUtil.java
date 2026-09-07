@@ -171,7 +171,8 @@ public class NetConnectUtil {
                     "Proxy path: Clash/Mihomo is running, but no active Meta Tunnel default route was found. "
                             + "Stopped at {0}; the reverse tunnel was not started.", tunnel.blockedAt());
             case SYSTEM_ROUTE -> localizer.getMessageorUseDefault("lblSystemTunnelRouteForHost",
-                    "Proxy path: no active Clash TUN route was found; the relay would use the current system route.");
+                    "Proxy path: no active Clash TUN route was found. TCP Exposer was not started; "
+                            + "hosting continues through UPnP or manual port forwarding.");
             case UNKNOWN -> localizer.getMessageorUseDefault("lblTunnelStatusUnknownForHost",
                     "Proxy path: runtime route status is not available yet ({0}).", tunnel.detail());
         };
