@@ -49,7 +49,7 @@
 - 海盗帕奇斯通过牌张脚本从手牌/牌库登场；突牙使用引擎级 `Boarding:3`。
 - 艾雅的三种财宝徽记分别具有独立的已登记牌张脚本；`MakeCard | AsEmblem` 会保留所选脚本的 `PaperCard` 规则与图片，同时把产生的游戏对象标记为真正的 `GamePieceType.EFFECT` 徽记并放入指挥区。艾雅在派出珍宝后以 `GenericChoice` 三选一，每项通过现有 `IsPresent` 限制只检查该牌手指挥区是否已有对应实体徽记，不记录或比较选择文字，也不再内联三种徽记效果。
 - 卡图同步工具已支持从 `cards/pictures/` 安装到 Forge 本地图片缓存。
-- 简中卡牌资源以 `forge-gui/res/languages/cardnames-zh-CN.txt` 为唯一源码；开发客户端在启动时预载该文件，运行仓库的 `publish_git_payload.ps1 -SyncCustom` 会同时同步到 `app/res/languages/cardnames-zh-CN.txt` 并校验哈希，避免只发布卡牌而漏发中文类别或规则文字。
+- 原有 `forge-gui/res/languages/cardnames-zh-CN.txt` 保留全部现存记录；新卡和以后修订改用 `custom/translations/cardnames-zh-CN-custom.txt`。启动时先读大文件、再读小文件，同名以小文件为准；安装和 `publish_git_payload.ps1 -SyncCustom` 自动同步小文件并校验哈希。详见 `translations/README.md`。
 - 最新引擎迁移已恢复 `CardDiscover`，并修复 `BranchEffect` 在分支解析时传递替代效应对象；新桌面聚合 JAR 已构建，安装到实际客户端与客户端对局验证仍待单独记录。
 - 旧快照中的 `NewGame` 静态触发堆栈路由和持久法术力清理回归测试已适配到最新版；普通静态触发仍保持立即结算。
 - `Card.isValid` 支持 `printedNamed<name>`，在牌因复制状态改变当前名称后仍可按关联 `PaperCard` 的原始牌名筛选；`殒命暗影` 用它跳过连续施放的其他殒命暗影，并从牌库等非手牌区域开始持续记录上一张合格瞬间／法术。复制法术时额外保留瞬间类别，使复制状态仍能在瞬间时机施放；没有更早合格咒语时则以 `{0}` 无效果咒语正常结算。

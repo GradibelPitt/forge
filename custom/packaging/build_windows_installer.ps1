@@ -55,6 +55,7 @@ Copy-Item -LiteralPath $JarSource -Destination (Join-Path $StageRoot $JarName)
 Copy-Item -LiteralPath $ExeSource -Destination (Join-Path $StageRoot "forge.exe")
 Copy-Tree (Join-Path $RepoRoot "forge-gui\res") (Join-Path $StageRoot "res")
 Copy-Item -LiteralPath $ZhCn -Destination (Join-Path $StageRoot "res\languages\cardnames-zh-CN.txt") -Force
+& (Join-Path $CustomRoot 'tools\sync_translations.ps1') -LanguagesDirectory (Join-Path $StageRoot 'res\languages')
 
 $ManagedCustom = Join-Path $StageRoot "managed\custom"
 Copy-Tree $CustomCards (Join-Path $ManagedCustom "cards")
@@ -79,7 +80,8 @@ $critical = @(
     'BUILD-ID.txt',
     'launch_forge_diy.ps1',
     'install_diy_payload.ps1',
-    'res\languages\cardnames-zh-CN.txt'
+    'res\languages\cardnames-zh-CN.txt',
+    'res\languages\cardnames-zh-CN-custom.txt'
 )
 $critical += Get-ChildItem (Join-Path $StageRoot 'managed') -Recurse -File | ForEach-Object {
     $_.FullName.Substring($StageRoot.Length + 1)

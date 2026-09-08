@@ -6,6 +6,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -21,11 +23,15 @@ public class CardTranslation {
     private static final List <String> knownEffectNames = Arrays.asList("The Ring", "The Monarch", "The Initiative", "City's Blessing", "Keyword Effects");
     private static String languageSelected = "en-US";
 
-    private static void readTranslationFile(String language, String languagesDirectory) {
-        String filename = "cardnames-" + language + ".txt";
-
-        try (LineReader translationFile = new LineReader(Files.newInputStream(Paths.get(languagesDirectory + filename)), StandardCharsets.UTF_8)) {
+    private static void readTranslationFile(Path filename, boolean optional) {
+        try (LineReader translationFile = new LineReader(Files.newInputStream(filename), StandardCharsets.UTF_8)) {
             for (String line : translationFile.readLines()) {
+                if (optional && line.startsWith("\uFEFF")) {
+                    line = line.substring(1);
+                }
+                if (line.startsWith("#")) {
+                    continue;
+                }
                 String[] matches = line.split("\\|");
                 if (matches.length >= 2) {
                     if (matches[0].indexOf('$') > 0) {
@@ -51,9 +57,12 @@ public class CardTranslation {
                     translatedoracles.put(matches[0], toracle);
                 }
             }
+        } catch (NoSuchFileException e) {
+            if (!optional) {
+                System.err.println("Error reading translation file: " + filename);
+            }
         } catch (IOException e) {
-            if (!"en-US".equalsIgnoreCase(language))
-                System.err.println("Error reading translation file: cardnames-" + language + ".txt");
+            System.err.println("Error reading translation file: " + filename);
         }
     }
 
@@ -275,7 +284,12 @@ public class CardTranslation {
             translatedoracles = new HashMap<>();
             oracleMappings = new HashMap<>();
             translatedCaches = new HashMap<>();
-            readTranslationFile(languageSelected, languagesDirectory);
+            translatedEffectNames = null;
+            translatedTokenNames = null;
+            readTranslationFile(Paths.get(languagesDirectory, "cardnames-" + languageSelected + ".txt"), false);
+            // Existing official and DIY translations stay in the base file.
+            // Optional custom records are applied last, using the same parser.
+            readTranslationFile(Paths.get(languagesDirectory, "cardnames-" + languageSelected + "-custom.txt"), true);
         }
     }
 

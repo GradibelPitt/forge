@@ -29,7 +29,7 @@
 8. **保护用户改动。** 不覆盖无关文件，不使用破坏性 Git 命令，不因缺少 Git 仓库自行初始化。
 9. **每次制卡完成后立即发布。** 新增或修改卡牌脚本、图片、Token、中文文本或仅使用现有 DSL 的效果时，完成与改动相称的验证和本机部署后，必须立即创建范围明确的源码 commit 并 push 到 `GradibelPitt/forge` 的 `diy` 分支；随后用 `publish_git_payload.ps1 -SyncCustom` 更新运行仓库，完成运行时门禁后立即 commit 并 push `GradibelPitt/forge-diy-runtime` 的 `main` 分支。每张卡、每次修改都执行，不等待后续批次。
 10. **精准注入补丁完成后立即发布。** 任何 Java 引擎、Ability API、规则执行路径或引擎级 keyword 的改动，在目标测试和必要回归测试通过后，优先只构建受影响模块，并用 `publish_git_payload.ps1 -Module <module> -SyncCustom` 发布 overlay JAR；只有跨模块/API、依赖、资源打包边界或明确的新基线才重建桌面聚合 JAR。随后必须立即 push 源码与运行仓库，并核对两个远端 ref，避免联机双方加载不同引擎。
-11. **新卡与简中翻译是同一发布单元。** 每张新卡都必须在 `forge-gui/res/languages/cardnames-zh-CN.txt` 有完整四字段记录；发布运行仓库时用 `publish_git_payload.ps1 -SyncCustom` 自动同步简中资源。`CardTranslation` 只在启动时预载，未重启的客户端不得记为中文显示已验证。
+11. **新卡与简中翻译是同一发布单元。** 原 `forge-gui/res/languages/cardnames-zh-CN.txt` 内已有官方及 DIY 记录保持原样，不迁移、不删除。以后新卡及旧卡的中文覆盖均写入 `custom/translations/cardnames-zh-CN-custom.txt`，使用完整四字段记录；同名时小文件优先，详见 `translations/README.md`；发布运行仓库时用 `publish_git_payload.ps1 -SyncCustom` 自动同步简中资源。`CardTranslation` 只在启动时预载，未重启的客户端不得记为中文显示已验证。
 12. **发布脚本不等于 Git 发布。** `publish_git_payload.ps1` 只生成或同步 payload 与发布元数据，不会代替测试、暂存、commit 或 push。脚本成功后仍必须审查差异、只暂存本次目标文件、运行运行时门禁、提交、推送并确认远端提交；不得用 `git add -A` 混入无关工作。
 
 ## Change workflow

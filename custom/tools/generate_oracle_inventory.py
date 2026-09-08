@@ -4,6 +4,11 @@ import re
 import subprocess
 from pathlib import Path
 
+try:
+    from .card_translations import load_translations as read_card_translations
+except ImportError:
+    from card_translations import load_translations as read_card_translations
+
 from docx import Document
 from docx.enum.text import WD_BREAK
 from docx.oxml.ns import qn
@@ -69,12 +74,11 @@ def active_card_names() -> set[str]:
 
 
 def localized_cards() -> dict[str, tuple[str, str]]:
-    entries = {}
-    for line in LOCALIZATION.read_text(encoding="utf-8").splitlines():
-        parts = line.split("|", 3)
-        if len(parts) == 4:
-            entries[parts[0]] = (parts[2], parts[3].replace(r"\n", "\n"))
-    return entries
+    overlay = CUSTOM_ROOT / "translations" / "cardnames-zh-CN-custom.txt"
+    entries = read_card_translations(LOCALIZATION, overlay)
+    return {name: (fields.get("Types", ""), fields.get("Oracle", ""))
+            for name, fields in entries.items()}
+
 
 
 def ordered_cards(names: set[str]) -> list[tuple[str, str, str]]:
@@ -131,7 +135,7 @@ def write_text(rows: list[tuple[str, str, str, str, str]]) -> None:
         "Forge DIY 卡牌：游戏内真实 Oracle（非测试卡）",
         "================================================",
         "",
-        "来源：custom/cards、非测试版本登记与 forge-gui/res/languages/cardnames-zh-CN.txt",
+        "来源：custom/cards、非测试版本登记与基础简中 + custom/translations 增量覆盖",
         f"口径：已隐藏 Gigantic Spright；当前共 {len(rows)} 张非测试 DIY 卡。",
         f"本次 wording 审校范围：{audited} 张；未改动 {len(TITAN_NAMES)} 张炉石泰坦卡牌。",
         "说明：以下名称、类别和 Oracle 均按当前源码生成；每次文字变更后应重新运行本工具。",
@@ -182,7 +186,7 @@ def write_docx(rows: list[tuple[str, str, str, str, str]]) -> None:
 
     document.add_heading("Forge DIY 卡牌：游戏内真实 Oracle（非测试卡）", 0)
     document.add_paragraph(
-        "来源：custom/cards、非测试版本登记与 cardnames-zh-CN.txt"
+        "来源：custom/cards、非测试版本登记与基础简中 + custom/translations 增量覆盖"
     )
     document.add_paragraph(
         f"已隐藏 Gigantic Spright；当前共 {len(rows)} 张非测试 DIY 卡。"

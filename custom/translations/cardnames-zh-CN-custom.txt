@@ -1,0 +1,2 @@
+# Incremental DIY translations. Existing entries stay in cardnames-zh-CN.txt.
+# Add new cards or same-name overrides here. See README.md for the format.

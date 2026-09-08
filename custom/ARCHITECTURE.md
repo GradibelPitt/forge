@@ -12,7 +12,8 @@
 | 卡图 | `D:\Forge\forge-latest\custom\cards\pictures\` | `%LOCALAPPDATA%\Forge\Cache\pics\cards\` | 版本图使用如 `PH01/<名称>.full.jpg` |
 | DIY 测试 | `D:\Forge\forge-latest\custom\tests\` | 无 | Python 契约测试 |
 | Forge 源码 | `D:\Forge\forge-latest\` | Maven 构建产物 | Java 引擎的权威来源；上游基线为 `ebf9001` |
-| 中文卡牌资源 | `D:\Forge\forge-latest\forge-gui\res\languages\cardnames-zh-CN.txt` | 开发客户端直接读取该文件；运行仓库使用 `D:\Forge\forge-diy-runtime\app\res\languages\cardnames-zh-CN.txt` | `publish_git_payload.ps1 -SyncCustom` 会自动同步运行版简中资源 |
+| DIY 简中增量翻译 | `custom/translations/cardnames-zh-CN-custom.txt` | `forge-gui/res/languages/cardnames-zh-CN-custom.txt`（生成副本）和运行包 `app/res/languages/cardnames-zh-CN-custom.txt` | 旧大文件全部保留；同名时小文件优先；安装与发布时校验复制 |
+| 原有中文卡牌资源 | `D:\Forge\forge-latest\forge-gui\res\languages\cardnames-zh-CN.txt` | 开发客户端直接读取该文件；运行仓库使用 `D:\Forge\forge-diy-runtime\app\res\languages\cardnames-zh-CN.txt` | `publish_git_payload.ps1 -SyncCustom` 会自动同步运行版简中资源 |
 | 模块 overlay JAR | Java 源码与 Maven 配置 | `D:\Forge\forge-diy-runtime\app\overlays\<module>.jar` | Java 小改的默认精准注入产物；只构建和发布受影响模块 |
 | 桌面聚合 JAR | Java 源码与 Maven 配置 | `forge-gui-desktop\target\forge-gui-desktop-2.0.14-SNAPSHOT-jar-with-dependencies.jar` | 仅跨模块/API、依赖、资源打包边界或明确新基线时重建 |
 | DIY 源码远端 | `D:\Forge\forge-latest\` | `https://github.com/GradibelPitt/forge` 的 `diy` 分支 | 每次卡牌或精准补丁验证完成后立即 commit 并 push |
@@ -72,20 +73,15 @@
 
 ## Chinese localization
 
-权威简体中文卡牌资源是 `forge-gui/res/languages/cardnames-zh-CN.txt`，格式为
-`内部名称|中文显示名|中文类别|中文规则文字`。桌面开发客户端通过
-`GuiDesktop.getAssetsDir()` 返回的 `../forge-gui/` 读取该外部资源；当前仓库不存在、也不应新增
-`forge-gui-desktop/res/languages/cardnames-zh-CN.txt` 这一镜像。
+现有 `forge-gui/res/languages/cardnames-zh-CN.txt`（包括里面已有 DIY 卡）原样保留，不迁移、不删除。以后新卡和旧卡翻译修订只维护 `custom/translations/cardnames-zh-CN-custom.txt`。格式仍为 `内部名称|中文显示名|中文类别|中文规则文字`；详细用法见 [translations/README.md](translations/README.md)。
 
-`CardTranslation` 在客户端启动时预载翻译，不会因为卡牌脚本或卡图同步而自动重载。新增或修改卡牌后：
+`CardTranslation` 启动时先读 `cardnames-<language>.txt`，再用相同 parser 读取可选 `cardnames-<language>-custom.txt`；不同 key 追加，同名按字段覆盖。小文件缺失时维持旧行为，`en-US` 不加载翻译。原有 `\n`、`VERT`、Class 和 functional variant 解析保持兼容。
 
-1. 在权威简中资源中新增或更新完整四字段记录；
-2. 使用 `custom/tools/install_to_forge.ps1` 同步卡牌、版本与卡图；
-3. 发布玩家运行包时使用 `forge-diy-runtime/tools/publish_git_payload.ps1 -SyncCustom`，该开关会自动同步简中资源到 `app/res/languages/cardnames-zh-CN.txt` 并校验两端 SHA-256；
-4. 立即分别 commit 并 push 源码与运行仓库，核对两个远端 ref；
-5. 重启客户端后才可把中文名称、类别和规则文字记为客户端已验证。
+`custom/tools/install_to_forge.ps1` 自动校验、复制小文件到开发资源目录；可用 `-TranslationsOnly` 只同步翻译、不接触 profile。开发客户端仍通过 `GuiDesktop.getAssetsDir()` 读取 `../forge-gui/`，不新增 `forge-gui-desktop/res/languages` 镜像。
 
-`install_to_forge.ps1` 不负责复制语言文件，因为开发客户端本来就直接读取权威资源；它也不能代替运行仓库的发布步骤。
+运行仓库 `publish_git_payload.ps1 -SyncCustom`（隐含 `-SyncLocalization`）直接从权威小文件复制到 `app/res/languages/cardnames-zh-CN-custom.txt`，校验 SHA-256 并纳入 `manifest-critical.sha256`；不依赖开发副本是否已生成。全量打包和自动发布工作流也携带该文件。第一次启用必须发布新的 `forge-core` overlay；以后只改中文不需要重建 Java。
+
+修改后依旧必须完成验证、同步、源码与运行仓库提交推送，再正常重启客户端，才可确认游戏内中文显示。自动测试和哈希一致不代表已重启的客户端实测。
 
 ## Tests and validation tools
 
@@ -109,7 +105,7 @@
 ```text
 cards / editions / tokens ──install_to_forge.ps1──> %APPDATA%\Forge\custom
 cards/pictures ─────────────install_to_forge.ps1──> %LOCALAPPDATA%\Forge\Cache\pics\cards
-forge-gui/res/languages/cardnames-zh-CN.txt ──────> 开发客户端（启动时预载）
+原有 cardnames-zh-CN.txt + custom/translations 小文件 ──同步──> 开发/运行客户端（先 base 后 custom）
 Forge Java source ──affected-module package──> module JAR ──publish_git_payload.ps1 -Module──> app/overlays
        └─cross-module/package boundary──> forge-gui-desktop aggregate JAR
 JAR/overlays + res + DIY managed files ──publish_git_payload.ps1──> forge-diy-runtime/app

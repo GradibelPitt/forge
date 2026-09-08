@@ -4,10 +4,17 @@
 #   powershell -ExecutionPolicy Bypass -File .\install_to_forge.ps1 -Uninstall
 
 param (
-    [switch]$Uninstall = $false
+    [switch]$Uninstall = $false,
+    [switch]$TranslationsOnly,
+    [string]$LanguagesDirectory = (Join-Path $PSScriptRoot '..\..\forge-gui\res\languages')
 )
 
 $ErrorActionPreference = "Stop"
+
+# The developer client reads this generated overlay beside its base translations.
+# Translation-only installs never touch the profile, preferences or decks.
+& (Join-Path $PSScriptRoot 'sync_translations.ps1') -LanguagesDirectory $LanguagesDirectory -Uninstall:$Uninstall
+if ($TranslationsOnly) { return }
 
 # Define Paths
 $AppData = [System.Environment]::GetFolderPath('ApplicationData')

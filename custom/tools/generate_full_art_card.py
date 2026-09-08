@@ -3,6 +3,11 @@ from __future__ import annotations
 import argparse
 from io import BytesIO
 from pathlib import Path
+
+try:
+    from .card_translations import load_translations as read_card_translations
+except ImportError:
+    from card_translations import load_translations as read_card_translations
 from typing import Dict
 
 import resvg_py
@@ -14,9 +19,8 @@ GOLD = (214, 174, 70, 255)
 PALE_GOLD = (246, 222, 143, 255)
 INK = (16, 13, 12, 235)
 PANEL = (8, 10, 15, 190)
-DEFAULT_TRANSLATIONS = Path(
-    r"D:\Forge\forge-latest\forge-gui\res\languages\cardnames-zh-CN.txt"
-)
+DEFAULT_TRANSLATIONS = Path(__file__).resolve().parents[2] / "forge-gui/res/languages/cardnames-zh-CN.txt"
+CUSTOM_TRANSLATIONS = Path(__file__).resolve().parents[1] / "translations/cardnames-zh-CN-custom.txt"
 FRAME_DIR = Path(__file__).resolve().parent / "MTG_牌框_SVG_完全透明内框_v2"
 NAME_FRAME_SVG = FRAME_DIR / "牌名框_完全透明内框.svg"
 TEXT_FRAME_SVG = FRAME_DIR / "文字框_完全透明内框.svg"
@@ -35,20 +39,9 @@ def parse_card(path: Path) -> Dict[str, str]:
 
 
 def load_translations(path: Path) -> Dict[str, Dict[str, str]]:
-    translations: Dict[str, Dict[str, str]] = {}
-    if not path.is_file():
-        return translations
-    for raw in path.read_text(encoding="utf-8").splitlines():
-        fields = raw.split("|", 3)
-        if len(fields) != 4 or not fields[0]:
-            continue
-        internal_name, display_name, types, oracle = fields
-        translations[internal_name] = {
-            "Name": display_name,
-            "Types": types,
-            "Oracle": oracle.replace("\\n", "\n"),
-        }
-    return translations
+    overlay = CUSTOM_TRANSLATIONS if path.resolve() == DEFAULT_TRANSLATIONS.resolve() else None
+    return read_card_translations(path, overlay)
+
 
 
 def localized_fields(fields: Dict[str, str], translations: Dict[str, Dict[str, str]]) -> Dict[str, str]:

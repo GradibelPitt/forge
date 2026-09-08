@@ -105,3 +105,6 @@ forge-gui/tools/build
 /custom/tmp_*.png
 /custom/tmp_*.jpg
 /forge-gui-desktop/*.args
+
+# Generated from custom/translations by install_to_forge.ps1
+/forge-gui/res/languages/cardnames-*-custom.txt
