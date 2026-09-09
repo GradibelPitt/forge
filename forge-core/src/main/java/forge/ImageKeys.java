@@ -31,6 +31,7 @@ public final class ImageKeys {
             CARD_PREFIX + MYSTERY_CARD_NAME + "|" + MYSTERY_CARD_SET + "|[8]";
     public static final String FORETELL_IMAGE        = "foretell";
     public static final String BLESSING_IMAGE        = "blessing";
+    public static final String ENDURING_STORY_IMAGE  = "enduring_story";
     public static final String INITIATIVE_IMAGE      = "initiative";
     public static final String MONARCH_IMAGE         = "monarch";
     public static final String THE_RING_IMAGE        = "the_ring";

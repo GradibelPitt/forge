@@ -46,8 +46,7 @@ public class PlayerZoneBattlefield extends PlayerZone {
         c.getZone().remove(c);
         c.setZone(this);
         if (meldedCards.add(c)) {
-            game.onMeldedCardEnteredStaticAbilitySourceSet(getPlayer(), c,
-                    meldedCards.size() - 1);
+            game.onMeldedCardEnteredStaticAbilitySourceSet(getPlayer(), c, meldedCards.size() - 1);
         }
     }
 

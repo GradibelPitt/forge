@@ -165,8 +165,6 @@ public class Player extends GameEntity implements Comparable<Player> {
     private CardCollection currentPlanes = new CardCollection();
     private CardCollection planeswalkedToThisTurn = new CardCollection();
 
-    private Card activeScheme = null;
-
     private NavigableMap<Long, Pair<Player, PlayerController>> controlledBy = Maps.newTreeMap();
     private NavigableMap<Long, Player> controlledWhileSearching = Maps.newTreeMap();
 
@@ -282,10 +280,6 @@ public class Player extends GameEntity implements Comparable<Player> {
         return getZone(ZoneType.SchemeDeck).size() > 0; //Only the archenemy has schemes.
     }
 
-    public Card getActiveScheme() {
-        return activeScheme;
-    }
-
     public void setSchemeInMotion(SpellAbility cause) {
         setSchemeInMotion(cause, getZone(ZoneType.SchemeDeck).get(0));
     }
@@ -303,13 +297,6 @@ public class Player extends GameEntity implements Comparable<Player> {
         final Map<AbilityKey, Object> runParams = AbilityKey.newMap();
         runParams.put(AbilityKey.Scheme, scheme);
         game.getTriggerHandler().runTrigger(TriggerType.SetInMotion, runParams, false);
-    }
-
-    /**
-     * returns all players.
-     */
-    public final PlayerCollection getRegisteredPlayers() {
-        return game.getRegisteredPlayers();
     }
 
     /**
@@ -428,16 +415,12 @@ public class Player extends GameEntity implements Comparable<Player> {
     }
 
     public final boolean setLife(final int newLife, final SpellAbility sa) {
+        // CR 119.5
         boolean change = false;
-        // rule 119.5
         if (life > newLife) {
-            change = loseLife(life - newLife, false, false) > 0;
-        }
-        else if (newLife > life) {
+            change = loseLife(life - newLife, false, false, sa) > 0;
+        } else if (newLife > life) {
             change = gainLife(newLife - life, sa == null ? null : sa.getHostCard(), sa);
-        }
-        else { // life == newLife
-            change = false;
         }
         return change;
     }
@@ -450,6 +433,11 @@ public class Player extends GameEntity implements Comparable<Player> {
         startingLife = startLife;
         life = startLife;
         view.updateLife(this);
+    }
+
+    /** The number of cards in this player's main deck (not counting Commander/Sideboard/etc.) at game start. */
+    public final int getStartingLibrarySize() {
+        return getRegisteredPlayer().getDeck().getMain().countAll();
     }
 
     public final int getLife() {
@@ -515,8 +503,7 @@ public class Player extends GameEntity implements Comparable<Player> {
         return loseLife(toLose, damage, manaBurn, null);
     }
 
-    public final int loseLife(int toLose, final boolean damage, final boolean manaBurn,
-            final Card source) {
+    public final int loseLife(int toLose, final boolean damage, final boolean manaBurn, final SpellAbility cause) {
         // Rule 118.4
         // this is for players being able to pay 0 life nothing to do
         // no trigger for lost no life
@@ -528,7 +515,7 @@ public class Player extends GameEntity implements Comparable<Player> {
         final Map<AbilityKey, Object> repParams = AbilityKey.mapFromAffected(this);
         repParams.put(AbilityKey.Amount, toLose);
         repParams.put(AbilityKey.IsDamage, damage);
-        repParams.put(AbilityKey.Source, source);
+        repParams.put(AbilityKey.Source, cause == null ? null : cause.getHostCard());
 
         switch (getGame().getReplacementHandler().run(ReplacementType.LifeReduced, repParams)) {
         case NotReplaced:
@@ -563,6 +550,7 @@ public class Player extends GameEntity implements Comparable<Player> {
         final Map<AbilityKey, Object> runParams = AbilityKey.mapFromPlayer(this);
         runParams.put(AbilityKey.LifeAmount, toLose);
         runParams.put(AbilityKey.FirstTime, firstLost);
+        runParams.put(AbilityKey.SpellAbility, cause);
         game.getTriggerHandler().runTrigger(TriggerType.LifeLost, runParams, false);
 
         return toLose;
@@ -609,7 +597,7 @@ public class Player extends GameEntity implements Comparable<Player> {
             break;
         }
 
-        final int lost = loseLife(lifePayment, false, false);
+        final int lost = loseLife(lifePayment, false, false, cause);
         cause.setPaidLife(lifePayment);
 
         final Map<AbilityKey, Object> runParams = AbilityKey.mapFromPlayer(this);
@@ -826,7 +814,7 @@ public class Player extends GameEntity implements Comparable<Player> {
     }
 
     public final int processDamage() {
-        int lost = loseLife(simultaneousDamage, true, false);
+        int lost = loseLife(simultaneousDamage, true, false, null);
         simultaneousDamage = 0;
         return lost;
     }
@@ -849,7 +837,7 @@ public class Player extends GameEntity implements Comparable<Player> {
      * Get the greatest amount of combat damage assigned to a single player this turn.
      */
     public final int getMaxAssignedCombatDamage() {
-        return Aggregates.max(getRegisteredPlayers(), GameEntity::getAssignedCombatDamage);
+        return Aggregates.max(game.getRegisteredPlayers(), GameEntity::getAssignedCombatDamage);
     }
 
     public final boolean canReceiveCounters(final CounterType type) {
@@ -2702,6 +2690,8 @@ public class Player extends GameEntity implements Comparable<Player> {
 
     public void updateSleeve() {
         view.updateSleeveIndex(this);
+        view.updateSleeveArtKey(this);
+        view.updateSleeveArtOffset(this);
     }
 
     /**
@@ -3156,7 +3146,7 @@ public class Player extends GameEntity implements Comparable<Player> {
             }
         }
 
-        for (final Card c : getCardsIn(ZoneType.Library)) {
+        for (final Card c : List.copyOf(getCardsIn(ZoneType.Library))) { //Copy the list so ChangeZone effects don't trigger concurrent modification.
             for (KeywordInterface inst : c.getKeywords()) {
                 String kw = inst.getOriginal();
                 if (kw.startsWith("MayEffectFromOpeningDeck")) {
@@ -3845,7 +3835,7 @@ public class Player extends GameEntity implements Comparable<Player> {
 
             com.add(blessingEffect);
 
-            // 702.131d. After a player gets the city's blessing, continuous effects are reapplied
+            // CR 702.131d After a player gets the city's blessing, continuous effects are reapplied
             game.getAction().checkStaticAbilities();
         } else {
             com.remove(blessingEffect);
@@ -3869,6 +3859,7 @@ public class Player extends GameEntity implements Comparable<Player> {
         if (story) {
             enduringStoryEffect = new Card(game.nextCardId(), null, game);
             enduringStoryEffect.setOwner(this);
+            enduringStoryEffect.setImageKey(StaticData.instance().getOtherImageKey(ImageKeys.ENDURING_STORY_IMAGE, setCode));
             enduringStoryEffect.setName("An Enduring Story");
             enduringStoryEffect.setGamePieceType(GamePieceType.EFFECT);
             if (setCode != null) {

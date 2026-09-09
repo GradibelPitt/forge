@@ -135,7 +135,7 @@ public class AutoPaymentTest extends SimulationTest {
         game.getPhaseHandler().devModeSet(PhaseType.MAIN2, p);
         game.getAction().checkStateEffects(true);
 
-        SpellAbilityPicker picker = new SpellAbilityPicker(game, p);
+        SpellAbilityPicker picker = new SpellAbilityPicker(p);
         SpellAbility sa = picker.chooseSpellAbilityToPlay(null);
         AssertJUnit.assertTrue(sa.getHostCard().isCreature());
 

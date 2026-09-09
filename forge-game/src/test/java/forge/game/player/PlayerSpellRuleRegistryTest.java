@@ -1364,7 +1364,9 @@ public class PlayerSpellRuleRegistryTest {
             final String state, final String conversion) {
         final int entryStart = state.indexOf(';') + 1;
         final String[] fields = state.substring(entryStart).split(",", -1);
-        Assert.assertTrue(fields.length == 5 || fields.length == 7);
+        // Name snapshots added an eighth field; preserve it while corrupting
+        // only the mana-conversion field that this regression test exercises.
+        Assert.assertTrue(fields.length == 5 || fields.length == 7 || fields.length == 8);
         fields[4] = encodeStateField(conversion);
         return state.substring(0, entryStart) + String.join(",", fields);
     }

@@ -3,6 +3,7 @@ package forge.player;
 import com.google.common.collect.*;
 import forge.LobbyPlayer;
 import forge.StaticData;
+import forge.ai.AIOption;
 import forge.ai.AvailableActions;
 import forge.game.GameState;
 import forge.ai.PlayerControllerAi;
@@ -213,31 +214,11 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
     @Override
     public SpellAbility getAbilityToPlay(final Card hostCard, final List<SpellAbility> abilities,
                                          final ITriggerEvent triggerEvent) {
-        // make sure another human player can't choose opponents cards just because he might see them
-        if (triggerEvent != null && !hostCard.isInPlay() && !hostCard.getOwner().equals(player) &&
-                !hostCard.getController().equals(player) &&
-                // If player cast Shaman's Trance, they can play spells from any Graveyard (if other effects allow it to be cast)
-                (!player.hasKeyword("Shaman's Trance") || !hostCard.isInZone(ZoneType.Graveyard))) {
-            boolean noPermission = true;
-            for (CardPlayOption o : hostCard.mayPlay(player)) {
-                if (o.grantsZonePermissions()) {
-                    noPermission = false;
-                    break;
-                }
-            }
-            for (SpellAbility sa : hostCard.getAllSpellAbilities()) {
-                if (sa.hasParam("Activator")
-                        && player.isValid(sa.getParam("Activator"), hostCard.getController(), hostCard, sa)) {
-                    noPermission = false;
-                    break;
-                }
-            }
-            if (noPermission) {
-                return null;
-            }
-        }
-        //FIXME - on mobile gui it allows the card to cast from opponent hands issue #2127, investigate where the bug occurs before this method is called
         spellViewCache = SpellAbilityView.getMap(abilities);
+        if (getPlayer().isControlled() && getPlayer().getControllingPlayer().getController() instanceof PlayerControllerHuman pch) {
+            // need to transfer to original controller or menu selection fails
+            pch.spellViewCache = spellViewCache;
+        }
         for (SpellAbility sa : abilities) {
             sa.getView().updateCanPlay(sa);
         }
@@ -1142,10 +1123,7 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
         GameEntityViewMap<Card, CardView> gameCacheMove = GameEntityView.getMap(cards);
         List<CardView> choices = gameCacheMove.getTrackableKeys();
 
-        boolean topOfDeck = destinationZone.isDeck()
-                && (source == null
-                    || !source.hasParam("LibraryPosition")
-                    || AbilityUtils.calculateAmount(source.getHostCard(), source.getParam("LibraryPosition"), source) >= 0);
+        boolean topOfDeck = orderedMoveToTopOfLibrary(destinationZone, source);
 
         switch (destinationZone) {
             case Library:
@@ -2088,6 +2066,7 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
     @Override
     public ICardFace chooseSingleCardFace(final SpellAbility sa, final String message, final Predicate<ICardFace> cpp,
                                           final String name) {
+        FModel.getMagicDb().ensureAllCardsLoaded();
         List<CardFaceView> choices = FModel.getMagicDb().getCommonCards().streamAllFaces()
                 .filter(cpp)
                 .map(CardFaceView::new)
@@ -3421,6 +3400,7 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
                 f = lastAdded;
                 quantity = 1;
             } else {
+                FModel.getMagicDb().ensureAllCardsLoaded();
                 List<CardFaceView> choices = carddb.streamAllFaces().map(CardFaceView::new).collect(Collectors.toList());
                 Collections.sort(choices);
                 f = getGui().oneOrNone(localizer.getMessage("lblNameTheCard"), choices);
@@ -3487,7 +3467,9 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
                                 // ensure triggered abilities fire
                                 getGame().getTriggerHandler().runWaitingTriggers();
                             } else {
-                                final FCollectionView<SpellAbility> choices1 = forgeCard.getBasicSpells();
+                                // this is really needed (for rollbacks at least)
+                                getGame().getAction().moveToHand(forgeCard, null);
+                                final List<SpellAbility> choices1 = forgeCard.getAllPossibleAbilities(p, false);
                                 if (choices1.isEmpty()) {
                                     return; // when would it happen?
                                 }
@@ -3496,7 +3478,7 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
                                 if (choices1.size() == 1) {
                                     sa = choices1.iterator().next();
                                 } else {
-                                    sa = repeatLast ? lastAddedSA : getGui().oneOrNone(localizer.getMessage("lblChoose"), (FCollection<SpellAbility>) choices1);
+                                    sa = repeatLast ? lastAddedSA : getGui().oneOrNone(localizer.getMessage("lblChoose"), choices1);
                                 }
                                 if (sa == null) {
                                     return; // happens if cancelled
@@ -3504,8 +3486,6 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
 
                                 lastAddedSA = sa;
 
-                                // this is really needed (for rollbacks at least)
-                                getGame().getAction().moveToHand(forgeCard, null);
                                 // Human player is choosing targets for an ability
                                 // controlled by chosen player.
                                 sa.setActivatingPlayer(p);
@@ -3715,7 +3695,7 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
 
         public void askAI(boolean useSimulation) {
             PlayerControllerAi ai = new PlayerControllerAi(player.getGame(), player, player.getOriginalLobbyPlayer());
-            ai.setUseSimulation(useSimulation);
+            ai.getAi().setUseSimulation(AIOption.USE_FULL_SIMULATION);
             player.runWithController(() -> {
                 List<SpellAbility> sas = ai.chooseSpellAbilityToPlay();
                 SpellAbility chosen = sas == null ? null : sas.get(0);

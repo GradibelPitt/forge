@@ -44,6 +44,13 @@ import forge.game.zone.ZoneType;
 import forge.item.PaperCard;
 
 public class PlayEffect extends SpellAbilityEffect {
+
+    @Override
+    public boolean movesCardToOrFromLibrary(final SpellAbility sa) {
+        // cards are played from hand unless ValidZone says otherwise
+        return zoneParamIsLibrary(sa, "ValidZone");
+    }
+
     @Override
     protected String getStackDescription(final SpellAbility sa) {
         final StringBuilder sb = new StringBuilder();
@@ -118,9 +125,11 @@ public class PlayEffect extends SpellAbilityEffect {
                         .map(name -> name.replace(";", ","))
                         .map(cardDb::getUniqueByName);
             } else if (valid.equalsIgnoreCase("sorcery")) {
+                StaticData.instance().ensureAllCardsLoaded();
                 cards = cardDb.streamUniqueCards()
                         .filter(PaperCardPredicates.fromRules(CardRulesPredicates.IS_SORCERY));
             } else if (valid.equalsIgnoreCase("instant")) {
+                StaticData.instance().ensureAllCardsLoaded();
                 cards = cardDb.streamUniqueCards()
                         .filter(PaperCardPredicates.fromRules(CardRulesPredicates.IS_INSTANT));
             } else {
@@ -379,6 +388,7 @@ public class PlayEffect extends SpellAbilityEffect {
                 }
 
                 tgtSA = tgtSA.copyWithManaCostReplaced(tgtSA.getActivatingPlayer(), abCost);
+                applyKeywordAlternativeCost(sa, tgtSA);
             } else if (tgtSA.getPayCosts().hasManaCost() && tgtSA.getPayCosts().getCostMana().getMana().isNoCost()) {
                 // unpayable
                 continue;
@@ -411,8 +421,6 @@ public class PlayEffect extends SpellAbilityEffect {
                 String raise = sa.getParam("PlayRaiseCost");
                 tgtSA.putParam("RaiseCost", raise);
             }
-
-            applyAlternativeCostMarker(sa, tgtSA);
 
             if (sa.isKeyword(Keyword.MADNESS)) {
                 tgtSA.setAlternativeCost(AlternativeCost.Madness);
@@ -489,11 +497,14 @@ public class PlayEffect extends SpellAbilityEffect {
         }
     }
 
-    static void applyAlternativeCostMarker(final SpellAbility playAbility,
-                                           final SpellAbility spellToCast) {
-        if (playAbility.hasParam("AlternativeCost")) {
-            spellToCast.setAlternativeCost(AlternativeCost.valueOf(
-                    playAbility.getParam("AlternativeCost")));
+    static void applyKeywordAlternativeCost(final SpellAbility playAbility,
+                                            final SpellAbility spellToCast) {
+        // Use the keyword provenance propagated through the native trigger chain,
+        // only after selecting its replacement mana cost. Card text or an equally
+        // priced ordinary spell must not make a cast count as a miracle.
+        if (playAbility.isKeyword(Keyword.MIRACLE) && playAbility.hasParam("PlayCost")
+                && !playAbility.hasParam("WithoutManaCost")) {
+            spellToCast.setAlternativeCost(AlternativeCost.Miracle);
         }
     }
 

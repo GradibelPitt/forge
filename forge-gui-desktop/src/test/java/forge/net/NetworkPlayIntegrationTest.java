@@ -84,10 +84,10 @@ public class NetworkPlayIntegrationTest implements IHasForgeLog {
     public void testServerStartAndStop() {
         netLog.info("Testing server start/stop...");
         var server = forge.gamemodes.net.server.FServerManager.getInstance();
-        int port = 55556;
-
         try {
-            server.startServer(port);
+            int port = server.startServer();
+            Assert.assertTrue(port > 0, "Server should return its allocated TCP port");
+            Assert.assertEquals(server.getPort(), port);
             Assert.assertTrue(server.isHosting(), "Server should be hosting after start");
             netLog.info("Server started on port {}", port);
         } finally {

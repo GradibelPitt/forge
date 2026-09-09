@@ -41,4 +41,19 @@ public enum ComparableOp {
     public String toString() {
         return caption;
     }
+
+    public boolean apply(final Integer left, final Integer right) {
+        if (left == null || right == null) {
+            return false;
+        }
+        final int comparison = Integer.compare(left, right);
+        return switch (this) {
+            case EQUALS -> comparison == 0;
+            case NOT_EQUALS -> comparison != 0;
+            case GREATER_THAN -> comparison > 0;
+            case LESS_THAN -> comparison < 0;
+            case GT_OR_EQUAL -> comparison >= 0;
+            case LT_OR_EQUAL -> comparison <= 0;
+        };
+    }
 }

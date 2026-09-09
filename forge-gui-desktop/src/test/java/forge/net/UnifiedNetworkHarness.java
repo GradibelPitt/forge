@@ -65,7 +65,6 @@ public class UnifiedNetworkHarness implements IHasForgeLog {
     private int remoteClientCount = 0;
     private long connectionTimeoutMs = DEFAULT_CONNECTION_TIMEOUT_MS;
     private long gameTimeoutMs = DEFAULT_GAME_TIMEOUT_MS;
-    private int specifiedPort = -1; // -1 means auto-allocate
     private boolean useAiForRemotePlayers = true;
     private boolean commander = false;
     private List<Deck> decks = null;
@@ -95,8 +94,15 @@ public class UnifiedNetworkHarness implements IHasForgeLog {
         return this;
     }
 
+    /**
+     * Legacy harness option. The server now allocates its listening port atomically;
+     * clients and reports always use the actual bound port returned by startServer.
+     */
+    @Deprecated
     public UnifiedNetworkHarness port(int port) {
-        this.specifiedPort = port;
+        if (port > 0) {
+            netLog.info("Ignoring legacy requested port {}; server will allocate a free port", port);
+        }
         return this;
     }
 
@@ -170,12 +176,10 @@ public class UnifiedNetworkHarness implements IHasForgeLog {
         try {
             TestUtils.ensureFModelInitialized();
 
-            int port = (specifiedPort > 0) ? specifiedPort : PortAllocator.allocatePort();
-            result.port = port;
-
             // 1. Start server
             server = FServerManager.getInstance();
-            server.startServer(port);
+            int port = server.startServer();
+            result.port = port;
             serverRunning.set(true);
             logServerInstanceBanner("LocalAI", playerCount, port);
 
@@ -259,15 +263,12 @@ public class UnifiedNetworkHarness implements IHasForgeLog {
         try {
             TestUtils.ensureFModelInitialized();
 
-            int port = (specifiedPort > 0) ? specifiedPort : PortAllocator.allocatePort();
-            result.port = port;
-
-            netLog.info("Starting {}-player game with {} remote clients on port {}",
-                    playerCount, remoteClientCount, port);
-
             // 1. Start server
             server = FServerManager.getInstance();
-            server.startServer(port);
+            int port = server.startServer();
+            result.port = port;
+            netLog.info("Starting {}-player game with {} remote clients on port {}",
+                    playerCount, remoteClientCount, port);
             serverRunning.set(true);
             logServerInstanceBanner("RemoteNetwork", playerCount, port);
 

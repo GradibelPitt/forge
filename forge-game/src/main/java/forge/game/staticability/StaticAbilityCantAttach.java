@@ -2,26 +2,23 @@ package forge.game.staticability;
 
 import forge.game.GameEntity;
 import forge.game.card.Card;
+import forge.game.zone.ZoneType;
 
 public class StaticAbilityCantAttach {
 
     public static StaticAbility cantAttach(final GameEntity target, final Card card, boolean checkSBA) {
-        final StaticAbility[] result = {null};
-        target.getGame().visitStaticAbilityModeSources(
-                StaticAbilityMode.CantAttach, ca -> {
+        for (final Card ca : target.getGame().getCardsIn(ZoneType.STATIC_ABILITIES_SOURCE_ZONES)) {
             for (final StaticAbility stAb : ca.getStaticAbilities()) {
                 if (!stAb.checkConditions(StaticAbilityMode.CantAttach)) {
                     continue;
                 }
 
                 if (applyCantAttachAbility(stAb, card, target, checkSBA)) {
-                    result[0] = stAb;
-                    return false;
+                    return stAb;
                 }
             }
-            return true;
-        });
-        return result[0];
+        }
+        return null;
     }
 
     public static boolean applyCantAttachAbility(final StaticAbility stAb, final Card card, final GameEntity target, boolean checkSBA) {

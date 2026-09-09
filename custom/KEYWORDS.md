@@ -56,13 +56,13 @@ Oracle:Counter target instant or sorcery spell.
 - **Java implementation:** `forge-game/.../card/CardProperty.java`。
 - **Tests:** `ShadowOfDemiseTest` 覆盖复制后当前名称改变但原始牌名仍可识别、连续同名咒语跳过及空历史无效果结算。
 
-## Miracle 施放费用标记
+## Miracle 施放方式判定
 
-- **Status:** 在 Forge 既有 `Miracle` 关键字上补充施放方式标记，不改变抽到、展示、时机或替代法术力费用规则。
-- **DSL:** `K:Miracle:<cost>` 生成的 `Play` 效果会把待施放的咒语标记为 `AlternativeCost.Miracle`。咒语异能过滤器可用 `Spell.Miracle` 或 `Spell.!Miracle` 区分是否实际支付奇迹费用。
-- **Semantics:** 标记只属于本次咒语异能；普通施放、免费施放、返照及其他替代费用不会被误判为奇迹。`矿车难题` 以 `ValidSpell$ Spell.!Miracle` 添加弃牌费用，因此只有实际支付奇迹费用时免除弃牌。
+- **Status:** Miracle 是官方既有机制；这里只让自定义脚本读取本次是否通过奇迹费用施放，不新增奇迹关键字，不改变抽到、展示、时机或替代法术力费用规则。
+- **DSL:** 仅使用官方 `K:Miracle:<cost>`，不添加 `AlternativeCost$ Miracle` 脚本参数。引擎沿原生奇迹触发链传递的 `Keyword.MIRACLE` 来源，在选择奇迹替代费用时记录本次施放方式；咒语异能过滤器可用 `Spell.Miracle` 或 `Spell.!Miracle` 判断。普通施放即使支付相同数额也不算奇迹。
+- **Semantics:** 判断只针对本次咒语的实际施放方式，不读取描述文字或牌面上的关键字来冒充支付记录；普通施放、免费施放、返照及其他替代费用不会被误判为奇迹。`矿车难题` 以 `ValidSpell$ Spell.!Miracle` 添加弃牌费用，因此只有通过奇迹费用施放时免除弃牌。
 - **Java implementation:** `CardFactoryUtil`、`PlayEffect`、`AlternativeCost` 与 `SpellAbilityProperty`。
-- **Tests:** `MiracleAlternativeCostTest` 覆盖生成标记、咒语过滤与额外费用分支；`tests/test_trolley_problem.py` 固定卡牌契约。
+- **Tests:** `MiracleAlternativeCostTest` 覆盖原生关键词来源传递、咒语过滤与额外费用分支，以及普通同额费用、伪造脚本参数、免费施放和其他替代费用的排除；`tests/test_trolley_problem.py` 固定卡牌契约。
 
 ## Durability
 

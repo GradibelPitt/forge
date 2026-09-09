@@ -11,6 +11,7 @@ import forge.game.GameRules;
 import forge.game.GameStage;
 import forge.game.GameType;
 import forge.game.Match;
+import forge.game.phase.PhaseType;
 import forge.game.ability.ApiType;
 import forge.game.card.Card;
 import forge.game.card.CardFactory;
@@ -133,7 +134,7 @@ public class MysteryTest {
         fixture.controller.getZone(ZoneType.Hand).add(mystery);
         fixture.game.getAction().moveToPlay(mystery, null, null);
 
-        final SpellAbility reveal = mystery.getSpellAbilities().stream()
+        final SpellAbility reveal = mystery.getOriginalState(CardStateName.Original).getNonManaAbilities().stream()
                 .filter(SpellAbility::isMysteryUp)
                 .findFirst()
                 .orElseThrow();
@@ -141,6 +142,8 @@ public class MysteryTest {
 
         fixture.game.getPhaseHandler().setPlayerTurn(fixture.controller);
         Assert.assertFalse(reveal.getRestrictions().checkTimingRestrictions(mystery, reveal));
+        Assert.assertFalse(mystery.getAllPossibleAbilities(fixture.controller, true).stream()
+                .anyMatch(SpellAbility::isMysteryUp));
 
         fixture.game.getPhaseHandler().setPlayerTurn(fixture.opponent);
         Assert.assertTrue(reveal.getRestrictions().checkTimingRestrictions(mystery, reveal));
@@ -154,17 +157,21 @@ public class MysteryTest {
         fixture.controller.getZone(ZoneType.Hand).add(mystery);
         fixture.game.getAction().moveToPlay(mystery, null, null);
 
-        final SpellAbility reveal = mystery.getSpellAbilities().stream()
+        final SpellAbility reveal = mystery.getOriginalState(CardStateName.Original).getNonManaAbilities().stream()
                 .filter(SpellAbility::isMysteryUp)
                 .findFirst()
                 .orElseThrow();
         reveal.setActivatingPlayer(fixture.controller);
 
         Assert.assertFalse(reveal.canPlay());
+        Assert.assertFalse(mystery.getAllPossibleAbilities(fixture.controller, true).stream()
+                .anyMatch(SpellAbility::isMysteryUp));
 
         fixture.game.getStack().add(instantSpell(fixture));
 
         Assert.assertTrue(reveal.canPlay());
+        Assert.assertEquals(mystery.getAllPossibleAbilities(fixture.controller, true).stream()
+                .filter(SpellAbility::isMysteryUp).count(), 1L);
     }
 
     @Test
@@ -176,7 +183,9 @@ public class MysteryTest {
         fixture.controller.getZone(ZoneType.Hand).add(mystery);
         fixture.game.getAction().moveToPlay(mystery, null, null);
 
-        final SpellAbility reveal = mystery.getSpellAbilities().stream()
+        // Upstream now exposes face-up special actions through getAllPossibleAbilities,
+        // not through the face-down permanent's printed abilities.
+        final SpellAbility reveal = mystery.getAllPossibleAbilities(fixture.controller, true).stream()
                 .filter(SpellAbility::isMysteryUp)
                 .findFirst()
                 .orElseThrow();
@@ -295,7 +304,7 @@ public class MysteryTest {
         game.getPlayers().add(opponent);
         controller.setTeam(1);
         opponent.setTeam(2);
-        game.getPhaseHandler().setPlayerTurn(opponent);
+        game.getPhaseHandler().devModeSet(PhaseType.MAIN1, opponent);
         game.setAge(GameStage.Play);
         return new Fixture(game, controller, opponent);
     }

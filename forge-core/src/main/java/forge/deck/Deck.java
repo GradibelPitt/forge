@@ -47,7 +47,12 @@ import java.util.stream.Collectors;
  */
 @SuppressWarnings("serial")
 public class Deck extends DeckBase implements Iterable<Entry<DeckSection, CardPool>> {
+    // Pinned to the computed UID from before sleeveArtKey/sleeveArtOffset were added, so decks
+    // serialized into Adventure saves by older builds keep deserializing (new fields default).
     private static final long serialVersionUID = -8539667316828440829L;
+
+    // Crop offset (0..1000 along the slack axis) used when framing this deck's card-art sleeve
+    public static final int DEFAULT_SLEEVE_OFFSET = 500;
 
     private final Map<DeckSection, CardPool> parts = new EnumMap<>(DeckSection.class);
     private final Set<String> tags = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
@@ -63,6 +68,8 @@ public class Deck extends DeckBase implements Iterable<Entry<DeckSection, CardPo
     private String lastCardArtPreferenceUsed = "";
     private Boolean lastCardArtOptimisationOptionUsed = null;
     private boolean includeCardsFromUnspecifiedSet = false;
+    private String sleeveArtKey = "";
+    private int sleeveArtOffset = DEFAULT_SLEEVE_OFFSET;
     private transient UnplayableAICards unplayableAI = null;
     private DeckConstructionLedger constructionLedger = DeckConstructionLedger.tracked();
 
@@ -354,6 +361,8 @@ public class Deck extends DeckBase implements Iterable<Entry<DeckSection, CardPo
             result.tags.addAll(this.tags);
         if(keyCards != null)
             result.keyCards.addAll(this.keyCards);
+        result.sleeveArtKey = this.sleeveArtKey;
+        result.sleeveArtOffset = this.sleeveArtOffset;
     }
 
     /*
@@ -663,6 +672,22 @@ public class Deck extends DeckBase implements Iterable<Entry<DeckSection, CardPo
             sum += section.getValue().count(card);
         }
         return sum;
+    }
+
+    /** Card image key whose art_crop is this deck's sleeve, or "" to use the built-in sleeve. */
+    public String getSleeveArtKey() {
+        // null when deserialized from a stream written before this field existed
+        return sleeveArtKey == null ? "" : sleeveArtKey;
+    }
+    public void setSleeveArtKey(final String key) {
+        sleeveArtKey = key == null ? "" : key;
+    }
+
+    public int getSleeveArtOffset() {
+        return sleeveArtOffset;
+    }
+    public void setSleeveArtOffset(final int offset) {
+        sleeveArtOffset = offset;
     }
 
     public List<String> getKeyCards() {

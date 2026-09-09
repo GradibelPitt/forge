@@ -149,6 +149,7 @@ public class CopyPermanentEffect extends TokenEffectBase {
             List<Card> tgtCards = Lists.newArrayList();
 
             if (sa.hasParam("ValidSupportedCopy")) {
+                StaticData.instance().ensureAllCardsLoaded();
                 Iterable<PaperCard> cards = StaticData.instance().getCommonCards().getUniqueCards();
                 cards = IterableUtil.filter(cards, GameRuleCard::canMaterialize);
                 String valid = sa.getParam("ValidSupportedCopy");

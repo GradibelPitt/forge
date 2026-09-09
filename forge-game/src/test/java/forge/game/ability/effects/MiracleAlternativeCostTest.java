@@ -6,12 +6,15 @@ import forge.game.Game;
 import forge.game.GameRules;
 import forge.game.GameType;
 import forge.game.Match;
+import forge.game.ability.AbilityFactory;
 import forge.game.card.Card;
 import forge.game.card.CardFactory;
 import forge.game.cost.Cost;
 import forge.game.cost.CostAdjustment;
 import forge.game.cost.CostDiscard;
+import forge.game.keyword.Keyword;
 import forge.game.player.Player;
+import forge.game.spellability.AlternativeCost;
 import forge.game.spellability.SpellAbility;
 import forge.game.trigger.Trigger;
 import forge.game.trigger.TriggerType;
@@ -37,12 +40,14 @@ public class MiracleAlternativeCostTest {
     }
 
     @Test
-    public void miracleKeywordMarksItsGeneratedPlayEffect() {
+    public void miraclePlayUsesNativeKeywordProvenanceWithoutAScriptMarker() {
         final Fixture fixture = fixture();
         final SpellAbility play = miraclePlayAbility(fixture.card);
 
         Assert.assertEquals(play.getParam("PlayCost"), "B R R");
-        Assert.assertEquals(play.getParam("AlternativeCost"), "Miracle");
+        Assert.assertFalse(play.hasParam("AlternativeCost"));
+        Assert.assertTrue(play.isKeyword(Keyword.MIRACLE));
+        Assert.assertTrue(play.copy(fixture.card, fixture.player, false).isKeyword(Keyword.MIRACLE));
     }
 
     @Test
@@ -53,7 +58,7 @@ public class MiracleAlternativeCostTest {
 
         final SpellAbility miracle = base.copyWithManaCostReplaced(
                 fixture.player, new Cost("B R R", false));
-        PlayEffect.applyAlternativeCostMarker(miraclePlayAbility(fixture.card), miracle);
+        PlayEffect.applyKeywordAlternativeCost(miraclePlayAbility(fixture.card), miracle);
 
         Assert.assertFalse(base.isValid(
                 "Spell.Miracle", fixture.player, fixture.card, base));
@@ -71,6 +76,47 @@ public class MiracleAlternativeCostTest {
                 .anyMatch(CostDiscard.class::isInstance));
         Assert.assertFalse(miracleCost.getCostParts().stream()
                 .anyMatch(CostDiscard.class::isInstance));
+    }
+
+    @Test
+    public void sameCostOrScriptTextDoesNotMakeAnOrdinaryCastAMiracle() {
+        final Fixture fixture = fixture();
+        final SpellAbility ordinaryPlay = AbilityFactory.getAbility(
+                "DB$ Play | Defined$ Self | PlayCost$ B R R | AlternativeCost$ Miracle",
+                fixture.card);
+        final SpellAbility spell = fixture.card.getFirstSpellAbility().copyWithManaCostReplaced(
+                fixture.player, new Cost("B R R", false));
+
+        PlayEffect.applyKeywordAlternativeCost(ordinaryPlay, spell);
+
+        Assert.assertFalse(spell.isAlternativeCost(AlternativeCost.Miracle));
+    }
+
+    @Test
+    public void freeCastDoesNotCountAsPayingMiracleCost() {
+        final Fixture fixture = fixture();
+        final SpellAbility play = miraclePlayAbility(fixture.card);
+        play.putParam("WithoutManaCost", "True");
+        final SpellAbility spell = fixture.card.getFirstSpellAbility().copyWithNoManaCost();
+
+        PlayEffect.applyKeywordAlternativeCost(play, spell);
+
+        Assert.assertFalse(spell.isAlternativeCost(AlternativeCost.Miracle));
+    }
+
+    @Test
+    public void unrelatedPlayKeepsItsOwnAlternativeCost() {
+        final Fixture fixture = fixture();
+        final SpellAbility ordinaryPlay = AbilityFactory.getAbility(
+                "DB$ Play | Defined$ Self | PlayCost$ B R R", fixture.card);
+        final SpellAbility spell = fixture.card.getFirstSpellAbility().copyWithManaCostReplaced(
+                fixture.player, new Cost("B R R", false));
+        spell.setAlternativeCost(AlternativeCost.Flashback);
+
+        PlayEffect.applyKeywordAlternativeCost(ordinaryPlay, spell);
+
+        Assert.assertTrue(spell.isAlternativeCost(AlternativeCost.Flashback));
+        Assert.assertFalse(spell.isAlternativeCost(AlternativeCost.Miracle));
     }
 
     private static SpellAbility miraclePlayAbility(final Card card) {
