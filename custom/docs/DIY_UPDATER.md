@@ -1,5 +1,7 @@
 # 游戏内 DIY 选择性更新
 
+> 2026-09-09 策略 2 的最新规则见 [DIY_UPDATE_PROTECTION.md](DIY_UPDATE_PROTECTION.md)，包含牌名模糊搜索的明确保护、完整桌面成员目录与类型绑定门禁。下文为策略 1 的实现记录；路径范围和保护能力以新文档为准。
+
 规则脚本内嵌于 `forge-gui` 模块的 `forge/download/diy-updater.ps1`，由 `DiyUpdateBridge` 从游戏的更新按钮调用。它调用 Java 17 JDK 和 Maven 编译，并不是普通 JAR 天生具有自我编译能力。
 
 ## 更新边界
