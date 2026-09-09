@@ -9,12 +9,14 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeUnit;
 import javax.swing.SwingUtilities;
 
 /** Starts the embedded, isolated source updater; never opens an official installer. */
 public final class DiyUpdateBridge {
     private static final AtomicBoolean RUNNING = new AtomicBoolean();
     private static final String RESOURCE = "/forge/download/diy-updater.ps1";
+    private static volatile DiyUpdateProgress currentProgress;
 
     private DiyUpdateBridge() { }
 
@@ -29,7 +31,10 @@ public final class DiyUpdateBridge {
 
     public static boolean start() {
         if (!RUNNING.compareAndSet(false, true)) {
-            show("更新正在后台进行，请等待完成通知。", "Forge DIY 更新");
+            final DiyUpdateProgress progress = currentProgress;
+            if (progress != null) {
+                progress.open();
+            }
             return false;
         }
         try {
@@ -57,27 +62,72 @@ public final class DiyUpdateBridge {
             final Path request = job.resolve("request.json");
             Files.writeString(request, "{\"installRoot\":" + jsonString(install)
                     + ",\"appRoot\":" + jsonString(app) + ",\"javaHome\":"
-                    + jsonString(System.getProperty("java.home")) + "}", StandardCharsets.UTF_8);
+                    + jsonString(System.getProperty("java.home")) + ",\"controllerPid\":"
+                    + ProcessHandle.current().pid() + "}", StandardCharsets.UTF_8);
             final Path powershell = Path.of(System.getenv("SystemRoot"), "System32", "WindowsPowerShell",
                     "v1.0", "powershell.exe");
             final Process process = new ProcessBuilder(powershell.toString(), "-NoProfile", "-NonInteractive",
                     "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-File", script.toString(),
                     "-Request", request.toString()).redirectErrorStream(true)
                     .redirectOutput(job.resolve("update.log").toFile()).start();
-            final Thread watcher = new Thread(() -> {
+            if (currentProgress != null) {
+                currentProgress.disposeCompleted();
+            }
+            final DiyUpdateProgress progress = new DiyUpdateProgress(job.resolve("update.log"));
+            currentProgress = progress;
+            progress.open();
+            final DiyUpdateDecision decision = new DiyUpdateDecision(job);
+            final AtomicBoolean decisionErrorShown = new AtomicBoolean();
+            final Runnable pollDecision = () -> {
                 try {
-                    final int code = process.waitFor();
+                    decision.poll((id, summary) -> progress.requestDecision(summary, proceed -> {
+                        try {
+                            decision.answer(id, proceed);
+                            return true;
+                        } catch (IOException e) {
+                            progress.append("\n选择未提交：" + e.getMessage() + "\n");
+                            return false;
+                        }
+                    }));
+                    decisionErrorShown.set(false);
+                } catch (IOException e) {
+                    if (decisionErrorShown.compareAndSet(false, true)) {
+                        progress.append("\n无法读取测试失败确认：" + e.getMessage() + "\n");
+                    }
+                }
+            };
+            final Thread watcher = new Thread(() -> {
+                boolean interrupted = false;
+                try {
+                    try {
+                        DiyUpdateLog.follow(process, job.resolve("update.log"), progress::append, pollDecision);
+                    } catch (IOException | InterruptedException e) {
+                        interrupted = e instanceof InterruptedException;
+                        progress.append("\n实时日志读取中断：" + e.getMessage() + "\n更新仍在继续，完整输出保存在日志文件。\n");
+                    }
+                    // Losing the viewer must not unlock a still-running updater.
+                    while (true) {
+                        try {
+                            if (process.waitFor(200, TimeUnit.MILLISECONDS)) {
+                                break;
+                            }
+                            pollDecision.run();
+                        } catch (InterruptedException e) {
+                            interrupted = true;
+                        }
+                    }
+                    final int code = process.exitValue();
                     final Path result = job.resolve("result.txt");
                     final String message = Files.exists(result) ? Files.readString(result, StandardCharsets.UTF_8)
                             : "更新进程已结束，退出码 " + code;
-                    show(message + "\n日志：" + job.resolve("update.log"), "Forge DIY 更新结果");
-                } catch (IOException | InterruptedException e) {
-                    if (e instanceof InterruptedException) {
-                        Thread.currentThread().interrupt();
-                    }
-                    show("无法读取更新结果：" + e.getMessage(), "Forge DIY 更新");
+                    progress.finish(code, message);
+                } catch (IOException e) {
+                    progress.finish(-1, "无法读取更新结果：" + e.getMessage());
                 } finally {
                     RUNNING.set(false);
+                    if (interrupted) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
             }, "Forge-DIY-updater-monitor");
             watcher.setDaemon(true);

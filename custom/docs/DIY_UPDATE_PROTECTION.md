@@ -37,9 +37,9 @@ JDK 类型分析解析参数类型、局部变量作用域、符号引用、继�
 1. 官方基线优先取上一代 update-state，其次显式开发参数或 release.json 的 `upstreamCommit`。已审核源码 `0d87c2c71c269d645188ece26413ef89f4b9519a` 可兼容映射到 `4bee0abda5277ad8b8def2ed1229458bb7121fc0`；未知版本缺元数据就停止，不再默认 `ebf900...`。
 2. `blob:none` 获取配合桌面稀疏检出；包含 parent/build 元数据和 core、game、ai、gui、gui-desktop、custom。移动平台等目录不检出。官方保护基线仅提取五模块 main Java。隔离根 POM 移除非桌面 reactor 条目，当前安装不删目录。
 3. cardsfolder 只接收新增，edition 接收新增/修改，但已有运行资源若含本地修改则停止。五模块 Java 新增/修改参与三方合并与保护检查；删除/重命名、构建依赖改动和冲突仍要求审核。
-4. 当前执行的策略资源带入候选，防止旧源码重新打包出旧更新器。执行桌面生产/测试源码编译及测试，验证保护成员、绑定依赖、文件清单、搜索相关类和内嵌策略一致。
-5. 本地候选使用单一新聚合 JAR，不复制旧 overlay。资源复制排除牌组和 junction。全部通过后才原子切换 `updates/active.json`，保留旧版。
+4. 当前执行的策略资源带入候选，防止旧源码重新打包出旧更新器。执行桌面生产/测试源码编译及测试，验证保护成员、绑定依赖、文件清单、搜索相关类和内嵌策略一致。普通测试失败会列出失败项，等待用户选择“已知晓失败，继续更新”或“保留当前版本”。继续后使用 Maven 的测试失败容许选项完成构建，测试本身仍执行，新失败需再次确认；编译或测试进程异常不属于此选项。隐藏窗口不会自动答复。
+5. 本地候选使用单一新聚合 JAR，不复制旧 overlay。资源复制排除牌组和 junction。构建和全部 DIY 保护门禁通过、且测试已通过或每项现存失败均被用户确认后，才原子切换 `updates/active.json`，保留旧版。
 
-状态记录官方/本地源码提交、策略版本、保护目录/文件清单/保护器摘要、JDK、验证门禁和产物摘要。job 中有 `plan.json`、`result.txt`、`update.log`、`baseline-bindings.tsv`；版本目录保留 `protection.tsv`、`protected-files.json`、`update-state.json`。失败不激活候选，也不推送到 GitHub。
+状态记录官方/本地源码提交、策略版本、保护目录/文件清单/保护器摘要、JDK、验证门禁和产物摘要。job 中有 `plan.json`、`result.txt`、`update.log`、`baseline-bindings.tsv`，以及测试失败时的 `test-failures.json`、`test-acknowledgement-<编号>.json`；版本目录保留 `protection.tsv`、`protected-files.json`、`update-state.json`。状态内的 `testResult` 保存最终失败和每次确认，并明确区分 `tests-passed` 与 `test-failures-acknowledged-by-user`。没有确认的测试失败及任何构建/保护错误均不激活候选。游戏内构建不推送到 GitHub。
 
 替换运行模块前关闭 Forge；重新启动后的真实按钮和搜索交互是独立验收项。最新实际验证见 `../VERIFICATION.md`。

@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Request,
     [switch]$LibraryOnly,
     [switch]$PlanOnly,
@@ -32,7 +32,7 @@ function Quote-Native([string]$Value) {
     # CommandLineToArgvW quoting, including backslashes immediately before quotes/end.
     return '"' + [regex]::Replace([regex]::Replace($Value, '(\\*)"', '$1$1\"'), '(\\+)$', '$1$1') + '"'
 }
-function Invoke-Native([string]$Exe, [string[]]$Arguments, [string]$OutputFile = '') {
+function Invoke-Native([string]$Exe, [string[]]$Arguments, [string]$OutputFile = '', [switch]$LiveOutput) {
     $info = New-Object Diagnostics.ProcessStartInfo
     $info.FileName = $Exe
     $info.Arguments = ($Arguments | ForEach-Object { Quote-Native $_ }) -join ' '
@@ -45,6 +45,36 @@ function Invoke-Native([string]$Exe, [string[]]$Arguments, [string]$OutputFile =
     $process = New-Object Diagnostics.Process
     $process.StartInfo = $info
     [void]$process.Start()
+    if ($LiveOutput) {
+        # Read both pipes concurrently and flush partial lines (Git uses carriage returns).
+        # Metadata/diff callers retain the exact captured-output path below.
+        $readers = @($process.StandardOutput, $process.StandardError)
+        $buffers = @((New-Object char[] 4096), (New-Object char[] 4096))
+        $pending = @($readers[0].ReadAsync($buffers[0], 0, 4096), $readers[1].ReadAsync($buffers[1], 0, 4096))
+        $tail = ''
+        try {
+            while ($pending[0] -or $pending[1]) {
+                $received = $false
+                for ($pipe = 0; $pipe -lt 2; $pipe++) {
+                    if ($pending[$pipe] -and $pending[$pipe].IsCompleted) {
+                        $count = $pending[$pipe].GetAwaiter().GetResult()
+                        if ($count -eq 0) { $pending[$pipe] = $null; continue }
+                        $chunk = New-Object string($buffers[$pipe], 0, $count)
+                        [Console]::Out.Write($chunk)
+                        [Console]::Out.Flush()
+                        $tail += $chunk
+                        if ($tail.Length -gt 8192) { $tail = $tail.Substring($tail.Length - 8192) }
+                        $pending[$pipe] = $readers[$pipe].ReadAsync($buffers[$pipe], 0, 4096)
+                        $received = $true
+                    }
+                }
+                if (-not $received) { Start-Sleep -Milliseconds 30 }
+            }
+            $process.WaitForExit()
+            if ($process.ExitCode -ne 0) { throw "$Exe exited $($process.ExitCode) : $tail" }
+        } finally { $process.Dispose() }
+        return
+    }
     $stdout = $process.StandardOutput.ReadToEndAsync()
     $stderr = $process.StandardError.ReadToEndAsync()
     $process.WaitForExit()
@@ -55,9 +85,9 @@ function Invoke-Native([string]$Exe, [string[]]$Arguments, [string]$OutputFile =
     if ($code -ne 0) { throw "$Exe exited $code : $errorText $output" }
     if ($OutputFile) { Write-Utf8 $OutputFile $output } else { return $output }
 }
-function Invoke-Git([string]$Root, [string[]]$Arguments, [string]$OutputFile = '') {
+function Invoke-Git([string]$Root, [string[]]$Arguments, [string]$OutputFile = '', [switch]$LiveOutput) {
     Invoke-Native 'git' (@('-c', "safe.directory=$Root", '-c', 'core.quotepath=false', '-c', 'core.longpaths=true',
-        '-c', 'core.autocrlf=false', '--literal-pathspecs', '-C', $Root) + $Arguments) $OutputFile
+        '-c', 'core.autocrlf=false', '--literal-pathspecs', '-C', $Root) + $Arguments) $OutputFile -LiveOutput:$LiveOutput
 }
 function Get-UpdateDecision([string]$Status, [string]$Path) {
     if ($Path -match '(^|/)\.\.(/|$)|[:\\\x00-\x1f]' -or $Path.StartsWith('/')) { return 'block' }
@@ -108,7 +138,8 @@ function Merge-UpdatePaths([string]$Root, [string]$Base, [string]$Target, [strin
         Invoke-Git $Root (@('diff', '--binary', '--full-index', '--no-renames', '--diff-filter=AM', $Base, $Target, '--') + $batch) $patch
         # apply --3way uses the original blob IDs and keeps non-overlapping DIY modifications.
         # Any conflict occurs only in this disposable source tree; no runtime is touched.
-        Invoke-Git $Root @('apply', '--3way', '--index', '--whitespace=nowarn', $patch) | Out-Null
+        Write-Host "合并引擎与卡牌：$([Math]::Min($offset + 30, $Paths.Count)) / $($Paths.Count) 个文件"
+        Invoke-Git $Root @('apply', '--3way', '--index', '--whitespace=nowarn', $patch) -LiveOutput | Out-Null
     }
 }
 function Get-JavaHome([string]$Preferred, [string]$Tools) {
@@ -160,7 +191,9 @@ function Assert-DiyClasses([string]$Jar) {
             'forge/game/keyword/HarmonyKeyword.class', 'forge/game/player/PlayerSpellRuleRegistry.class',
             'forge/gui/CardNameSearchIndex.class', 'forge/gui/LatestSearchGeneration.class',
             'forge/gui/ListChooser.class', 'forge/gui/GuiChoose.class', 'forge/game/card/CardFaceView.class',
-            'forge/download/DiyUpdateBridge.class', 'forge/download/diy-updater.ps1', 'forge/download/DiyProtection.java',
+            'forge/download/DiyUpdateBridge.class', 'forge/download/DiyUpdateLog.class',
+            'forge/download/DiyUpdateProgress.class', 'forge/download/DiyUpdateDecision.class',
+            'forge/download/diy-updater.ps1', 'forge/download/DiyProtection.java',
             'forge/download/diy-protection-history.tsv')) {
             if (-not $zip.GetEntry($name)) { throw "Compiled DIY component missing: $name" }
         }
@@ -302,7 +335,114 @@ function Assert-BundledProtection([string]$Jar, [string]$Job) {
     } finally { $zip.Dispose() }
 }
 
+function Get-FailedTests([string]$Source, [string]$BuildLog, [switch]$ReportsOnly) {
+    $log = [IO.File]::ReadAllText($BuildLog)
+    # Offer a choice only for a completed Surefire test run, never compile/VM/plugin failures.
+    if (-not $ReportsOnly -and $log -notmatch '(?m)^\[ERROR\] Failed to execute goal [^\r\n]*:maven-surefire-plugin:[^\r\n]*:test[^\r\n]*There are test failures') { return @() }
+    $failures = @()
+    foreach ($module in @('forge-core','forge-game','forge-ai','forge-gui','forge-gui-desktop')) {
+        $reports = Join-Path $Source "$module/target/surefire-reports"
+        if (-not (Test-Path -LiteralPath $reports)) { continue }
+        foreach ($file in Get-ChildItem -LiteralPath $reports -Filter 'TEST-*.xml' -File) {
+            $settings = New-Object Xml.XmlReaderSettings
+            $settings.DtdProcessing = [Xml.DtdProcessing]::Prohibit
+            $settings.XmlResolver = $null
+            $reader = [Xml.XmlReader]::Create($file.FullName, $settings)
+            $doc = New-Object Xml.XmlDocument
+            $doc.XmlResolver = $null
+            try { $doc.Load($reader) } finally { $reader.Dispose() }
+            foreach ($case in $doc.SelectNodes('//testcase[failure or error]')) {
+                $detail = $case.SelectSingleNode('failure|error')
+                $failures += [pscustomobject]@{module=$module; name=($case.GetAttribute('classname') + '.' + $case.GetAttribute('name'));
+                    message=$detail.GetAttribute('message'); report=$file.Name}
+            }
+        }
+    }
+    return $failures
+}
+function Request-TestFailureDecision([string]$Job, [object[]]$Failures, [long]$ControllerPid = 0) {
+    if (-not $Failures.Count) { throw 'No test failures to acknowledge.' }
+    $id = [guid]::NewGuid().ToString('N')
+    Write-Utf8 (Join-Path $Job 'test-failures.json') (ConvertTo-Json -InputObject @($Failures) -Depth 6)
+    $lines = @("有 $($Failures.Count) 项测试未通过：")
+    foreach ($failure in @($Failures | Select-Object -First 50)) {
+        $message = $failure.message -replace '[\r\n]+', ' '
+        if ($message.Length -gt 500) { $message = $message.Substring(0,500) + '…' }
+        $lines += "$($failure.name)`n  $message"
+    }
+    if ($Failures.Count -gt 50) { $lines += '其余失败项见 test-failures.json。' }
+    $lines += '继续后仍会运行测试并完成打包；这些已确认的失败允许构建继续，新出现的失败会再次询问。'
+    $lines += '启用新版本前仍会检查 DIY 代码、资源和依赖保护，失败记录会随版本保存。'
+    $lines += '选择“保留当前版本”则结束本次更新。'
+    $summary = $lines -join "`n"
+    Write-Host $summary
+    $temporary = Join-Path $Job "test-decision-$id.tmp"
+    Write-Utf8 $temporary ($id + "`n" + $summary)
+    $requestFile = Join-Path $Job 'test-decision.request'
+    if (Test-Path -LiteralPath $requestFile) { [IO.File]::Replace($temporary, $requestFile, (Join-Path $Job "test-decision-previous-$id.request")) }
+    else { [IO.File]::Move($temporary, $requestFile) }
+    Write-Host '等待你选择：已知晓失败，继续更新 / 保留当前版本。'
+    $response = Join-Path $Job "test-decision-$id.response"
+    while (-not (Test-Path -LiteralPath $response)) {
+        if ($ControllerPid -gt 0) {
+            try { $viewer = [Diagnostics.Process]::GetProcessById([int]$ControllerPid); $viewer.Dispose() }
+            catch { throw '游戏已退出，未收到继续确认；本次更新保留当前版本。' }
+        }
+        Start-Sleep -Milliseconds 200
+    }
+    $choice = [IO.File]::ReadAllText($response).Trim()
+    if ($choice -notin @('continue','stop')) { throw 'Invalid test-failure decision; current version retained.' }
+    $decision = [pscustomobject]@{id=$id; choice=$choice; atUtc=[DateTime]::UtcNow.ToString('o'); failures=@($Failures)}
+    Write-Utf8 (Join-Path $Job "test-acknowledgement-$id.json") ($decision | ConvertTo-Json -Depth 6)
+    return $decision
+}
+function Invoke-MavenPass([string]$Maven, [string[]]$Arguments, [string]$Log) {
+    $savedPreference = $ErrorActionPreference
+    Write-Utf8 $Log ''
+    try {
+        $ErrorActionPreference = 'Continue'
+        $global:LASTEXITCODE = -1
+        & $Maven @Arguments 2>&1 | ForEach-Object { $_.ToString() } | Tee-Object -FilePath $Log | Out-Host
+        return $global:LASTEXITCODE
+    } finally { $ErrorActionPreference = $savedPreference }
+}
+function Invoke-CheckedPackage([string]$Maven, [string]$Source, [string]$Cache, [string]$Job, [long]$ControllerPid = 0) {
+    $arguments = @('-B','-ntp',"-Dmaven.repo.local=$Cache",'-pl','forge-gui-desktop','-am')
+    $log = Join-Path $Job 'build-with-tests.log'
+    Push-Location $Source
+    try {
+        $code = Invoke-MavenPass $Maven ($arguments + @('clean','package')) $log
+        if ($code -eq 0) { return [pscustomobject]@{status='passed'; acknowledgement=@(); failures=@()} }
+        $failures = @(Get-FailedTests $Source $log)
+        if (-not $failures.Count) { throw "Compilation or build infrastructure failed ($code). See build-with-tests.log." }
+        $known = @{}
+        $acknowledgements = @()
+        while ($failures.Count) {
+            $decision = Request-TestFailureDecision $Job $failures $ControllerPid
+            if ($decision.choice -ne 'continue') { throw '你已选择保留当前版本，本次更新已停止。' }
+            $acknowledgements += $decision
+            foreach ($failure in $failures) { $known[($failure | ConvertTo-Json -Compress)] = $true }
+            Write-Host '已记录你的确认，继续构建并运行测试；新的失败会再次询问。'
+            $retryLog = Join-Path $Job "build-after-acknowledgement-$($acknowledgements.Count).log"
+            $code = Invoke-MavenPass $Maven ($arguments + @('-Dmaven.test.failure.ignore=true','package')) $retryLog
+            if ($code -ne 0 -or [IO.File]::ReadAllText($retryLog) -match 'The forked VM terminated|There was an error in the forked process|Error occurred in starting fork') {
+                throw "用户确认后继续构建仍发生编译或测试进程错误 ($code)，当前版本保持不变。"
+            }
+            $remaining = @(Get-FailedTests $Source $retryLog -ReportsOnly)
+            $failures = @($remaining | Where-Object { -not $known.ContainsKey(($_ | ConvertTo-Json -Compress)) })
+            if (-not $failures.Count) {
+                $status = if ($remaining.Count) { 'failures-acknowledged' } else { 'passed' }
+                return [pscustomobject]@{status=$status; acknowledgement=$acknowledgements; failures=$remaining}
+            }
+        }
+    } finally { Pop-Location }
+}
+
 if ($LibraryOnly) { return }
+[Console]::OutputEncoding = New-Object Text.UTF8Encoding($false)
+$OutputEncoding = [Console]::OutputEncoding
+$env:GIT_TERMINAL_PROMPT = '0'
+Write-Host '[1/7] 正在检查更新环境…'
 $job = Split-Path -Parent ([IO.Path]::GetFullPath($Request))
 $lock = $null
 try {
@@ -334,35 +474,38 @@ try {
         if ($state.baseReleaseHash -ne $releaseHash) { throw 'DIY baseline changed; restart through the launcher before updating.' }
         $previousSource = Join-Path (Split-Path $activeApp) 'source'
         Assert-ChildPath (Join-Path $updates 'versions') $previousSource
-        Invoke-Native git @('-c', 'core.autocrlf=false', '-c', 'core.longpaths=true', 'clone', '--no-checkout', '--no-hardlinks', $previousSource, $source) | Out-Null
+        Write-Host '[2/7] 正在准备已有 DIY 桌面源码…'
+        Invoke-Native git @('-c', 'core.autocrlf=false', '-c', 'core.longpaths=true', 'clone', '--progress', '--no-checkout', '--no-hardlinks', $previousSource, $source) -LiveOutput | Out-Null
         Set-DesktopSparseCheckout $source
-        Invoke-Git $source @('checkout') | Out-Null
+        Invoke-Git $source @('checkout', '--progress') -LiveOutput | Out-Null
     } elseif ($SourceRoot) {
         # Developer/test input is cloned, never modified in place.
-        Invoke-Native git @('-c', 'core.autocrlf=false', '-c', 'core.longpaths=true', 'clone', '--no-checkout', '--no-hardlinks', $SourceRoot, $source) | Out-Null
+        Write-Host '[2/7] 正在准备指定 DIY 桌面源码…'
+        Invoke-Native git @('-c', 'core.autocrlf=false', '-c', 'core.longpaths=true', 'clone', '--progress', '--no-checkout', '--no-hardlinks', $SourceRoot, $source) -LiveOutput | Out-Null
         Set-DesktopSparseCheckout $source
-        Invoke-Git $source @('checkout') | Out-Null
+        Invoke-Git $source @('checkout', '--progress') -LiveOutput | Out-Null
     } else {
-        Write-Host 'Fetching the exact DIY source baseline...'
+        Write-Host '[2/7] 正在下载当前版本对应的 DIY 源码…'
         Invoke-Native git @('init', $source) | Out-Null
         Invoke-Git $source @('remote', 'add', 'origin', 'https://github.com/GradibelPitt/forge.git') | Out-Null
         Invoke-Git $source @('config', 'remote.origin.promisor', 'true') | Out-Null
         Invoke-Git $source @('config', 'remote.origin.partialclonefilter', 'blob:none') | Out-Null
         Set-DesktopSparseCheckout $source
-        Invoke-Git $source @('fetch', '--filter=blob:none', '--depth=1', '--no-tags', 'origin', $release.sourceCommit) | Out-Null
-        Invoke-Git $source @('checkout', '-b', 'local-diy', 'FETCH_HEAD') | Out-Null
+        Invoke-Git $source @('fetch', '--progress', '--filter=blob:none', '--depth=1', '--no-tags', 'origin', $release.sourceCommit) -LiveOutput | Out-Null
+        Invoke-Git $source @('checkout', '--progress', '-b', 'local-diy', 'FETCH_HEAD') -LiveOutput | Out-Null
     }
     if (-not $previousState -and (Invoke-Git $source @('rev-parse', 'HEAD')).Trim() -ne $release.sourceCommit) {
         throw 'Source checkout does not match the released DIY baseline.'
     }
     $UpstreamBase = Resolve-UpstreamBase $release $previousState $UpstreamBase
-    Write-Host 'Fetching official source changes...'
+    Write-Host '[3/7] 正在下载官方源码改动…'
     Invoke-Git $source @('remote', 'add', 'reviewed-upstream', 'https://github.com/Card-Forge/forge.git') | Out-Null
     Invoke-Git $source @('config', 'remote.reviewed-upstream.promisor', 'true') | Out-Null
     Invoke-Git $source @('config', 'remote.reviewed-upstream.partialclonefilter', 'blob:none') | Out-Null
-    Invoke-Git $source @('fetch', '--filter=blob:none', '--depth=1', '--no-tags', 'reviewed-upstream', $UpstreamBase) | Out-Null
-    Invoke-Git $source @('fetch', '--filter=blob:none', '--depth=1', '--no-tags', 'reviewed-upstream', $UpstreamTarget) | Out-Null
+    Invoke-Git $source @('fetch', '--progress', '--filter=blob:none', '--depth=1', '--no-tags', 'reviewed-upstream', $UpstreamBase) -LiveOutput | Out-Null
+    Invoke-Git $source @('fetch', '--progress', '--filter=blob:none', '--depth=1', '--no-tags', 'reviewed-upstream', $UpstreamTarget) -LiveOutput | Out-Null
     $target = (Invoke-Git $source @('rev-parse', 'FETCH_HEAD')).Trim()
+    Write-Host '[4/7] 正在检查改动范围与 DIY 保留规则…'
     $plan = @(Get-UpdatePlan $source $UpstreamBase $target)
     Write-Utf8 (Join-Path $job 'plan.json') (ConvertTo-Json -InputObject $plan -Depth 6)
     $blocked = @($plan | Where-Object { $_.decision -eq 'block' })
@@ -371,6 +514,7 @@ try {
     if ($PlanOnly) { Write-Utf8 (Join-Path $job 'result.txt') 'Plan completed; no runtime changes.'; exit 0 }
     if ($blocked.Count) { throw "Review required for deleted/renamed engine files or build dependencies: $($blocked.path -join ', '). See plan.json." }
     if (-not $paths.Count) { Write-Utf8 (Join-Path $job 'result.txt') 'No eligible updates. Current DIY version retained.'; exit 0 }
+    Write-Host '[5/7] 正在准备工具并核对 DIY 保护规则…'
     $tools = Join-Path $updates 'tools'
     New-Item -ItemType Directory -Path $tools -Force | Out-Null
     $jdk = Get-JavaHome $config.javaHome $tools
@@ -383,6 +527,7 @@ try {
         Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $source "forge-gui/src/main/resources/forge/download/$name") -Force
     }
     $catalog = Join-Path $versionRoot 'protection.tsv'
+    Write-Host '正在准备 DIY 符号保护目录…'
     if ($previousState -and $previousState.policyVersion -eq 2) {
         $previousCatalog = Join-Path (Split-Path $activeApp) 'protection.tsv'
         if ((Get-FileHash -LiteralPath $previousCatalog -Algorithm SHA256).Hash -ne $previousState.protectionCatalogHash) { throw 'Previous protection catalog is missing or changed.' }
@@ -390,6 +535,7 @@ try {
     } else { New-ProtectionCatalog $source $UpstreamBase $jdk $job $catalog }
     Invoke-Protection $jdk $job @('verify', $source, $catalog)
     $bindings = Join-Path $job 'baseline-bindings.tsv'
+    Write-Host '正在核对 DIY 调用关系与依赖…'
     Invoke-Protection $jdk $job @('bindings', $source, $bindings, $baselineClasspath)
     $protectedFiles = Get-ProtectedFileManifest $source $UpstreamBase
     if ($previousState -and $previousState.policyVersion -eq 2) {
@@ -413,6 +559,7 @@ try {
             }
         }
     }
+    Write-Host '正在合并允许的改动，并复核 DIY 保护规则…'
     Merge-UpdatePaths $source $UpstreamBase $target $paths $job
     Assert-ProtectedFiles $source $protectedFiles
     Invoke-Protection $jdk $job @('verify', $source, $catalog)
@@ -425,14 +572,11 @@ try {
     $env:PATH = (Join-Path $jdk 'bin') + ';' + $env:PATH
     $mavenCache = Join-Path $env:USERPROFILE '.m2/repository'
     if (-not (Test-Path -LiteralPath $mavenCache)) { $mavenCache = Join-Path $tools 'm2' }
-    Write-Host 'Compiling and testing the merged DIY engine and preserved DIY desktop...'
-    Push-Location $source
-    try {
-        & $maven '-B' '-ntp' "-Dmaven.repo.local=$mavenCache" '-pl' 'forge-gui-desktop' '-am' 'clean' 'package'
-        if ($LASTEXITCODE -ne 0) { throw "Compilation or regression tests failed ($LASTEXITCODE)." }
-    } finally { Pop-Location }
+    Write-Host '[6/7] 正在编译并测试 DIY 引擎与界面…'
+    $testResult = Invoke-CheckedPackage $maven $source $mavenCache $job $config.controllerPid
     $jar = @(Get-ChildItem -LiteralPath (Join-Path $source 'forge-gui-desktop/target') -File -Filter '*-jar-with-dependencies.jar')
     if ($jar.Count -ne 1) { throw 'Expected exactly one compiled desktop JAR.' }
+    Write-Host '[7/7] 正在验证并准备新版本…'
     Assert-DiyClasses $jar[0].FullName
     Assert-BundledProtection $jar[0].FullName $job
     Invoke-Protection $jdk $job @('verify-bindings', $source, $catalog, $bindings, $jar[0].FullName)
@@ -462,17 +606,22 @@ try {
         protectionPolicyHash=(Get-FileHash -LiteralPath (Join-Path $PSScriptRoot 'DiyProtection.java') -Algorithm SHA256).Hash;
         historyCatalogHash=(Get-FileHash -LiteralPath (Join-Path $PSScriptRoot 'diy-protection-history.tsv') -Algorithm SHA256).Hash;
         javaVersion=(Invoke-Native (Join-Path $jdk 'bin/javac.exe') @('-version')).Trim();
-        verification=@('desktop-package-and-tests', 'protected-files', 'java-members', 'resolved-bindings-and-dependencies', 'bundled-policy')}
+        testResult=$testResult;
+        verification=@('desktop-package', 'protected-files', 'java-members', 'resolved-bindings-and-dependencies', 'bundled-policy')}
+    if ($testResult.status -eq 'passed') { $state.verification += 'tests-passed' }
+    else { $state.verification += 'test-failures-acknowledged-by-user' }
     $hashes = @(Get-ChildItem -LiteralPath $app -Recurse -File | ForEach-Object {
         $relative = $_.FullName.Substring($app.Length + 1).Replace('\', '/')
         (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash + ' *' + $relative
     })
     Write-Utf8 (Join-Path $app 'manifest-critical.sha256') (($hashes | Sort-Object) -join "`n")
     $state['manifestHash'] = (Get-FileHash -LiteralPath (Join-Path $app 'manifest-critical.sha256') -Algorithm SHA256).Hash
-    Write-Utf8 (Join-Path $versionRoot 'update-state.json') ($state | ConvertTo-Json)
+    Write-Utf8 (Join-Path $versionRoot 'update-state.json') ($state | ConvertTo-Json -Depth 10)
     if ((Get-FileHash -LiteralPath $releaseFile -Algorithm SHA256).Hash -ne $releaseHash) { throw 'DIY release changed during compilation; staged update was not activated.' }
     if (-not $NoActivate) { Write-ActivePointer $updates $state }
-    Write-Utf8 (Join-Path $job 'result.txt') 'DIY update compiled and validated. Save your work, close Forge and use the ForgeDIY launcher to load it. The previous version is retained.'
+    $resultMessage = 'DIY 更新已完成构建与保护检查。保存后关闭游戏，再通过 ForgeDIY 启动器打开即可加载；旧版本已保留。'
+    if ($testResult.status -ne 'passed') { $resultMessage += "`n本次按你的确认继续更新，仍有 $($testResult.failures.Count) 项测试未通过，记录已随版本保存。" }
+    Write-Utf8 (Join-Path $job 'result.txt') $resultMessage
     Write-Host 'DIY_UPDATE_READY'
 } catch {
     $detail = $_.Exception.Message
