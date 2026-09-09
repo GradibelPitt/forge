@@ -230,6 +230,21 @@ public final class DiyProtection {
                 }
                 // Missing official members can be intentional DIY removals. Don't resurrect them.
                 for (String id : official.members.keySet()) if (!baseline.members.containsKey(id)) rows.add(row("absent", id, ""));
+                if (args.length > 5) {
+                    Path history = Path.of(args[5]);
+                    // A committed, reviewed history floor cannot shrink merely because an
+                    // upstream baseline advances or gains a similarly named implementation.
+                    verifyCatalog(baseline, history);
+                    List<String> historyRows = Files.readAllLines(history);
+                    rows.addAll(historyRows.subList(1, historyRows.size()));
+                    for (String line : historyRows) {
+                        String[] cols = line.split("\t", -1);
+                        if (cols.length == 3 && cols[0].equals("file")) {
+                            String prefix = decoded(cols[1]) + "|";
+                            for (Member m : baseline.members.values()) if (m.id.startsWith(prefix)) rows.add(row("member", m.id, m.syntax));
+                        }
+                    }
+                }
                 if (rows.size() < 2) throw new IllegalStateException("Empty DIY protection catalog");
                 save(Path.of(args[3]), rows.stream().distinct().toList());
                 System.out.println("DIY_CATALOG=OK; rules=" + (rows.size() - 1));

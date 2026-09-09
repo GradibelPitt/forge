@@ -160,7 +160,8 @@ function Assert-DiyClasses([string]$Jar) {
             'forge/game/keyword/HarmonyKeyword.class', 'forge/game/player/PlayerSpellRuleRegistry.class',
             'forge/gui/CardNameSearchIndex.class', 'forge/gui/LatestSearchGeneration.class',
             'forge/gui/ListChooser.class', 'forge/gui/GuiChoose.class', 'forge/game/card/CardFaceView.class',
-            'forge/download/DiyUpdateBridge.class', 'forge/download/diy-updater.ps1', 'forge/download/DiyProtection.java')) {
+            'forge/download/DiyUpdateBridge.class', 'forge/download/diy-updater.ps1', 'forge/download/DiyProtection.java',
+            'forge/download/diy-protection-history.tsv')) {
             if (-not $zip.GetEntry($name)) { throw "Compiled DIY component missing: $name" }
         }
     } finally { $zip.Dispose() }
@@ -210,18 +211,22 @@ function Invoke-Protection([string]$Jdk, [string]$Job, [string[]]$Arguments) {
     Invoke-Native (Join-Path $Jdk 'bin/java.exe') (@('-Xmx2g', '-cp', (Join-Path $Job 'guard-classes'), 'DiyProtection') + $Arguments)
 }
 function Initialize-ProtectionTool([string]$Jdk, [string]$Job, [string]$Classpath = '') {
-    $guard = Join-Path $PSScriptRoot 'DiyProtection.java'
-    if (-not (Test-Path -LiteralPath $guard)) {
+    foreach ($resourceName in @('DiyProtection.java', 'diy-protection-history.tsv')) {
+      $resourcePath = Join-Path $PSScriptRoot $resourceName
+      if (-not (Test-Path -LiteralPath $resourcePath)) {
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         foreach ($jar in ($Classpath -split ';')) {
             if (-not $jar) { continue }
             $zip = [IO.Compression.ZipFile]::OpenRead($jar)
             try {
-                $entry = $zip.GetEntry('forge/download/DiyProtection.java')
-                if ($entry) { [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $guard); break }
+                $entry = $zip.GetEntry("forge/download/$resourceName")
+                if ($entry) { [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $resourcePath); break }
             } finally { $zip.Dispose() }
         }
+      }
+      if (-not (Test-Path -LiteralPath $resourcePath)) { throw "Bundled protection resource missing: $resourceName" }
     }
+    $guard = Join-Path $PSScriptRoot 'DiyProtection.java'
     if (-not (Test-Path -LiteralPath $guard)) { throw 'Bundled DIY protection tool missing; refusing an unguarded update.' }
     $classes = Join-Path $Job 'guard-classes'
     New-Item -ItemType Directory -Path $classes -Force | Out-Null
@@ -252,7 +257,7 @@ function New-ProtectionCatalog([string]$Root, [string]$Base, [string]$Jdk, [stri
     # Only Java source blobs are requested here, never mobile files or decks.
     Invoke-Git $Root (@('archive', '--format=zip', "--output=$archive", $Base, '--') + $paths) | Out-Null
     Expand-Archive -LiteralPath $archive -DestinationPath $official
-    Invoke-Protection $Jdk $Job @('catalog', $Root, $official, $Catalog, '--require-card-name-search')
+    Invoke-Protection $Jdk $Job @('catalog', $Root, $official, $Catalog, '--require-card-name-search', (Join-Path $PSScriptRoot 'diy-protection-history.tsv'))
 }
 function Get-ProtectedFileManifest([string]$Root, [string]$Base) {
     $rules = @{}
@@ -286,7 +291,7 @@ function Assert-BundledProtection([string]$Jar, [string]$Job) {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $zip = [IO.Compression.ZipFile]::OpenRead($Jar)
     try {
-        foreach ($name in @('diy-updater.ps1', 'DiyProtection.java')) {
+        foreach ($name in @('diy-updater.ps1', 'DiyProtection.java', 'diy-protection-history.tsv')) {
             $entry = $zip.GetEntry("forge/download/$name")
             if (-not $entry) { throw "Built updater resource missing: $name" }
             $stream = $entry.Open(); $reader = New-Object IO.StreamReader($stream)
@@ -374,7 +379,7 @@ try {
     Initialize-ProtectionTool $jdk $job $baselineClasspath
     # Carry the executing DIY policy into the candidate even when it was delivered as a
     # resource-only overlay over an earlier reviewed engine source commit.
-    foreach ($name in @('diy-updater.ps1', 'DiyProtection.java')) {
+    foreach ($name in @('diy-updater.ps1', 'DiyProtection.java', 'diy-protection-history.tsv')) {
         Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $source "forge-gui/src/main/resources/forge/download/$name") -Force
     }
     $catalog = Join-Path $versionRoot 'protection.tsv'
@@ -432,7 +437,7 @@ try {
     Assert-BundledProtection $jar[0].FullName $job
     Invoke-Protection $jdk $job @('verify-bindings', $source, $catalog, $bindings, $jar[0].FullName)
     Assert-ProtectedFiles $source $protectedFiles
-    Invoke-Git $source @('add', '--', 'pom.xml', 'forge-gui/src/main/resources/forge/download/diy-updater.ps1', 'forge-gui/src/main/resources/forge/download/DiyProtection.java') | Out-Null
+    Invoke-Git $source @('add', '--', 'pom.xml', 'forge-gui/src/main/resources/forge/download/diy-updater.ps1', 'forge-gui/src/main/resources/forge/download/DiyProtection.java', 'forge-gui/src/main/resources/forge/download/diy-protection-history.tsv') | Out-Null
     Invoke-Git $source @('-c', 'user.name=ForgeDIY Local Updater', '-c', 'user.email=local-updater@invalid', 'commit', '-m', "Guarded selective upstream update $target") | Out-Null
     $app = Join-Path $versionRoot 'app'
     New-Item -ItemType Directory -Path $app | Out-Null
@@ -455,6 +460,7 @@ try {
         policyVersion=2; protectionCatalogHash=(Get-FileHash -LiteralPath $catalog -Algorithm SHA256).Hash;
         protectedFilesHash=(Get-FileHash -LiteralPath (Join-Path $versionRoot 'protected-files.json') -Algorithm SHA256).Hash;
         protectionPolicyHash=(Get-FileHash -LiteralPath (Join-Path $PSScriptRoot 'DiyProtection.java') -Algorithm SHA256).Hash;
+        historyCatalogHash=(Get-FileHash -LiteralPath (Join-Path $PSScriptRoot 'diy-protection-history.tsv') -Algorithm SHA256).Hash;
         javaVersion=(Invoke-Native (Join-Path $jdk 'bin/javac.exe') @('-version')).Trim();
         verification=@('desktop-package-and-tests', 'protected-files', 'java-members', 'resolved-bindings-and-dependencies', 'bundled-policy')}
     $hashes = @(Get-ChildItem -LiteralPath $app -Recurse -File | ForEach-Object {

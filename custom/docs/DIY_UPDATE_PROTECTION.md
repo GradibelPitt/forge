@@ -1,6 +1,6 @@
 # 游戏内更新保护策略 2
 
-入口仍为 `CSubmenuDownloaders → AutoUpdater → DiyUpdateBridge → diy-updater.ps1`。保护器 `DiyProtection.java` 与脚本内嵌在同一 GUI JAR；脚本按实际 overlay 顺序提取保护器。缺失任一资源即停止。
+入口仍为 `CSubmenuDownloaders → AutoUpdater → DiyUpdateBridge → diy-updater.ps1`。保护器 `DiyProtection.java`、历史保护目录与脚本内嵌在同一 GUI JAR；脚本按实际 overlay 顺序提取保护资源。缺失任一资源即停止。
 
 ## 牌名模糊搜索是明确的 DIY 保护合同
 
@@ -11,6 +11,14 @@
 - 原测试 `CardNameSearchIndexTest`、`PlayerControllerHumanCardNameTest`、`ListChooserTest` 必须保留。
 
 搜索索引、异步代次、ListChooser、GuiChoose、CardFaceView 不从官方覆盖；目录再次登记这些完整类和上述玩家方法，绑定门禁继续检查调用方及依赖。不能用“搜索类仍存在”替代完整保护。
+
+历史提交 `0eabbb306884283c99d552ab3adba524769a6d15` 确认双语模糊搜索来自 DIY 分支。`SFilterUtil.memoizeTextFilter(Predicate<PaperCard>,boolean)` 和 `buildTextFilter(String,boolean,boolean,boolean,boolean,boolean)` 的缓存接入亦纳入历史保护合同，不只保留窗口类。
+
+## 历史归属下限
+
+按照 2026-09-09 提供的《代码块历史归属》《历史归属全量清单》《明确代码块与历史依据》逐项核对：56 个自有文件、451 个新增成员、382 个共享增补成员和 16 个结构边界项均已直接覆盖，未发现遗漏或签名定位失败。发布资源 `diy-protection-history.tsv` 固定这 905 条当前合同；生成未来目录时必须先核验，缺失/改名/当前实现变化需要审核，不能从新差异中悄悄消失。另核验 Miracle 与 LifeReduced 当前接口适配，以及 TypeLists 中 Quest/Mystery 登记和 Warmwood 资源。
+
+该历史清单中的“共享增补”证明局部代码的来源；16 个结构项只是需要审核的边界，不能当作旧实现自动回填脚本。官方 `ComparableOp`、`ImageKeys.ENDURING_STORY_IMAGE`、LobbyPlayer sleeves 接口和旧 `AscendEffect` 不列为 DIY 自有代码。当前差异及依赖门禁可能仍要求对它们的变动进行兼容审核，此类保守限制不等于原创归属。完整方法保护是当前执行器的保守边界，并非声称历史清单中的整段官方方法都是 DIY。
 
 ## 目录与门禁
 
