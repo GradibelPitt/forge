@@ -48,11 +48,17 @@ public class AutoUpdater {
     }
 
     public boolean updateAvailable() {
+        if (DiyUpdateBridge.isBundled()) {
+            return !isLoading;
+        }
         // TODO Check if an update is available, and add a UI element to notify the user.
         return verifyUpdateable();
     }
 
     public boolean attemptToUpdate(CompletableFuture<String> cf) {
+        if (DiyUpdateBridge.isBundled()) {
+            return !isLoading && DiyUpdateBridge.start();
+        }
         if (!verifyUpdateable()) {
             return false;
         }
