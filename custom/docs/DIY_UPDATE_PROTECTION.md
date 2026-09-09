@@ -42,4 +42,6 @@ JDK 类型分析解析参数类型、局部变量作用域、符号引用、继�
 
 状态记录官方/本地源码提交、策略版本、保护目录/文件清单/保护器摘要、JDK、验证门禁和产物摘要。job 中有 `plan.json`、`result.txt`、`update.log`、`baseline-bindings.tsv`，以及测试失败时的 `test-failures.json`、`test-acknowledgement-<编号>.json`；版本目录保留 `protection.tsv`、`protected-files.json`、`update-state.json`。状态内的 `testResult` 保存最终失败和每次确认，并明确区分 `tests-passed` 与 `test-failures-acknowledged-by-user`。没有确认的测试失败及任何构建/保护错误均不激活候选。游戏内构建不推送到 GitHub。
 
+DIY 自有更新器变更也必须同步审核历史清单：2026-09-09 的 `47cf7555` 增加实时日志和测试失败确认，因此 `DiyUpdateBridge.java` 的完整文件保护摘要同步到该已发布版本。只校正这一条固定摘要，没有删除规则或运行时自动接受任意新摘要。`test_diy_update_history.ps1` 验证发布版本通过、随后修改仍被拦截；校验按本 Windows 更新器的 CRLF 检出内容执行。普通测试失败的选择窗口不会绕过此前的代码保护检查。
+
 替换运行模块前关闭 Forge；重新启动后的真实按钮和搜索交互是独立验收项。最新实际验证见 `../VERIFICATION.md`。
