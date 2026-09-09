@@ -2,9 +2,9 @@ param([string]$Updater = (Join-Path $PSScriptRoot '../../forge-gui/src/main/reso
 $ErrorActionPreference = 'Stop'
 . $Updater -LibraryOnly
 function Assert($Condition, [string]$Message) { if (-not $Condition) { throw $Message } }
-Assert ((Get-UpdateDecision 'A' 'forge-gui/res/cardsfolder/n/new.txt') -eq 'merge') 'New cards must merge'
-Assert ((Get-UpdateDecision 'M' 'forge-gui/res/cardsfolder/o/old.txt') -eq 'skip') 'Existing card scripts preserved'
-Assert ((Get-UpdateDecision 'M' 'forge-gui/res/editions/Set.txt') -eq 'merge') 'Edition changes must merge'
+Assert ((Get-UpdateDecision 'A' 'forge-gui/res/cardsfolder/n/new.txt') -eq 'resource-audit') 'New cards need the complete resource audit'
+Assert ((Get-UpdateDecision 'M' 'forge-gui/res/cardsfolder/o/old.txt') -eq 'resource-audit') 'Modified official scripts need the complete resource audit'
+Assert ((Get-UpdateDecision 'M' 'forge-gui/res/editions/Set.txt') -eq 'resource-audit') 'Edition changes need the complete resource audit'
 Assert ((Get-UpdateDecision 'M' 'forge-game/src/main/java/forge/game/card/Card.java') -eq 'merge') 'Existing engine Java may change'
 Assert ((Get-UpdateDecision 'D' 'forge-game/src/main/java/forge/game/keyword/Boarding.java') -eq 'block') 'Java deletion blocked'
 Assert ((Get-UpdateDecision 'R100' 'forge-game/src/main/java/forge/game/Old.java') -eq 'block') 'Java rename blocked'

@@ -36,11 +36,16 @@ JDK 类型分析解析参数类型、局部变量作用域、符号引用、继�
 
 1. 官方基线优先取上一代 update-state，其次显式开发参数或 release.json 的 `upstreamCommit`。已审核源码 `0d87c2c71c269d645188ece26413ef89f4b9519a` 可兼容映射到 `4bee0abda5277ad8b8def2ed1229458bb7121fc0`；未知版本缺元数据就停止，不再默认 `ebf900...`。
 2. `blob:none` 获取配合桌面稀疏检出；包含 parent/build 元数据和 core、game、ai、gui、gui-desktop、custom。移动平台等目录不检出。官方保护基线仅提取五模块 main Java。隔离根 POM 移除非桌面 reactor 条目，当前安装不删目录。
-3. cardsfolder 只接收新增，edition 接收新增/修改，但已有运行资源若含本地修改则停止。五模块 Java 新增/修改参与三方合并与保护检查；删除/重命名、构建依赖改动和冲突仍要求审核。
+3. 官方卡牌资源使用独立 `cardResourceCommit`，逐项核对目标官方树内 `cardsfolder`、`editions`、`tokenscripts` 的全部 TXT 与真实源码及运行文件，不依赖引擎提交差异。新增、修改及历史漏同步都会进入资源修复计划；即使引擎差异为零，也必须先完成完整资源核验。缺失文件和内容仍等于已知旧官方版本的文件可以自动补齐；官方内容未变的 DIY/本地差异保持原样并记入回执，双方均有变化则列出具体文件并停止覆盖。旧版本缺独立字段时，额外识别已证实的 `ebf900109c882d7027b0651ddcff65a57519237a` 资源快照，但仍逐文件核验，绝不把该提交当作已经同步的证据。语言大文件、custom 和其他额外 DIY 资源仍不取官方覆盖。
+   官方删除的旧文件只有内容与历史官方完全匹配，且目标具有同内容替代路径或同 Code 的改名系列时才从隔离源码和候选运行目录一起退役；其他删除或本地改动需要审核。最终扫描全部候选系列的 Code，重复时拒绝激活，防止旧新系列文件并存使筛选树崩溃。五模块 Java 新增/修改仍参与原有三方合并与保护检查；Java 删除/重命名、构建依赖改动和冲突仍要求审核。
 4. 当前执行的策略资源带入候选，防止旧源码重新打包出旧更新器。执行桌面生产/测试源码编译及测试，验证保护成员、绑定依赖、文件清单、搜索相关类和内嵌策略一致。普通测试失败会列出失败项，等待用户选择“已知晓失败，继续更新”或“保留当前版本”。继续后使用 Maven 的测试失败容许选项完成构建，测试本身仍执行，新失败需再次确认；编译或测试进程异常不属于此选项。隐藏窗口不会自动答复。
 5. 本地候选使用单一新聚合 JAR，不复制旧 overlay。资源复制排除牌组和 junction。构建和全部 DIY 保护门禁通过、且测试已通过或每项现存失败均被用户确认后，才原子切换 `updates/active.json`，保留旧版。
 
 状态记录官方/本地源码提交、策略版本、保护目录/文件清单/保护器摘要、JDK、验证门禁和产物摘要。job 中有 `plan.json`、`result.txt`、`update.log`、`baseline-bindings.tsv`，以及测试失败时的 `test-failures.json`、`test-acknowledgement-<编号>.json`；版本目录保留 `protection.tsv`、`protected-files.json`、`update-state.json`。状态内的 `testResult` 保存最终失败和每次确认，并明确区分 `tests-passed` 与 `test-failures-acknowledged-by-user`。没有确认的测试失败及任何构建/保护错误均不激活候选。游戏内构建不推送到 GitHub。
+
+资源计划另存 job 的 `card-resource-audit.json`，包含每条官方目标、两端实际摘要、修复/退役/保留/冲突决定。完成复制后重新核验全量候选资源，生成版本目录 `card-resource-receipt.json`；`update-state.json` 保存 `cardResourceCommit`、`cardResourceReceiptHash`、`cardResourceCount`、`cardResourceDiyOverrides`。该元数据不替代下次对实际文件的完整核验。构建过程中运行文件改变会停止激活，避免覆盖期间新增的本地修改。新保护文件清单不会把已证实落后的纯官方资源误归属为 DIY；继承的旧保护条目不自动缩减，若旧条目锁定了需要更新的资源则明确要求复核该条目。资源修复目前继续经过同一完整桌面构建和原有保护门禁，尚未引入绕过构建的资源专用激活流程。
+
+`custom/tests/test_diy_resource_update.ps1` 使用真实临时 Git 仓库复现引擎零差异但资源落后的情况，覆盖新卡、修改脚本、系列、Token、CRLF、两端 DIY 冲突、额外 DIY 保留、期间改动、最终内容校验、YMKM 同 Code 官方改名、重复系列代码及修改后的旧系列拒绝退役。
 
 DIY 自有更新器变更也必须同步审核历史清单：2026-09-09 的 `47cf7555` 增加实时日志和测试失败确认，因此 `DiyUpdateBridge.java` 的完整文件保护摘要同步到该已发布版本。只校正这一条固定摘要，没有删除规则或运行时自动接受任意新摘要。`test_diy_update_history.ps1` 验证发布版本通过、随后修改仍被拦截；校验按本 Windows 更新器的 CRLF 检出内容执行。普通测试失败的选择窗口不会绕过此前的代码保护检查。
 

@@ -109,9 +109,220 @@ function Get-UpdateDecision([string]$Status, [string]$Path) {
     }
     # Shared UI/translation Java goes through the member AND bound dependency gates.
     # Skin, language data, custom/, launchers and build machinery stay DIY-owned.
-    if ($Path -match '^forge-gui/res/cardsfolder/.+\.txt$' -and $Status -eq 'A') { return 'merge' }
-    if ($Path -match '^forge-gui/res/editions/[^/]+\.txt$' -and $Status -in @('A', 'M')) { return 'merge' }
+    # These files have a separate complete-tree audit; an engine commit is not a resource receipt.
+    if (Test-OfficialCardResourcePath $Path) { return 'resource-audit' }
     return 'skip'
+}
+function Test-OfficialCardResourcePath([string]$Path) {
+    return $Path -cmatch '^forge-gui/res/(cardsfolder/|editions/|tokenscripts/)[^:\\\x00-\x1f]+\.txt$' -and
+        $Path -notmatch '(^|/)\.\.(/|$)'
+}
+function Get-OfficialCardResourceTree([string]$Root, [string]$Commit) {
+    $tree = @{}
+    $rows = Invoke-Git $Root @('ls-tree', '-r', '-z', $Commit, '--',
+        'forge-gui/res/cardsfolder', 'forge-gui/res/editions', 'forge-gui/res/tokenscripts')
+    foreach ($row in ($rows -split "`0")) {
+        if (-not $row) { continue }
+        if ($row -notmatch '^([0-9]{6}) blob ([a-f0-9]{40})\t(.+)$') { throw 'Unexpected official card resource tree entry.' }
+        $mode = $Matches[1]; $blob = $Matches[2]; $path = $Matches[3]
+        # Exclude all other extensions BEFORE opening any file, including .dck.
+        if (-not (Test-OfficialCardResourcePath $path)) { continue }
+        if ($mode -ne '100644' -and $mode -ne '100755') { throw "Official resource is not a regular file: $path" }
+        $tree[$path] = $blob
+    }
+    if (-not $tree.Count) { throw "Official card resource tree is empty: $Commit" }
+    return $tree
+}
+function Get-CardResourceBases($Release, $PreviousState, [string]$EngineBase) {
+    $recorded = if ($PreviousState -and $PreviousState.PSObject.Properties['cardResourceCommit']) {
+        $PreviousState.cardResourceCommit
+    } elseif ($Release.PSObject.Properties['cardResourceCommit']) { $Release.cardResourceCommit } else { '' }
+    if ($recorded) {
+        if ($recorded -notmatch '^[a-f0-9]{40}$') { throw 'Invalid independent cardResourceCommit.' }
+        return @($recorded)
+    }
+    # The pre-receipt DIY releases carried this official resource snapshot even after
+    # advancing upstreamCommit for the engine. It is a recognition baseline, never proof
+    # that installed files match it: every source AND runtime file is still inspected.
+    return @($EngineBase, 'ebf900109c882d7027b0651ddcff65a57519237a') | Select-Object -Unique
+}
+function Initialize-CardResourceHasher {
+    if ('ForgeDiyResourceReader' -as [type]) { return }
+    Add-Type -TypeDefinition @'
+using System;
+using System.IO;
+using System.Text;
+using System.Security.Cryptography;
+using System.Collections.Generic;
+public sealed class ForgeDiyResourceReader {
+    readonly string root;
+    readonly HashSet<string> directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    public ForgeDiyResourceReader(string root) { this.root = Path.GetFullPath(root).TrimEnd('\\', '/') + Path.DirectorySeparatorChar; }
+    public string Hash(string relative) {
+        if (!relative.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)) throw new IOException("Only card resource TXT files may be read.");
+        string path = Path.GetFullPath(Path.Combine(root, relative));
+        if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase)) throw new IOException("Card resource path escapes root.");
+        string directory = Path.GetDirectoryName(path);
+        while (directory.Length >= root.Length && directories.Add(directory)) {
+            if (Directory.Exists(directory) && (File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0)
+                throw new IOException("Card resource directory is a link: " + directory);
+            directory = Path.GetDirectoryName(directory);
+        }
+        if (!File.Exists(path)) return "ABSENT";
+        if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0) throw new IOException("Card resource is a link: " + path);
+        byte[] input = File.ReadAllBytes(path);
+        // Git text checkouts may be CRLF. Normalize only CRLF; preserve every other byte.
+        int count = 0;
+        for (int i = 0; i < input.Length; i++) {
+            if (input[i] == 13 && i + 1 < input.Length && input[i + 1] == 10) continue;
+            input[count++] = input[i];
+        }
+        byte[] prefix = Encoding.ASCII.GetBytes("blob " + count + "\0");
+        using (SHA1 hash = SHA1.Create()) {
+            hash.TransformBlock(prefix, 0, prefix.Length, prefix, 0);
+            hash.TransformFinalBlock(input, 0, count);
+            return BitConverter.ToString(hash.Hash).Replace("-", "").ToLowerInvariant();
+        }
+    }
+}
+'@
+}
+function Get-CardResourceAudit([string]$Root, [string]$App, [string]$Target, [string[]]$Bases) {
+    Initialize-CardResourceHasher
+    $targetTree = Get-OfficialCardResourceTree $Root $Target
+    $baseTrees = @($Bases | ForEach-Object { Get-OfficialCardResourceTree $Root $_ })
+    $sourceReader = New-Object ForgeDiyResourceReader($Root)
+    $runtimeReader = New-Object ForgeDiyResourceReader($App)
+    $plan = New-Object 'Collections.Generic.List[object]'
+    $number = 0
+    foreach ($path in @($targetTree.Keys | Sort-Object)) {
+        $wanted = $targetTree[$path]
+        $sourceHash = $sourceReader.Hash($path)
+        $runtimeHash = $runtimeReader.Hash($path.Substring('forge-gui/'.Length))
+        $known = @($wanted, 'ABSENT') + @($baseTrees | ForEach-Object { if ($_.ContainsKey($path)) { $_[$path] } })
+        $unknown = $sourceHash -notin $known -or $runtimeHash -notin $known
+        $decision = 'current'; $reason = ''
+        if ($unknown) {
+            if ($baseTrees.Count -and $baseTrees[0][$path] -eq $wanted) {
+                $decision = 'preserve-diy'; $reason = 'Official content is unchanged; retain distinct DIY/local content.'
+            } else {
+                $decision = 'block'; $reason = 'Official and DIY/local content both changed; explicit file review is required.'
+            }
+        } elseif ($sourceHash -ne $wanted -or $runtimeHash -ne $wanted) { $decision = 'repair' }
+        $plan.Add([pscustomobject]@{path=$path; targetBlob=$wanted; sourceBlob=$sourceHash;
+            runtimeBlob=$runtimeHash; decision=$decision; reason=$reason})
+        $number++
+        if ($number % 2000 -eq 0) { Write-Host "已核对官方卡牌资源 $number / $($targetTree.Count)（源码和运行文件）" }
+    }
+    # Only proven replacements may retire a previous official file. Edition filenames
+    # may change while Code stays identical; retaining both breaks the series selector.
+    $removed = @{}
+    $replacementEditions = @{}
+    $targetBlobPaths = @{}
+    foreach ($path in $targetTree.Keys) {
+        $targetBlobPaths[$targetTree[$path]] = $path
+        if ($path -notmatch '^forge-gui/res/editions/') { continue }
+        $newInBaseline = @($baseTrees | Where-Object { -not $_.ContainsKey($path) }).Count -gt 0
+        if (-not $newInBaseline) { continue }
+        $editionText = Invoke-Git $Root @('show', "${Target}:$path")
+        if ($editionText -match '(?m)^Code=([^\r\n]+)') { $replacementEditions[$Matches[1].Trim()] = $path }
+    }
+    foreach ($baseTree in $baseTrees) {
+        foreach ($path in $baseTree.Keys) {
+            if ($targetTree.ContainsKey($path) -or $removed.ContainsKey($path)) { continue }
+            $removed[$path] = $true
+            $sourceHash = $sourceReader.Hash($path)
+            $runtimeHash = $runtimeReader.Hash($path.Substring('forge-gui/'.Length))
+            if ($sourceHash -eq 'ABSENT' -and $runtimeHash -eq 'ABSENT') { continue }
+            $knownOld = @('ABSENT') + @($baseTrees | ForEach-Object { if ($_.ContainsKey($path)) { $_[$path] } })
+            $replacement = ''
+            if ($sourceHash -in $knownOld -and $runtimeHash -in $knownOld) {
+                if ($targetBlobPaths.ContainsKey($baseTree[$path])) { $replacement = $targetBlobPaths[$baseTree[$path]] }
+                elseif ($path -match '^forge-gui/res/editions/') {
+                    $oldText = Invoke-Git $Root @('show', $baseTree[$path])
+                    if ($oldText -match '(?m)^Code=([^\r\n]+)' -and $replacementEditions.ContainsKey($Matches[1].Trim())) {
+                        $replacement = $replacementEditions[$Matches[1].Trim()]
+                    }
+                }
+            }
+            $decision = if ($replacement) { 'retire' } else { 'block' }
+            $reason = if ($replacement) { "Verified official replacement: $replacement" } else { 'Official resource was removed; existing content requires review.' }
+            $plan.Add([pscustomobject]@{path=$path; targetBlob='ABSENT'; sourceBlob=$sourceHash;
+                runtimeBlob=$runtimeHash; decision=$decision; reason=$reason; replacement=$replacement})
+        }
+    }
+    return [pscustomobject]@{schema=1; targetCommit=$Target; recognitionBases=@($Bases); officialFileCount=$targetTree.Count;
+        complete=(@($plan | Where-Object { $_.decision -eq 'block' }).Count -eq 0); files=$plan.ToArray()}
+}
+function Repair-CardResourceSource([string]$Root, [string]$Target, $Audit) {
+    if (-not $Audit.complete -or $Audit.targetCommit -ne $Target) { throw 'Cannot repair resources from an incomplete or mismatched audit.' }
+    $reader = New-Object ForgeDiyResourceReader($Root)
+    $paths = @($Audit.files | Where-Object { $_.decision -eq 'repair' -and $_.sourceBlob -ne $_.targetBlob })
+    foreach ($row in $paths) {
+        if ($reader.Hash($row.path) -ne $row.sourceBlob) { throw "Source card resource changed after audit: $($row.path)" }
+    }
+    for ($offset = 0; $offset -lt $paths.Count; $offset += 100) {
+        $batch = @($paths | Select-Object -Skip $offset -First 100 | Select-Object -ExpandProperty path)
+        Write-Host "补齐官方卡牌资源：$([Math]::Min($offset + 100, $paths.Count)) / $($paths.Count)"
+        Invoke-Git $Root (@('restore', '--source', $Target, '--staged', '--worktree', '--') + $batch) -LiveOutput | Out-Null
+    }
+    foreach ($row in @($Audit.files | Where-Object { $_.decision -eq 'retire' -and $_.sourceBlob -ne 'ABSENT' })) {
+        Assert-ChildPath $Root (Join-Path $Root $row.path)
+        if ($reader.Hash($row.path) -ne $row.sourceBlob) { throw "Source resource changed before retiring official replacement: $($row.path)" }
+        Invoke-Git $Root @('rm', '--', $row.path) | Out-Null
+    }
+}
+function Copy-AuditedCardResources([string]$Root, [string]$ActiveApp, [string]$App, $Audit) {
+    if (-not $Audit.complete) { throw 'Cannot stage resources with unresolved audit conflicts.' }
+    $sourceReader = New-Object ForgeDiyResourceReader($Root)
+    $activeReader = New-Object ForgeDiyResourceReader($ActiveApp)
+    foreach ($row in $Audit.files) {
+        $runtimePath = $row.path.Substring('forge-gui/'.Length)
+        if ($activeReader.Hash($runtimePath) -ne $row.runtimeBlob) { throw "Active card resource changed after audit: $($row.path)" }
+        if ($row.decision -eq 'retire') {
+            $dest = Join-Path $App $runtimePath
+            Assert-ChildPath $App $dest
+            if (Test-Path -LiteralPath $dest -PathType Leaf) { Remove-Item -LiteralPath $dest -Force }
+            continue
+        }
+        if ($row.decision -ne 'repair') { continue }
+        if ($sourceReader.Hash($row.path) -ne $row.targetBlob) { throw "Candidate card resource differs from audited official target: $($row.path)" }
+        $dest = Join-Path $App $runtimePath
+        Assert-ChildPath $App $dest
+        New-Item -ItemType Directory -Path (Split-Path $dest) -Force | Out-Null
+        Copy-Item -LiteralPath (Join-Path $Root $row.path) -Destination $dest -Force
+    }
+}
+function Assert-CardResourceCandidate([string]$Root, [string]$App, $Audit) {
+    if (-not $Audit.complete) { throw 'Cannot accept resources with unresolved audit conflicts.' }
+    $sourceReader = New-Object ForgeDiyResourceReader($Root)
+    $runtimeReader = New-Object ForgeDiyResourceReader($App)
+    foreach ($row in $Audit.files) {
+        $sourceExpected = if ($row.decision -eq 'preserve-diy') { $row.sourceBlob } else { $row.targetBlob }
+        $runtimeExpected = if ($row.decision -eq 'preserve-diy') { $row.runtimeBlob } else { $row.targetBlob }
+        if ($sourceReader.Hash($row.path) -ne $sourceExpected -or
+            $runtimeReader.Hash($row.path.Substring('forge-gui/'.Length)) -ne $runtimeExpected) {
+            throw "Final source/runtime card resource verification failed: $($row.path)"
+        }
+    }
+    Assert-UniqueEditionCodes $Root 'forge-gui/res/editions'
+    Assert-UniqueEditionCodes $App 'res/editions'
+}
+function Assert-UniqueEditionCodes([string]$Root, [string]$RelativeDirectory) {
+    $directory = Join-Path $Root $RelativeDirectory
+    Assert-ChildPath $Root $directory
+    if (-not (Test-Path -LiteralPath $directory -PathType Container)) { return }
+    $codes = @{}
+    foreach ($file in @(Get-ChildItem -LiteralPath $directory -File -Filter '*.txt')) {
+        Assert-ChildPath $Root $file.FullName
+        $text = [IO.File]::ReadAllText($file.FullName)
+        if ($text -notmatch '(?m)^Code=([^\r\n]+)') { continue }
+        $code = $Matches[1].Trim()
+        if ($codes.ContainsKey($code)) {
+            throw "系列代码重复，会使游戏系列筛选失败：$code；$($codes[$code])；$($file.Name)。需审核旧官方改名或 DIY 系列代码，未激活候选。"
+        }
+        $codes[$code] = $file.Name
+    }
 }
 function Get-UpdatePlan([string]$Root, [string]$Base, [string]$Target) {
     $rows = Invoke-Git $Root @('diff', '--name-status', '--no-renames', $Base, $Target)
@@ -292,8 +503,14 @@ function New-ProtectionCatalog([string]$Root, [string]$Base, [string]$Jdk, [stri
     Expand-Archive -LiteralPath $archive -DestinationPath $official
     Invoke-Protection $Jdk $Job @('catalog', $Root, $official, $Catalog, '--require-card-name-search', (Join-Path $PSScriptRoot 'diy-protection-history.tsv'))
 }
-function Get-ProtectedFileManifest([string]$Root, [string]$Base) {
+function Get-ProtectedFileManifest([string]$Root, [string]$Base, $CardResourceAudit = $null) {
     $rules = @{}
+    $officialResources = @{}
+    if ($CardResourceAudit) {
+        foreach ($row in $CardResourceAudit.files) {
+            if ($row.decision -in @('current', 'repair', 'retire')) { $officialResources[$row.path] = $true }
+        }
+    }
     # All tracked non-Java DIY files are immutable during an official update. This also
     # protects registrations/resources/tests, in addition to the Java member catalog.
     $changed = Invoke-Git $Root @('diff', '--name-only', '--no-renames', $Base, 'HEAD', '--',
@@ -302,6 +519,9 @@ function Get-ProtectedFileManifest([string]$Root, [string]$Base) {
     foreach ($path in @((($changed + "`n" + $owned) -split "`n") | Sort-Object -Unique)) {
         $path = $path.TrimEnd("`r")
         if (-not $path -or $path -match '(?i)\.dck$') { continue }
+        # A resource can predate the ENGINE baseline without being a DIY edit. Only
+        # complete-tree recognition in BOTH locations permits this classification.
+        if ($officialResources.ContainsKey($path)) { continue }
         if ($path -match '/src/main/java/.*\.java$') { continue }
         # Excluded modules are absent by design, not files to inspect, copy or delete.
         if ($path -notmatch '^(custom/|forge-(core|game|ai|gui|gui-desktop)/)') { continue }
@@ -506,14 +726,35 @@ try {
     Invoke-Git $source @('fetch', '--progress', '--filter=blob:none', '--depth=1', '--no-tags', 'reviewed-upstream', $UpstreamTarget) -LiveOutput | Out-Null
     $target = (Invoke-Git $source @('rev-parse', 'FETCH_HEAD')).Trim()
     Write-Host '[4/7] 正在检查改动范围与 DIY 保留规则…'
+    $resourceBases = @(Get-CardResourceBases $release $previousState $UpstreamBase)
+    foreach ($resourceBase in $resourceBases) {
+        if ($resourceBase -eq $UpstreamBase -or $resourceBase -eq $target) { continue }
+        Invoke-Git $source @('fetch', '--progress', '--filter=blob:none', '--depth=1', '--no-tags', 'reviewed-upstream', $resourceBase) -LiveOutput | Out-Null
+    }
+    Write-Host '正在独立核对完整官方卡牌、系列和衍生物资源；不会只根据引擎版本判断…'
+    $resourceAudit = Get-CardResourceAudit $source $activeApp $target $resourceBases
+    Write-Utf8 (Join-Path $job 'card-resource-audit.json') ($resourceAudit | ConvertTo-Json -Depth 8)
+    $resourceRepairs = @($resourceAudit.files | Where-Object { $_.decision -in @('repair', 'retire') })
+    $resourceConflicts = @($resourceAudit.files | Where-Object { $_.decision -eq 'block' })
+    $resourceOverrides = @($resourceAudit.files | Where-Object { $_.decision -eq 'preserve-diy' })
     $plan = @(Get-UpdatePlan $source $UpstreamBase $target)
     Write-Utf8 (Join-Path $job 'plan.json') (ConvertTo-Json -InputObject $plan -Depth 6)
     $blocked = @($plan | Where-Object { $_.decision -eq 'block' })
     $paths = @($plan | Where-Object { $_.decision -eq 'merge' } | Select-Object -ExpandProperty path)
     Write-Host "Selected $($paths.Count) paths; blocked $($blocked.Count); official target $target"
+    Write-Host "官方卡牌资源共 $($resourceAudit.officialFileCount) 项；需补齐 $($resourceRepairs.Count)；保留 DIY 差异 $($resourceOverrides.Count)；冲突 $($resourceConflicts.Count)"
     if ($PlanOnly) { Write-Utf8 (Join-Path $job 'result.txt') 'Plan completed; no runtime changes.'; exit 0 }
+    if ($resourceConflicts.Count) {
+        $examples = @($resourceConflicts | Select-Object -First 12 | ForEach-Object { "$($_.path): $($_.reason)" }) -join "`n"
+        throw "卡牌资源与 DIY/本地内容存在 $($resourceConflicts.Count) 项冲突，当前文件未覆盖。完整清单：$(Join-Path $job 'card-resource-audit.json')`n$examples"
+    }
     if ($blocked.Count) { throw "Review required for deleted/renamed engine files or build dependencies: $($blocked.path -join ', '). See plan.json." }
-    if (-not $paths.Count) { Write-Utf8 (Join-Path $job 'result.txt') 'No eligible updates. Current DIY version retained.'; exit 0 }
+    if (-not $paths.Count -and -not $resourceRepairs.Count) {
+        Assert-UniqueEditionCodes $source 'forge-gui/res/editions'
+        Assert-UniqueEditionCodes $activeApp 'res/editions'
+        Write-Utf8 (Join-Path $job 'result.txt') "已核对官方完整卡牌资源 $($resourceAudit.officialFileCount) 项及引擎改动，无需更新；保留 $($resourceOverrides.Count) 项 DIY/本地资源差异，详见 card-resource-audit.json。"
+        exit 0
+    }
     Write-Host '[5/7] 正在准备工具并核对 DIY 保护规则…'
     $tools = Join-Path $updates 'tools'
     New-Item -ItemType Directory -Path $tools -Force | Out-Null
@@ -537,7 +778,7 @@ try {
     $bindings = Join-Path $job 'baseline-bindings.tsv'
     Write-Host '正在核对 DIY 调用关系与依赖…'
     Invoke-Protection $jdk $job @('bindings', $source, $bindings, $baselineClasspath)
-    $protectedFiles = Get-ProtectedFileManifest $source $UpstreamBase
+    $protectedFiles = Get-ProtectedFileManifest $source $UpstreamBase $resourceAudit
     if ($previousState -and $previousState.policyVersion -eq 2) {
         $previousFiles = Join-Path (Split-Path $activeApp) 'protected-files.json'
         if ((Get-FileHash -LiteralPath $previousFiles -Algorithm SHA256).Hash -ne $previousState.protectedFilesHash) { throw 'Previous protected file manifest changed.' }
@@ -546,25 +787,22 @@ try {
         Assert-ProtectedFiles $source $protectedFiles
     }
     Write-Utf8 (Join-Path $versionRoot 'protected-files.json') ($protectedFiles | ConvertTo-Json -Depth 4)
-    foreach ($path in $paths) {
-        if ($path.StartsWith('forge-gui/res/')) {
-            $installedResource = Join-Path $activeApp $path.Substring('forge-gui/'.Length)
-            $baselineResource = Join-Path $source $path
-            if (Test-Path -LiteralPath $installedResource) {
-                if (-not (Test-Path -LiteralPath $baselineResource) -or
-                    (Get-FileHash -LiteralPath $installedResource -Algorithm SHA256).Hash -ne
-                    (Get-FileHash -LiteralPath $baselineResource -Algorithm SHA256).Hash) {
-                    throw "Active resource has a DIY/local change; refusing official overwrite: $path"
-                }
-            }
+    foreach ($row in $resourceRepairs) {
+        if ($protectedFiles.ContainsKey($row.path) -and $row.sourceBlob -ne $row.targetBlob) {
+            throw "历史保护清单固定了待更新资源，需明确审核该条误归属或 DIY 改动；不会缩减旧保护规则：$($row.path)"
         }
     }
     Write-Host '正在合并允许的改动，并复核 DIY 保护规则…'
     Merge-UpdatePaths $source $UpstreamBase $target $paths $job
+    Repair-CardResourceSource $source $target $resourceAudit
+    Assert-UniqueEditionCodes $source 'forge-gui/res/editions'
     Assert-ProtectedFiles $source $protectedFiles
     Invoke-Protection $jdk $job @('verify', $source, $catalog)
     $deleted = Invoke-Git $source @('diff', '--cached', '--name-only', '--diff-filter=D')
-    if ($deleted.Trim()) { throw 'Update would delete existing source files.' }
+    $allowedRetired = @($resourceAudit.files | Where-Object decision -eq 'retire' | Select-Object -ExpandProperty path)
+    foreach ($deletedPath in ($deleted -split "`n")) {
+        if ($deletedPath.Trim() -and $deletedPath.TrimEnd("`r") -notin $allowedRetired) { throw "Update would delete an unreviewed existing source file: $deletedPath" }
+    }
     Invoke-Git $source @('diff', '--cached', '--check') | Out-Null
     Initialize-DesktopReactor $source
     $maven = Get-Maven $tools
@@ -588,18 +826,24 @@ try {
     # Copy only application resources. Never traverse user profiles, managed custom payload or decks.
     & robocopy (Join-Path $activeApp 'res') (Join-Path $app 'res') /E /XJ /XF *.dck /R:1 /W:1 /NFL /NDL /NJH /NJS /NP
     if ($LASTEXITCODE -gt 7) { throw 'Cannot stage existing application resources.' }
-    foreach ($path in $paths) {
-        if ($path.StartsWith('forge-gui/res/')) {
-            $dest = Join-Path $app ($path.Substring('forge-gui/'.Length))
-            Assert-ChildPath $app $dest
-            New-Item -ItemType Directory -Path (Split-Path $dest) -Force | Out-Null
-            Copy-Item -LiteralPath (Join-Path $source $path) -Destination $dest
-        }
-    }
+    Copy-AuditedCardResources $source $activeApp $app $resourceAudit
+    Assert-CardResourceCandidate $source $app $resourceAudit
+    $resourceReceipt = [ordered]@{schema=1; cardResourceCommit=$target; officialFileCount=$resourceAudit.officialFileCount;
+        verifiedSourceAndRuntime=$true; preservedDiyOverrides=$resourceOverrides.Count;
+        files=@($resourceAudit.files | ForEach-Object {
+            [ordered]@{path=$_.path; officialBlob=$_.targetBlob;
+                sourceBlob=$(if ($_.decision -eq 'preserve-diy') { $_.sourceBlob } else { $_.targetBlob });
+                runtimeBlob=$(if ($_.decision -eq 'preserve-diy') { $_.runtimeBlob } else { $_.targetBlob });
+                preservedDiyOverride=($_.decision -eq 'preserve-diy')}
+        })}
+    $resourceReceiptFile = Join-Path $versionRoot 'card-resource-receipt.json'
+    Write-Utf8 $resourceReceiptFile ($resourceReceipt | ConvertTo-Json -Depth 8)
     Copy-Item -LiteralPath $jar[0].FullName -Destination $app
     $jarHash = (Get-FileHash -LiteralPath (Join-Path $app $jar[0].Name) -Algorithm SHA256).Hash
     Write-Utf8 (Join-Path $app 'BUILD-ID.txt') ("DIY-upstream-" + $target.Substring(0, 12))
-    $state = [ordered]@{schema=1; generation=$generation; upstreamCommit=$target; baseReleaseHash=$releaseHash;
+    $state = [ordered]@{schema=1; generation=$generation; upstreamCommit=$target; cardResourceCommit=$target; baseReleaseHash=$releaseHash;
+        cardResourceReceiptHash=(Get-FileHash -LiteralPath $resourceReceiptFile -Algorithm SHA256).Hash;
+        cardResourceCount=$resourceAudit.officialFileCount; cardResourceDiyOverrides=$resourceOverrides.Count;
         sourceCommit=(Invoke-Git $source @('rev-parse', 'HEAD')).Trim(); jar=$jar[0].Name; jarHash=$jarHash;
         policyVersion=2; protectionCatalogHash=(Get-FileHash -LiteralPath $catalog -Algorithm SHA256).Hash;
         protectedFilesHash=(Get-FileHash -LiteralPath (Join-Path $versionRoot 'protected-files.json') -Algorithm SHA256).Hash;
@@ -607,10 +851,11 @@ try {
         historyCatalogHash=(Get-FileHash -LiteralPath (Join-Path $PSScriptRoot 'diy-protection-history.tsv') -Algorithm SHA256).Hash;
         javaVersion=(Invoke-Native (Join-Path $jdk 'bin/javac.exe') @('-version')).Trim();
         testResult=$testResult;
-        verification=@('desktop-package', 'protected-files', 'java-members', 'resolved-bindings-and-dependencies', 'bundled-policy')}
+        verification=@('desktop-package', 'protected-files', 'java-members', 'resolved-bindings-and-dependencies', 'bundled-policy', 'complete-official-card-resources')}
     if ($testResult.status -eq 'passed') { $state.verification += 'tests-passed' }
     else { $state.verification += 'test-failures-acknowledged-by-user' }
     $hashes = @(Get-ChildItem -LiteralPath $app -Recurse -File | ForEach-Object {
+        if ($_.Extension -ieq '.dck') { return }
         $relative = $_.FullName.Substring($app.Length + 1).Replace('\', '/')
         (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash + ' *' + $relative
     })
@@ -620,6 +865,7 @@ try {
     if ((Get-FileHash -LiteralPath $releaseFile -Algorithm SHA256).Hash -ne $releaseHash) { throw 'DIY release changed during compilation; staged update was not activated.' }
     if (-not $NoActivate) { Write-ActivePointer $updates $state }
     $resultMessage = 'DIY 更新已完成构建与保护检查。保存后关闭游戏，再通过 ForgeDIY 启动器打开即可加载；旧版本已保留。'
+    $resultMessage += "`n完整核对官方卡牌资源 $($resourceAudit.officialFileCount) 项，补齐 $($resourceRepairs.Count) 项，保留 $($resourceOverrides.Count) 项 DIY/本地差异。"
     if ($testResult.status -ne 'passed') { $resultMessage += "`n本次按你的确认继续更新，仍有 $($testResult.failures.Count) 项测试未通过，记录已随版本保存。" }
     Write-Utf8 (Join-Path $job 'result.txt') $resultMessage
     Write-Host 'DIY_UPDATE_READY'
