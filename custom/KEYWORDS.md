@@ -123,7 +123,7 @@ Oracle:Counter target instant or sorcery spell.
 - **DSL:** `SVar:<name>:Count$StartingDeckDuplicateNonlandNames`；配合 `ConditionCheckSVar$ <name> | ConditionSVarCompare$ EQ0` 表示起始套牌中每张非地牌的名称均不相同。
 - **Java implementation:** `AbilityUtils.xCount` 读取异能起动牌手注册的主牌 `CardPool`；按内部牌名合并不同版本，忽略所有地牌，并返回出现至少两份的非地牌名数量。
 - **Tests:** `forge-game/src/test/java/forge/game/ability/AbilityUtilsStartingDeckTest.java`；DIY 契约测试 `tests/test_elise_the_enlightened.py`。
-- **Edge cases:** 读取的是注册的起始构筑，不会因对局中抓牌、磨牌、化生、洗牌或换区而改变；同名不同版本仍视为同一牌名，基本地和非基本地均不计入。
+- **Edge cases:** 读取的是注册的起始构筑，不会因对局中抓牌、磨牌、幻变、洗牌或换区而改变；同名不同版本仍视为同一牌名，基本地和非基本地均不计入。
 
 本文件记录自定义关键词及类似关键词的引擎 API。卡牌清单见 [CARDS.md](CARDS.md)，设计理由见 [docs/DESIGN.md](docs/DESIGN.md)。
 
@@ -177,9 +177,9 @@ Oracle:Counter target instant or sorcery spell.
 - **Status:** 已实现；作为通用规则牌能力保留，当前炉石模式不再使用。
 - **Player-facing behavior:** 这类牌只承载整局规则，不是可获得或使用的普通牌。引擎在任何起手牌或调度手牌产生前将它从牌库放逐；若异常路径仍把它留在牌库顶或牌库底，抓牌会先将其放逐并继续抓下一张普通牌。
 - **DSL:** `K:GameRule`。
-- **Java implementation:** `GameAction` 负责调度前放逐并禁止其离开放逐区；`Player.drawCards` 提供顶部／底部抽牌兜底；`GameRuleCard` 统一识别规则牌；`CardDiscoverEffect`、`MakeCardEffect`、`ReplaceCardsEffect`、`DraftEffect`、`PlayEffect`、`CopyPermanentEffect` 与 `CloneEffect` 从发现、化生／制造、随机替换、选牌、直接打出及复制入口排除规则牌。
+- **Java implementation:** `GameAction` 负责调度前放逐并禁止其离开放逐区；`Player.drawCards` 提供顶部／底部抽牌兜底；`GameRuleCard` 统一识别规则牌；`CardDiscoverEffect`、`MakeCardEffect`、`ReplaceCardsEffect`、`DraftEffect`、`PlayEffect`、`CopyPermanentEffect` 与 `CloneEffect` 从发现、幻变／制造、随机替换、选牌、直接打出及复制入口排除规则牌。
 - **Tests:** `GameRuleCardTest` 覆盖调度前放逐、顶部／底部抽牌兜底与区域锁；`DeckPolicyKeywordTest` 覆盖关键词解析；`CardDiscoverEffectTest`、`MakeCardEffectTest` 与 `ReplaceCardsEffectTest` 覆盖三类生成入口。
-- **Edge cases:** 构筑检查仍会把该牌计入主牌并应用 `DeckMinimum`／`DeckLimit`；进入对局后它只能位于放逐区，不能成为发现选项、化生结果、制造结果、批量替换结果、选牌结果、直接打出结果或复制来源。其 `NewGame` 触发必须以 `TriggerZones$ Exile` 运行。
+- **Edge cases:** 构筑检查仍会把该牌计入主牌并应用 `DeckMinimum`／`DeckLimit`；进入对局后它只能位于放逐区，不能成为发现选项、幻变结果、制造结果、批量替换结果、选牌结果、直接打出结果或复制来源。其 `NewGame` 触发必须以 `TriggerZones$ Exile` 运行。
 
 ## Fatigue
 

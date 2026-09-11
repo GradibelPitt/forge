@@ -13,8 +13,8 @@ ART = ROOT / "cards" / "pictures" / "PH01" / "破碎映像.artcrop.jpg"
 ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
-    "选择至多一个目标非衍生生物。分别在你的战场、手上和牌库中各化生一张该生物的复制品，"
-    "然后将你的牌库洗牌。\\n以此法化生的牌不是传奇。"
+    "选择至多一个目标非衍生生物。分别在你的战场、手上和牌库中各幻变一张该生物的复制品，"
+    "然后将你的牌库洗牌。\\n以此法幻变的牌不是传奇。"
 )
 
 

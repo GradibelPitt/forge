@@ -23,7 +23,7 @@ class TidepoolApprenticeContractTest(unittest.TestCase):
 
         expected = (
             "潮池学徒|潮池学徒|生物～娜迦|"
-            "每当你施放一个瞬间或法术咒语时，将一张与该咒语同名之牌的复制品化生到放逐区。"
+            "每当你施放一个瞬间或法术咒语时，将一张与该咒语同名之牌的复制品幻变到放逐区。"
             "\\n{T}，牺牲潮池学徒：将目标由潮池学徒放逐的牌移回你手上。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())

@@ -196,7 +196,7 @@ class AyaLotusKingpinContractTest(unittest.TestCase):
                 and "此前未选择过的选项中选择一项" in line
                 and "派出一个青玉魔像" in line
                 and "随机选择" in line
-                and "化生一张伪造的药水并置入你的手牌" in line
+                and "幻变一张伪造的药水并置入你的手牌" in line
                 and "你可以支付{1}" not in line
                 for line in localization
             )
@@ -211,7 +211,7 @@ class AyaLotusKingpinContractTest(unittest.TestCase):
             for line in localization
             if line.startswith("Emblem — Aya's Cunning Treasure|")
         )
-        self.assertIn("化生一张伪造的药水并置入你的手牌", cunning_row)
+        self.assertIn("幻变一张伪造的药水并置入你的手牌", cunning_row)
         self.assertNotIn("支付{1}", cunning_row)
 
         self.assertTrue(ART_BACKUP.is_file(), ART_BACKUP)

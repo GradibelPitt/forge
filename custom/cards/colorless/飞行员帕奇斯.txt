@@ -8,4 +8,4 @@ T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.S
 SVar:TrigConjure:DB$ MakeCard | Defined$ You | Conjure$ True | Name$ 帕奇斯的降落伞 | Amount$ 6 | Zone$ Library | SubAbility$ ShuffleLibrary
 SVar:ShuffleLibrary:DB$ Shuffle | Defined$ You
 DeckHas:Ability$Token|Draw
-Oracle:你的套牌中只能包含一张名为飞行员帕奇斯的牌。\n飞行。\n当飞行员帕奇斯进战场时，化生六张帕奇斯的降落伞到你的牌库，然后将你的牌库洗牌。
+Oracle:你的套牌中只能包含一张名为飞行员帕奇斯的牌。\n飞行。\n当飞行员帕奇斯进战场时，幻变六张帕奇斯的降落伞到你的牌库，然后将你的牌库洗牌。

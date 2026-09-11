@@ -21,7 +21,7 @@ class MindVisionContractTest(unittest.TestCase):
         self.assertIn("39 C 心灵视界 @Custom", EDITION.read_text(encoding="utf-8"))
         expected = (
             "心灵视界|心灵视界|瞬间|检视目标对手的手牌，然后从中选择一张牌。"
-            "将一张与该牌同名之牌化生到你手上。它永久具有调和，且减少{1}来施放。"
+            "将一张与该牌同名之牌幻变到你手上。它永久具有调和，且减少{1}来施放。"
         )
         self.assertIn(expected, ZH_CN.read_text(encoding="utf-8").splitlines())
 

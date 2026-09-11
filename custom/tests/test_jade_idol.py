@@ -15,7 +15,7 @@ ZH_CN = FORGE_ROOT / "forge-gui" / "res" / "languages" / "cardnames-zh-CN.txt"
 
 ORACLE = (
     "选择一项：\\n"
-    "• 化生三张青玉护符到你的牌库中，然后将你的牌库洗牌。\\n"
+    "• 幻变三张青玉护符到你的牌库中，然后将你的牌库洗牌。\\n"
     "• 派出一个青玉魔像。"
 )
 
