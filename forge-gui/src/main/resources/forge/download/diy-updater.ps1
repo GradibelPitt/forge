@@ -687,9 +687,31 @@ function Invoke-MavenPass([string]$Maven, [string[]]$Arguments, [string]$Log) {
         return $global:LASTEXITCODE
     } finally { $ErrorActionPreference = $savedPreference }
 }
+function Set-NativeDesktopPackaging([string]$Source) {
+    if (Test-WindowsPlatform) { return $null }
+    $path = Join-Path $Source 'forge-gui-desktop/pom.xml'
+    if (-not (Test-Path -LiteralPath $path)) { return $null }
+    $original = [IO.File]::ReadAllBytes($path)
+    $xml = New-Object Xml.XmlDocument
+    $xml.PreserveWhitespace = $true
+    $xml.Load($path)
+    foreach ($plugin in $xml.SelectNodes("//*[local-name()='plugin'][*[local-name()='artifactId' and text()='launch4j-maven-plugin']]")) {
+        $configuration = $plugin.SelectSingleNode("*[local-name()='configuration']")
+        if (-not $configuration) {
+            $configuration = $xml.CreateElement('configuration', $plugin.NamespaceURI)
+            [void]$plugin.AppendChild($configuration)
+        }
+        $skip = $configuration.SelectSingleNode("*[local-name()='skip']")
+        if (-not $skip) { $skip = $xml.CreateElement('skip', $plugin.NamespaceURI); [void]$configuration.AppendChild($skip) }
+        $skip.InnerText = 'true'
+    }
+    try { $xml.Save($path) } catch { [IO.File]::WriteAllBytes($path, $original); throw }
+    return [pscustomobject]@{path=$path; original=$original}
+}
 function Invoke-CheckedPackage([string]$Maven, [string]$Source, [string]$Cache, [string]$Job, [long]$ControllerPid = 0) {
     $arguments = @('-B','-ntp',"-Dmaven.repo.local=$Cache",'-pl','forge-gui-desktop','-am')
     $log = Join-Path $Job 'build-with-tests.log'
+    $packaging = Set-NativeDesktopPackaging $Source
     Push-Location $Source
     try {
         $code = Invoke-MavenPass $Maven ($arguments + @('clean','package')) $log
@@ -716,7 +738,10 @@ function Invoke-CheckedPackage([string]$Maven, [string]$Source, [string]$Cache, 
                 return [pscustomobject]@{status=$status; acknowledgement=$acknowledgements; failures=$remaining}
             }
         }
-    } finally { Pop-Location }
+    } finally {
+        Pop-Location
+        if ($packaging) { [IO.File]::WriteAllBytes($packaging.path, $packaging.original) }
+    }
 }
 
 if ($LibraryOnly) { return }
