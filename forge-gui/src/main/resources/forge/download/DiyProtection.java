@@ -182,8 +182,10 @@ public final class DiyProtection {
         @Override public void close() throws IOException { manager.close(); }
     }
     private static String relative(Path root, Path p) { return root.toAbsolutePath().normalize().relativize(p.toAbsolutePath().normalize()).toString().replace('\\', '/'); }
+    // The committed history was produced on Windows. Canonical CRLF keeps its hashes
+    // stable across javac pretty-printers and Git checkouts on both desktop platforms.
     private static String hash(String value) {
-        try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8))); }
+        try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.replace("\r\n", "\n").replace("\n", "\r\n").getBytes(StandardCharsets.UTF_8))); }
         catch (Exception e) { throw new IllegalStateException(e); }
     }
     private static String encoded(String value) { return Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8)); }

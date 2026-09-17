@@ -61,3 +61,5 @@ python -m unittest discover -s tests -p "test_*.py"
 ## Updater platform parity
 
 Changes to the built-in DIY updater must update and validate macOS and Windows together. Keep one shared update policy, resource audit, DIY protection, test-failure acknowledgement and activation format. Platform branches may adapt process startup, native tools and paths only. Run both platform jobs before delivery, and publish the executing runtime components together with source changes.
+
+Official updater online exclusion is permanent: do not merge/download upstream multiplayer source or shared protocol/lobby adapters selected by `Test-OnlineUpdateExcluded`. Preserve the existing DIY online implementation. Ordinary native Java changes remain eligible; preserve Discover, Boarding, Harmony and other DIY members through the shared protection gates. Never turn an acknowledged native change into a blanket waiver for DIY mechanisms.

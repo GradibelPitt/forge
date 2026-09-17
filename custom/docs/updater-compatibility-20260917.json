@@ -1,0 +1,79 @@
+{
+  "officialTarget": "1575e927612f3a80b32c481580fd767bed1355b7",
+  "sourceBaseline": "1ed43d524cedd30be13b0466c9aac8ca1ca3ecf1",
+  "reviewedChanges": [
+    {
+      "kind": "member",
+      "member": "forge-core/src/main/java/forge/util/CardTranslation.java|forge.util.CardTranslation#method:preloadTranslation(String,String)",
+      "oldHash": "2d0f3b70ace9f2cc2bcbc8f7543d9811aaef025bdaca6e4e611425e66aec0f38",
+      "newHash": "74b6023c5eb9823cebc4e0309537c781b4f7b007043c61a425c6072d51f53186"
+    },
+    {
+      "kind": "member",
+      "member": "forge-game/src/main/java/forge/game/ability/AbilityUtils.java|forge.game.ability.AbilityUtils#method:xCount(Card,String,CardTraitBase)",
+      "oldHash": "207ef09e9e59e92b18881f018ebc898ef83453abb53024a870d3ed1ae570308d",
+      "newHash": "2bea513009a1ad61f915a5625d0781437e8c28bc55b59dd1d3b71b09bc41a475"
+    },
+    {
+      "kind": "member",
+      "member": "forge-game/src/main/java/forge/game/ability/effects/DrawEffect.java|forge.game.ability.effects.DrawEffect#method:resolve(SpellAbility)",
+      "oldHash": "560d59dc2284497e1612823febb1ce8976fae4205c8282a84698d1a5e8119621",
+      "newHash": "c09039272d8f657bc04536bb1c57c5dc29e284d7180ba8e08a58c71511d44648"
+    },
+    {
+      "kind": "member",
+      "member": "forge-game/src/main/java/forge/game/card/CardProperty.java|forge.game.card.CardProperty#method:cardHasProperty(Card,String,Player,Card,CardTraitBase)",
+      "oldHash": "51bfb75525f4d61b42d96d4e381fce119b257e11fa9cdceee7909bbc644b92a3",
+      "newHash": "0e62155c4cc85c759b1939b36d34e77a1b23fcd2d336cb4df38b08aec29ae41c"
+    },
+    {
+      "kind": "member",
+      "member": "forge-game/src/main/java/forge/game/card/CounterEnumType.java|forge.game.card.CounterEnumType#initialization-order",
+      "oldHash": "5ad50daf03ba22d141c064128f5eba510b3851bfa407f978a3ef5dc397f6d687",
+      "newHash": "90e4b9391828e7ec11c8683a99dc688181d818c3e2e3b263567ccbc71c6adae3"
+    },
+    {
+      "kind": "member",
+      "member": "forge-game/src/main/java/forge/game/player/Player.java|forge.game.player.Player#method:onCleanupPhase()",
+      "oldHash": "5bb102ea39832f06eaced3b01aa8478a00e919a0c9cf433093e6e46422f6fb05",
+      "newHash": "dbb9d4e8386e8096f57e1f95f3e6163a26406502aee14d1be7bafa7eb2850e75"
+    },
+    {
+      "kind": "member",
+      "member": "forge-game/src/main/java/forge/game/staticability/StaticAbilityAlternativeCost.java|forge.game.staticability.StaticAbilityAlternativeCost#method:alternativeCosts(SpellAbility,Card,Player)",
+      "oldHash": "1308686e8b6df54e6ad9501379cc8227fea9ba08ddd040df9a5212d33a8b3d6c",
+      "newHash": "293d0c53782eafb35d11031c6611268a38560a765c34a71adf2acc08d08b7c2c"
+    },
+    {
+      "kind": "member",
+      "member": "forge-gui-desktop/src/main/java/forge/screens/deckeditor/CDeckEditorUI.java|forge.screens.deckeditor.CDeckEditorUI#method:setCurrentEditorController(ACEditorBase<? extends InventoryItem, ? extends DeckBase>)",
+      "oldHash": "80041c85331bde01cbe8961d755a4a8f781af3e2eee5815eb3b452478b0203e8",
+      "newHash": "9da9ae2c3587f2b8806b5c4092b82d8470380dfffa39180a03c2e6ad25e187ba"
+    },
+    {
+      "kind": "member",
+      "member": "forge-gui-desktop/src/main/java/forge/screens/deckeditor/controllers/CEditorConstructed.java|forge.screens.deckeditor.controllers.CEditorConstructed#method:buildRemoveContextMenu(EditorContextMenuBuilder,DeckSection,boolean)",
+      "oldHash": "9b9afd7d089f59d8325cbab6638f9b58941531b7115d49f8704d418602ea47f0",
+      "newHash": null
+    },
+    {
+      "kind": "member",
+      "member": "forge-gui/src/main/java/forge/gui/download/GuiDownloadFilteredCardImages.java|forge.gui.download.GuiDownloadFilteredCardImages#method:addIfMissing(PaperCard,String,Map<String, String>)",
+      "oldHash": "56d47c277457bd96a8a325093a56f50bddf329fb5201ae20b0b0b2b6e4cb0550",
+      "newHash": "57534218bbca10406cc1bd948254cc81ea96fecc17e3e17f10977a8c2190eecb"
+    },
+    {
+      "kind": "member",
+      "member": "forge-gui/src/main/java/forge/localinstance/properties/ForgePreferences.java|forge.localinstance.properties.ForgePreferences.FPref#initialization-order",
+      "oldHash": "225882baf1c975552cd7deab721165ada68fb37e0ec94692d6143d81ee5c4b53",
+      "newHash": "2b5c428c68de9b8af870b5a3f6913da59d5a73161cc9ab804c68bf5c3e13b988"
+    },
+    {
+      "kind": "member",
+      "member": "forge-core/src/main/java/forge/util/CardTranslation.java|forge.util.CardTranslation#initialization-order",
+      "oldHash": "24d13de52a2dd08861db61dfafbad01d54fcd79fe35a62e3c477dd71dc5e0f22",
+      "newHash": "05d0caf0dda90c7b5ca46ec1c6a5f39658343c1411067f9af33204c134dc144e"
+    }
+  ],
+  "scope": "Native shared-method hunks reviewed; custom mechanism declarations preserved; networking frozen."
+}

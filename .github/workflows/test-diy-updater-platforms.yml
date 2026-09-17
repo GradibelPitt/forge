@@ -35,11 +35,17 @@ jobs:
           sparse-checkout: |
             custom/tests
             forge-gui/src/main/resources/forge/download
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
       - name: Same update policy, merge, resource and Adventure tests on both platforms
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           & ./custom/tests/test_diy_updater.ps1
+          & ./custom/tests/test_diy_online_policy.ps1
+          & ./custom/tests/test_diy_protection_platform.ps1
           & ./custom/tests/test_diy_resource_update.ps1
           & ./custom/tests/test_diy_adventure_exclusion.ps1
           if ($env:RUNNER_OS -eq 'macOS') { & ./custom/tests/test_diy_macos_platform.ps1 }
@@ -50,6 +56,8 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           & ./custom/tests/test_diy_updater.ps1
+          & ./custom/tests/test_diy_online_policy.ps1
+          & ./custom/tests/test_diy_protection_platform.ps1
           & ./custom/tests/test_diy_resource_update.ps1
           & ./custom/tests/test_diy_adventure_exclusion.ps1
           $global:LASTEXITCODE = 0

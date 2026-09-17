@@ -6,7 +6,7 @@ Assert ((Get-UpdateDecision 'A' 'forge-gui/res/cardsfolder/n/new.txt') -eq 'reso
 Assert ((Get-UpdateDecision 'M' 'forge-gui/res/cardsfolder/o/old.txt') -eq 'resource-audit') 'Modified official scripts need the complete resource audit'
 Assert ((Get-UpdateDecision 'M' 'forge-gui/res/editions/Set.txt') -eq 'resource-audit') 'Edition changes need the complete resource audit'
 Assert ((Get-UpdateDecision 'M' 'forge-game/src/main/java/forge/game/card/Card.java') -eq 'merge') 'Existing engine Java may change'
-Assert ((Get-UpdateDecision 'D' 'forge-game/src/main/java/forge/game/keyword/Boarding.java') -eq 'block') 'Java deletion blocked'
+Assert ((Get-UpdateDecision 'D' 'forge-game/src/main/java/forge/game/keyword/Boarding.java') -eq 'review-delete') 'Java deletion must verify unchanged official ownership'
 Assert ((Get-UpdateDecision 'R100' 'forge-game/src/main/java/forge/game/Old.java') -eq 'block') 'Java rename blocked'
 Assert ((Get-UpdateDecision 'M' 'forge-gui-desktop/src/main/java/forge/view/UI.java') -eq 'merge') 'Shared UI must pass symbol gates'
 Assert ((Get-UpdateDecision 'M' 'forge-core/src/main/java/forge/util/CardTranslation.java') -eq 'merge') 'Translation Java must pass symbol gates'

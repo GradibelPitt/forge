@@ -100,8 +100,32 @@ function Invoke-Git([string]$Root, [string[]]$Arguments, [string]$OutputFile = '
     Invoke-Native 'git' (@('-c', "safe.directory=$Root", '-c', 'core.quotepath=false', '-c', 'core.longpaths=true',
         '-c', 'core.autocrlf=false', '--literal-pathspecs', '-C', $Root) + $Arguments) $OutputFile -LiveOutput:$LiveOutput
 }
+function Test-OnlineUpdateExcluded([string]$Path) {
+    # Permanent user policy: do not fetch/apply official multiplayer payloads.
+    # Include shared lobby/protocol adapters: mixing them with frozen networking changes the wire contract.
+    if ($Path -match '^forge-[^/]+/src/(main|test)/java/forge/(gamemodes/net|net|screens/home/online)(/|$)') { return $true }
+    if ($Path -match '^forge-[^/]+/src/(main|test)/java/forge/.*/(Network[^/]*|.*Online[^/]*|.*NetPreferences[^/]*)\.java$') { return $true }
+    return $Path -in @(
+        'forge-gui-desktop/src/main/java/forge/screens/deckeditor/controllers/NetworkDraftLog.java',
+        'forge-gui-desktop/src/main/java/forge/screens/home/CLobby.java',
+        'forge-gui-desktop/src/main/java/forge/screens/home/VLobby.java',
+        'forge-gui-desktop/src/main/java/forge/screens/home/PlayerPanel.java',
+        'forge-gui-desktop/src/main/java/forge/screens/match/CMatchUI.java',
+        'forge-gui/src/main/java/forge/gamemodes/match/AbstractGuiGame.java',
+        'forge-gui/src/main/java/forge/gamemodes/match/GameLobby.java',
+        'forge-gui/src/main/java/forge/gamemodes/match/HostedMatch.java',
+        'forge-gui/src/main/java/forge/gamemodes/match/YieldController.java',
+        'forge-gui/src/main/java/forge/gamemodes/match/YieldUpdate.java',
+        'forge-gui/src/main/java/forge/gamemodes/match/input/InputPassPriority.java',
+        'forge-gui/src/main/java/forge/interfaces/IGameController.java',
+        'forge-gui/src/main/java/forge/player/RecordActionsMacroSystem.java',
+        'forge-gui/src/main/java/forge/player/PlayerControllerHuman.java',
+        'forge-gui/src/main/java/forge/localinstance/properties/ForgeNetPreferences.java'
+    )
+}
 function Get-UpdateDecision([string]$Status, [string]$Path) {
     if ($Path -match '(^|/)\.\.(/|$)|[:\\\x00-\x1f]' -or $Path.StartsWith('/')) { return 'block' }
+    if (Test-OnlineUpdateExcluded $Path) { return 'skip' }
     # Adventure mode assets are never part of a desktop DIY update.
     if ($Path -match '^forge-gui/res/adventure(/|$)' -or
         $Path -eq 'forge-gui/res/skins/default/sprite_adventure.png') { return 'skip' }
@@ -119,6 +143,7 @@ function Get-UpdateDecision([string]$Status, [string]$Path) {
     $engine = $Path -match '^forge-(core|game|ai|gui|gui-desktop)/src/(main|test)/java/.+\.java$'
     if ($engine) {
         if ($Status -eq 'A' -or $Status -eq 'M') { return 'merge' }
+        if ($Status -eq 'D') { return 'review-delete' }
         return 'block'
     }
     # Shared UI/translation Java goes through the member AND bound dependency gates.
@@ -345,6 +370,12 @@ function Get-UpdatePlan([string]$Root, [string]$Base, [string]$Target) {
         if (-not $row.Trim()) { continue }
         $fields = $row.TrimEnd("`r") -split "`t", 2
         $decision = Get-UpdateDecision $fields[0] $fields[1]
+        if ($decision -eq 'review-delete') {
+            # Only an unchanged official blob may be retired. DIY additions/edits stay protected.
+            $oldEntry = (Invoke-Git $Root @('ls-tree', $Base, '--', $fields[1])).Trim()
+            $localEntry = (Invoke-Git $Root @('ls-tree', 'HEAD', '--', $fields[1])).Trim()
+            $decision = if (-not $localEntry) { 'skip' } elseif ($oldEntry -and $localEntry -ceq $oldEntry) { 'merge' } else { 'block' }
+        }
         if ($fields[1] -eq 'pom.xml' -and $fields[0] -eq 'M') {
             # A release label alone does not require replacing DIY build configuration.
             $oldPom = Invoke-Git $Root @('show', "${Base}:pom.xml")
@@ -357,10 +388,11 @@ function Get-UpdatePlan([string]$Root, [string]$Base, [string]$Target) {
     return $plan
 }
 function Merge-UpdatePaths([string]$Root, [string]$Base, [string]$Target, [string[]]$Paths, [string]$Job) {
+    $Paths = @($Paths | Where-Object { -not (Test-OnlineUpdateExcluded $_) })
     for ($offset = 0; $offset -lt $Paths.Count; $offset += 30) {
         $batch = @($Paths | Select-Object -Skip $offset -First 30)
         $patch = Join-Path $Job "upstream-$offset.patch"
-        Invoke-Git $Root (@('diff', '--binary', '--full-index', '--no-renames', '--diff-filter=AM', $Base, $Target, '--') + $batch) $patch
+        Invoke-Git $Root (@('diff', '--binary', '--full-index', '--no-renames', '--diff-filter=AMD', $Base, $Target, '--') + $batch) $patch
         # apply --3way uses the original blob IDs and keeps non-overlapping DIY modifications.
         # Any conflict occurs only in this disposable source tree; no runtime is touched.
         Write-Host "合并引擎与卡牌：$([Math]::Min($offset + 30, $Paths.Count)) / $($Paths.Count) 个文件"
@@ -559,8 +591,11 @@ function New-ProtectionCatalog([string]$Root, [string]$Base, [string]$Jdk, [stri
     $official = Join-Path $Job 'official-java'
     $archive = Join-Path $Job 'official-java.zip'
     $paths = @('forge-core', 'forge-game', 'forge-ai', 'forge-gui', 'forge-gui-desktop') | ForEach-Object { "$_/src/main/java" }
-    # Only Java source blobs are requested here, never mobile files or decks.
-    Invoke-Git $Root (@('archive', '--format=zip', "--output=$archive", $Base, '--') + $paths) | Out-Null
+    # Enumerate names without fetching blobs, then exclude online payloads from the archive.
+    $names = Invoke-Git $Root (@('ls-tree', '-r', '--name-only', $Base, '--') + $paths)
+    $exclusions = @($names -split "`n" | Where-Object { Test-OnlineUpdateExcluded $_ } | ForEach-Object { ':(exclude,literal)' + $_ })
+    # archive needs pathspec exclusions; Invoke-Git deliberately uses literal-only pathspecs.
+    Invoke-Native 'git' (@('-c', "safe.directory=$Root", '-C', $Root, 'archive', '--format=zip', "--output=$archive", $Base, '--') + $paths + $exclusions) | Out-Null
     Expand-Archive -LiteralPath $archive -DestinationPath $official
     Invoke-Protection $Jdk $Job @('catalog', $Root, $official, $Catalog, '--require-card-name-search', (Join-Path $PSScriptRoot 'diy-protection-history.tsv'))
 }
@@ -589,6 +624,14 @@ function Get-ProtectedFileManifest([string]$Root, [string]$Base, $CardResourceAu
         $file = Join-Path $Root $path
         Assert-ChildPath $Root $file
         $rules[$path] = if (Test-Path -LiteralPath $file -PathType Leaf) { (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash } else { 'ABSENT' }
+    }
+    # Freeze online files byte-for-byte, including shared protocol/lobby adapters.
+    $tracked = Invoke-Git $Root @('ls-files')
+    foreach ($path in ($tracked -split "`n")) {
+        if (Test-OnlineUpdateExcluded $path) {
+            $file = Join-Path $Root $path
+            $rules[$path] = if (Test-Path -LiteralPath $file -PathType Leaf) { (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash } else { 'ABSENT' }
+        }
     }
     return $rules
 }
@@ -888,7 +931,8 @@ try {
     Assert-ProtectedFiles $source $protectedFiles
     Invoke-Protection $jdk $job @('verify', $source, $catalog)
     $deleted = Invoke-Git $source @('diff', '--cached', '--name-only', '--diff-filter=D')
-    $allowedRetired = @($resourceAudit.files | Where-Object decision -eq 'retire' | Select-Object -ExpandProperty path)
+    $allowedRetired = @($resourceAudit.files | Where-Object decision -eq 'retire' | Select-Object -ExpandProperty path) +
+        @($plan | Where-Object { $_.status -eq 'D' -and $_.decision -eq 'merge' } | Select-Object -ExpandProperty path)
     foreach ($deletedPath in ($deleted -split "`n")) {
         if ($deletedPath.Trim() -and $deletedPath.TrimEnd("`r") -notin $allowedRetired) { throw "Update would delete an unreviewed existing source file: $deletedPath" }
     }

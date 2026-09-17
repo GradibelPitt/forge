@@ -2852,6 +2852,7 @@ public class GameAction {
                 runParams.put(AbilityKey.ScryBottom, toBottom == null ? 0 : toBottom.size());
                 game.getTriggerHandler().runTrigger(TriggerType.Scry, runParams, false);
             }
+            p.incScryThisTurn();
         }
     }
 

@@ -45,7 +45,7 @@ public final class DiyUpdateBridge {
                 throw new IOException("请使用 ForgeDIY 一键启动器打开游戏，再执行 DIY 更新。");
             }
             if (SOptionPane.showOptionDialog("将下载新卡和版本资料，三方合并允许的引擎改动并重新编译。\n"
-                    + "保留 DIY 界面和自定义机制；Java 删除或合并冲突会停止更新并生成报告。\n"
+                    + "保留 DIY 界面和自定义机制；联机代码不更新，DIY 机制变更或合并冲突会停止并生成报告。\n"
                     + "首次需要下载源码及编译工具，可能需要较长时间。完成后保存并重启游戏即可使用。",
                     "Forge DIY 增量更新", null, List.of("开始更新", "取消"), 1) != 0) {
                 RUNNING.set(false);

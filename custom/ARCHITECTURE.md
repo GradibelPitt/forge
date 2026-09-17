@@ -113,3 +113,7 @@ JAR/overlays + res + DIY managed files ──publish_git_payload.ps1──> forg
 validated source ──commit/push──> forge:diy
 validated runtime payload ──commit/push──> forge-diy-runtime:main ──bootstrap/update──> player client
 ```
+
+## Official updater ownership boundary (2026-09-17)
+
+The shared Windows/macOS updater permanently excludes official online/multiplayer code and shared protocol/lobby adapters through `Test-OnlineUpdateExcluded`. Existing DIY network source stays in the build and is immutable during official updates. Native Java may merge; unchanged official deletions use blob ownership checks, while Discover, Boarding, Harmony and other custom mechanisms retain member/dependency protection. See `docs/DIY_UPDATE_PROTECTION.md` and the reviewed compatibility receipt.
