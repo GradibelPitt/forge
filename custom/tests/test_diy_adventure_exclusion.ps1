@@ -26,6 +26,7 @@ try {
     foreach ($path in $retained) { Assert (Test-Path (Join-Path $temp $path)) "Sparse checkout lost protected resource: $path" }
     foreach ($path in $retained[0..1]) { Assert ((Get-UpdateDecision 'A' $path) -eq 'resource-audit') "Normal card resource excluded: $path" }
     foreach ($path in $retained[3..4]) { Assert ((Get-UpdateDecision 'M' $path) -eq 'merge') "Normal mechanic excluded: $path" }
+    function Test-WindowsPlatform { return $true }
     # Exercise the real copy function while capturing native arguments on every OS.
     function robocopy { $script:copyArgs = @($args); $global:LASTEXITCODE = 1 }
     Copy-DesktopResources (Join-Path $temp 'old') (Join-Path $temp 'new')

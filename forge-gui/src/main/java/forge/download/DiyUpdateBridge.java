@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
@@ -64,11 +65,10 @@ public final class DiyUpdateBridge {
                     + ",\"appRoot\":" + jsonString(app) + ",\"javaHome\":"
                     + jsonString(System.getProperty("java.home")) + ",\"controllerPid\":"
                     + ProcessHandle.current().pid() + "}", StandardCharsets.UTF_8);
-            final Path powershell = Path.of(System.getenv("SystemRoot"), "System32", "WindowsPowerShell",
-                    "v1.0", "powershell.exe");
-            final Process process = new ProcessBuilder(powershell.toString(), "-NoProfile", "-NonInteractive",
-                    "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-File", script.toString(),
-                    "-Request", request.toString()).redirectErrorStream(true)
+            final Path repo = Path.of(System.getProperty("forge.diy.repoRoot",
+                    Path.of(install, System.getProperty("os.name").startsWith("Mac") ? "repo-macos" : "repo").toString()));
+            final Process process = new ProcessBuilder(updateCommand(System.getProperty("os.name"),
+                    System.getenv("SystemRoot"), Path.of(install), repo, script, request)).redirectErrorStream(true)
                     .redirectOutput(job.resolve("update.log").toFile()).start();
             if (currentProgress != null) {
                 currentProgress.disposeCompleted();
@@ -135,9 +135,35 @@ public final class DiyUpdateBridge {
             return true;
         } catch (IOException | RuntimeException e) {
             RUNNING.set(false);
-            show("更新未启动：" + e.getMessage(), "Forge DIY 更新");
+            e.printStackTrace();
+            show("更新未启动：" + errorDetail(e), "Forge DIY 更新");
             return false;
         }
+    }
+
+    static List<String> updateCommand(final String os, final String systemRoot, final Path install,
+            final Path repo, final Path script, final Path request) throws IOException {
+        if (os.toLowerCase(Locale.ROOT).startsWith("windows")) {
+            if (systemRoot == null || systemRoot.isBlank()) {
+                throw new IOException("Windows SystemRoot is missing; cannot locate PowerShell.");
+            }
+            return List.of(Path.of(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe").toString(),
+                    "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass",
+                    "-File", script.toString(), "-Request", request.toString());
+        }
+        if (os.toLowerCase(Locale.ROOT).startsWith("mac")) {
+            final Path helper = repo.resolve("tools/run_diy_updater_macos.sh");
+            if (!Files.isRegularFile(helper)) {
+                throw new IOException("macOS updater helper missing: " + helper + "; reopen the DIY launcher to update it.");
+            }
+            return List.of("/bin/bash", helper.toString(), install.toString(), script.toString(), request.toString());
+        }
+        throw new IOException("DIY updater does not yet support this platform: " + os);
+    }
+
+    static String errorDetail(final Throwable error) {
+        return error.getMessage() == null || error.getMessage().isBlank()
+                ? error.getClass().getSimpleName() : error.getMessage();
     }
 
     private static void show(final String message, final String title) {

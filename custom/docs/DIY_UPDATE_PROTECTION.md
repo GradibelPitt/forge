@@ -54,3 +54,9 @@ DIY 自有更新器变更也必须同步审核历史清单：2026-09-09 的 `47c
 ## Adventure 资源明确排除（2026-09-17）
 
 `forge-gui/res/adventure/` 和专用 `forge-gui/res/skins/default/sprite_adventure.png` 在更新计划中直接跳过，在 blob:none 的稀疏检出中用否定路径排除；生成新运行目录时 robocopy 在遍历前排除旧安装中的对应目录与图片。不是按 adventure 关键词模糊删文件：历险牌、Venture／地城和 Subgame 不受影响。Git 仍获取提交及树元数据，但不会因检出这些排除路径而请求其资源 blob。运行仓库同步移除资源，并通过优先加载的 updater resource overlay 部署脚本。
+
+## macOS / Windows parity (2026-09-17)
+
+Both desktops execute the same embedded `diy-updater.ps1`; update selection, complete card-resource audit, merge/protection gates, explicit failure acknowledgements and state format are shared. Windows starts its system PowerShell; macOS uses `tools/run_diy_updater_macos.sh`, which installs a pinned SHA-256-verified PowerShell only when needed. Java reports an actionable platform error instead of a null exception message. macOS uses native executable names, architecture-specific Java 17 JDK, Unix classpath/PATH separators and rsync with the same Adventure/deck exclusions. Maven archives are checksum-verified on both platforms.
+
+The macOS launcher validates `updates/active.json` with the same PowerShell selector as Windows, using `repo-macos/release.json` as its baseline. A named pre-existing macOS audio overlay is retained and included in candidate binding checks and the hash manifest; updater/module overlays are not carried into full builds. Missing, changed or stale local builds fall back to the published base. Every later updater change must run the Windows and macOS regression matrix together.

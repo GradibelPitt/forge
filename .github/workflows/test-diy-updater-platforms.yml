@@ -1,0 +1,46 @@
+name: DIY updater platform parity
+on:
+  push:
+    branches: [diy]
+    paths:
+      - 'forge-gui/src/main/java/forge/download/DiyUpdate*.java'
+      - 'forge-gui/src/main/resources/forge/download/**'
+      - 'forge-gui/src/test/java/forge/download/**'
+      - 'custom/tests/test_diy_*.ps1'
+      - '.github/workflows/test-diy-updater-platforms.yml'
+  pull_request:
+    paths:
+      - 'forge-gui/src/main/java/forge/download/**'
+      - 'forge-gui/src/main/resources/forge/download/**'
+      - 'custom/tests/test_diy_*.ps1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  shared-policy:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            shell: powershell
+          - os: macos-latest
+            shell: pwsh
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            custom/tests
+            forge-gui/src/main/resources/forge/download
+      - name: Same update policy, merge, resource and Adventure tests on both platforms
+        shell: ${{ matrix.shell }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & ./custom/tests/test_diy_updater.ps1
+          & ./custom/tests/test_diy_resource_update.ps1
+          & ./custom/tests/test_diy_adventure_exclusion.ps1
+          if ($env:RUNNER_OS -eq 'macOS') { & ./custom/tests/test_diy_macos_platform.ps1 }
+          $global:LASTEXITCODE = 0

@@ -9,6 +9,16 @@
 )
 $ErrorActionPreference = 'Stop'
 
+function Test-WindowsPlatform { return [IO.Path]::DirectorySeparatorChar -eq '\' }
+function Get-JavaTool([string]$JavaHome, [string]$Name) {
+    $suffix = if (Test-WindowsPlatform) { '.exe' } else { '' }
+    return Join-Path $JavaHome ("bin/" + $Name + $suffix)
+}
+function Get-ReleaseFile([string]$Install, $Config) {
+    $folder = if (Test-WindowsPlatform) { 'repo' } else { 'repo-macos' }
+    return Join-Path (Join-Path $Install $folder) 'release.json'
+}
+
 function Write-Utf8([string]$Path, [string]$Text) {
     [IO.File]::WriteAllText($Path, $Text, (New-Object Text.UTF8Encoding($false)))
 }
@@ -35,7 +45,8 @@ function Quote-Native([string]$Value) {
 function Invoke-Native([string]$Exe, [string[]]$Arguments, [string]$OutputFile = '', [switch]$LiveOutput) {
     $info = New-Object Diagnostics.ProcessStartInfo
     $info.FileName = $Exe
-    $info.Arguments = ($Arguments | ForEach-Object { Quote-Native $_ }) -join ' '
+    if (Test-WindowsPlatform) { $info.Arguments = ($Arguments | ForEach-Object { Quote-Native $_ }) -join ' ' }
+    else { foreach ($argument in $Arguments) { $info.ArgumentList.Add($argument) } }
     $info.UseShellExecute = $false
     $info.CreateNoWindow = $true
     $info.RedirectStandardOutput = $true
@@ -357,42 +368,68 @@ function Merge-UpdatePaths([string]$Root, [string]$Base, [string]$Target, [strin
     }
 }
 function Get-JavaHome([string]$Preferred, [string]$Tools) {
+    $windows = Test-WindowsPlatform
     $choices = @($Preferred, $env:JAVA_HOME)
-    $javac = Get-Command javac.exe -ErrorAction SilentlyContinue
+    $compiler = if ($windows) { 'javac.exe' } else { 'javac' }
+    $javac = Get-Command $compiler -ErrorAction SilentlyContinue
     if ($javac) { $choices += Split-Path (Split-Path $javac.Source) }
-    foreach ($dir in @((Join-Path $env:LOCALAPPDATA 'Programs/Eclipse Adoptium'), (Join-Path $env:ProgramFiles 'Eclipse Adoptium'), (Join-Path $Tools 'jdk'))) {
-        if (Test-Path -LiteralPath $dir) { $choices += @(Get-ChildItem -LiteralPath $dir -Directory -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName) }
+    $roots = @((Join-Path $Tools 'jdk'))
+    if ($windows) {
+        foreach ($parent in @($env:LOCALAPPDATA, $env:ProgramFiles)) {
+            if ($parent) { $roots += Join-Path $parent 'Eclipse Adoptium' }
+        }
+        if ($env:LOCALAPPDATA) { $roots += Join-Path $env:LOCALAPPDATA 'Programs/Eclipse Adoptium' }
+    } else { $roots += '/Library/Java/JavaVirtualMachines' }
+    foreach ($dir in $roots) {
+        if (Test-Path -LiteralPath $dir) { $choices += @(Get-ChildItem -LiteralPath $dir -Directory | Select-Object -ExpandProperty FullName) }
     }
     foreach ($candidate in $choices) {
-        if ($candidate -and (Test-Path -LiteralPath (Join-Path $candidate 'bin/javac.exe'))) {
-            $version = Invoke-Native (Join-Path $candidate 'bin/javac.exe') @('-version')
+        if (-not $candidate) { continue }
+        if (Test-Path -LiteralPath (Join-Path $candidate 'Contents/Home')) { $candidate = Join-Path $candidate 'Contents/Home' }
+        $javacPath = Get-JavaTool $candidate 'javac'
+        if (Test-Path -LiteralPath $javacPath) {
+            try { $version = Invoke-Native $javacPath @('-version') } catch { continue }
             if ($version -match 'javac 17\.') { return $candidate }
         }
     }
     Write-Host 'Downloading a verified Java 17 compiler...'
-    $assets = Invoke-RestMethod 'https://api.adoptium.net/v3/assets/latest/17/hotspot?architecture=x64&image_type=jdk&os=windows&vendor=eclipse'
+    $os = if ($windows) { 'windows' } else { 'mac' }
+    $arch = if ([Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString() -eq 'Arm64') { 'aarch64' } else { 'x64' }
+    $assets = Invoke-RestMethod "https://api.adoptium.net/v3/assets/latest/17/hotspot?architecture=$arch&image_type=jdk&os=$os&vendor=eclipse"
     $package = @($assets)[0].binary.package
     if ($package.link -notmatch '^https://github\.com/adoptium/' -or $package.checksum -notmatch '^[a-fA-F0-9]{64}$') { throw 'Unexpected JDK download metadata.' }
-    $zip = Join-Path $Tools 'jdk.zip'
-    Invoke-WebRequest -UseBasicParsing $package.link -OutFile $zip
-    if ((Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash -ne $package.checksum) { throw 'JDK checksum mismatch.' }
+    $archive = Join-Path $Tools $(if ($windows) { 'jdk.zip' } else { 'jdk.tar.gz' })
+    Invoke-WebRequest -UseBasicParsing $package.link -OutFile $archive
+    if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ne $package.checksum) { throw 'JDK checksum mismatch.' }
     $jdkRoot = Join-Path $Tools 'jdk'
-    Expand-Archive -LiteralPath $zip -DestinationPath $jdkRoot -Force
-    return Get-JavaHome '' $Tools
+    New-Item -ItemType Directory -Path $jdkRoot -Force | Out-Null
+    if ($windows) { Expand-Archive -LiteralPath $archive -DestinationPath $jdkRoot -Force }
+    else { Invoke-Native '/usr/bin/tar' @('-xzf', $archive, '-C', $jdkRoot) | Out-Null }
+    # Validate the downloaded candidate once; never loop forever on invalid metadata.
+    foreach ($dir in Get-ChildItem -LiteralPath $jdkRoot -Directory) {
+        $homePath = if ($windows) { $dir.FullName } else { Join-Path $dir.FullName 'Contents/Home' }
+        $javacPath = Get-JavaTool $homePath 'javac'
+        if ((Test-Path -LiteralPath $javacPath) -and (Invoke-Native $javacPath @('-version')) -match 'javac 17\.') { return $homePath }
+    }
+    throw 'Downloaded JDK did not contain a working Java 17 compiler.'
 }
 function Get-Maven([string]$Tools) {
-    $command = Get-Command mvn.cmd -ErrorAction SilentlyContinue
+    $windows = Test-WindowsPlatform
+    $executable = if ($windows) { 'mvn.cmd' } else { 'mvn' }
+    $command = Get-Command $executable -ErrorAction SilentlyContinue
     if ($command) { return $command.Source }
-    $maven = Join-Path $Tools 'apache-maven-3.9.16/bin/mvn.cmd'
+    $maven = Join-Path $Tools "apache-maven-3.9.16/bin/$executable"
     if (-not (Test-Path -LiteralPath $maven)) {
         Write-Host 'Downloading verified Maven build tools...'
-        $url = 'https://archive.apache.org/dist/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.zip'
-        $zip = Join-Path $Tools 'maven.zip'
+        $extension = if ($windows) { 'zip' } else { 'tar.gz' }
+        $url = "https://archive.apache.org/dist/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.$extension"
+        $archive = Join-Path $Tools "maven.$extension"
         $checksum = ((Invoke-WebRequest -UseBasicParsing ($url + '.sha512')).Content -split '\s+')[0]
         if ($checksum -notmatch '^[a-fA-F0-9]{128}$') { throw 'Invalid Maven checksum metadata.' }
-        Invoke-WebRequest -UseBasicParsing $url -OutFile $zip
-        if ((Get-FileHash -LiteralPath $zip -Algorithm SHA512).Hash -ne $checksum) { throw 'Maven checksum mismatch.' }
-        Expand-Archive -LiteralPath $zip -DestinationPath $Tools -Force
+        Invoke-WebRequest -UseBasicParsing $url -OutFile $archive
+        if ((Get-FileHash -LiteralPath $archive -Algorithm SHA512).Hash -ne $checksum) { throw 'Maven checksum mismatch.' }
+        if ($windows) { Expand-Archive -LiteralPath $archive -DestinationPath $Tools -Force }
+        else { Invoke-Native '/usr/bin/tar' @('-xzf', $archive, '-C', $Tools) | Out-Null }
     }
     return $maven
 }
@@ -445,10 +482,16 @@ function Copy-DesktopResources([string]$ActiveApp, [string]$App) {
     $source = Join-Path $ActiveApp 'res'
     $destination = Join-Path $App 'res'
     # Exclude before traversal/copy, including assets retained by an older release.
-    & robocopy $source $destination /E /XJ /XD (Join-Path $source 'adventure') `
-        /XF *.dck (Join-Path $source 'skins/default/sprite_adventure.png') `
-        /R:1 /W:1 /NFL /NDL /NJH /NJS /NP
-    if ($LASTEXITCODE -gt 7) { throw 'Runtime resource copy failed.' }
+    if (Test-WindowsPlatform) {
+        & robocopy $source $destination /E /XJ /XD (Join-Path $source 'adventure') `
+            /XF *.dck (Join-Path $source 'skins/default/sprite_adventure.png') `
+            /R:1 /W:1 /NFL /NDL /NJH /NJS /NP
+        if ($LASTEXITCODE -gt 7) { throw 'Runtime resource copy failed.' }
+    } else {
+        New-Item -ItemType Directory -Path $destination -Force | Out-Null
+        Invoke-Native '/usr/bin/rsync' @('-rt', '--exclude=/adventure/', '--exclude=/skins/default/sprite_adventure.png',
+            '--exclude=*.[dD][cC][kK]', ($source + '/'), ($destination + '/')) -LiveOutput | Out-Null
+    }
 }
 function Initialize-DesktopReactor([string]$Root) {
     $pom = Join-Path $Root 'pom.xml'
@@ -465,14 +508,14 @@ function Initialize-DesktopReactor([string]$Root) {
     $xml.Save($pom)
 }
 function Invoke-Protection([string]$Jdk, [string]$Job, [string[]]$Arguments) {
-    Invoke-Native (Join-Path $Jdk 'bin/java.exe') (@('-Xmx2g', '-cp', (Join-Path $Job 'guard-classes'), 'DiyProtection') + $Arguments)
+    Invoke-Native (Get-JavaTool $Jdk 'java') (@('-Xmx2g', '-cp', (Join-Path $Job 'guard-classes'), 'DiyProtection') + $Arguments)
 }
 function Initialize-ProtectionTool([string]$Jdk, [string]$Job, [string]$Classpath = '') {
     foreach ($resourceName in @('DiyProtection.java', 'diy-protection-history.tsv')) {
       $resourcePath = Join-Path $PSScriptRoot $resourceName
       if (-not (Test-Path -LiteralPath $resourcePath)) {
         Add-Type -AssemblyName System.IO.Compression.FileSystem
-        foreach ($jar in ($Classpath -split ';')) {
+        foreach ($jar in ($Classpath -split [regex]::Escape([string][IO.Path]::PathSeparator))) {
             if (-not $jar) { continue }
             $zip = [IO.Compression.ZipFile]::OpenRead($jar)
             try {
@@ -487,7 +530,12 @@ function Initialize-ProtectionTool([string]$Jdk, [string]$Job, [string]$Classpat
     if (-not (Test-Path -LiteralPath $guard)) { throw 'Bundled DIY protection tool missing; refusing an unguarded update.' }
     $classes = Join-Path $Job 'guard-classes'
     New-Item -ItemType Directory -Path $classes -Force | Out-Null
-    Invoke-Native (Join-Path $Jdk 'bin/javac.exe') @('-encoding', 'UTF-8', '-d', $classes, $guard) | Out-Null
+    Invoke-Native (Get-JavaTool $Jdk 'javac') @('-encoding', 'UTF-8', '-d', $classes, $guard) | Out-Null
+}
+function Get-PlatformOverlayNames([string]$App) {
+    if (-not (Test-WindowsPlatform) -and (Test-Path -LiteralPath (Join-Path $App 'overlays/000-forge-macos-native-audio.jar'))) {
+        return '000-forge-macos-native-audio.jar'
+    }
 }
 function Get-ApplicationClasspath([string]$App, $Release) {
     $jars = @()
@@ -495,17 +543,17 @@ function Get-ApplicationClasspath([string]$App, $Release) {
     $overlayRoot = Join-Path $App 'overlays'
     $actualNames = @()
     if (Test-Path -LiteralPath $overlayRoot) { $actualNames = @(Get-ChildItem -LiteralPath $overlayRoot -File -Filter '*.jar' | Sort-Object Name | Select-Object -ExpandProperty Name) }
-    $expectedNames = @($Release.moduleOverlays | Where-Object { $_ } | Sort-Object)
+    $expectedNames = @((@($Release.moduleOverlays) + @(Get-PlatformOverlayNames $App)) | Where-Object { $_ } | Sort-Object -Unique)
     if (($expectedNames -join '|') -cne ($actualNames -join '|')) { throw 'Active overlays differ from release metadata.' }
     foreach ($name in $actualNames) {
-        if ($name -notmatch '^forge-(core|game|ai|gui|gui-desktop)\.jar$') { throw "Invalid overlay: $name" }
+        if ($name -notmatch '^(forge-(core|game|ai|gui|gui-desktop)|001-forge-diy-updater-resources|002-forge-diy-updater-platform|000-forge-macos-native-audio)\.jar$') { throw "Invalid overlay: $name" }
         $jar = Join-Path $App "overlays/$name"
         if (-not (Test-Path -LiteralPath $jar)) { throw "Active overlay missing: $name" }
         $jars += $jar
     }
     $main = @(Get-ChildItem -LiteralPath $App -File -Filter '*-jar-with-dependencies.jar')
     if ($main.Count -ne 1) { throw 'Expected one active desktop aggregate JAR.' }
-    return (@($jars) + $main[0].FullName) -join ';'
+    return (@($jars) + $main[0].FullName) -join [IO.Path]::PathSeparator
 }
 function New-ProtectionCatalog([string]$Root, [string]$Base, [string]$Jdk, [string]$Job, [string]$Catalog) {
     $official = Join-Path $Job 'official-java'
@@ -683,8 +731,8 @@ try {
     $install = [IO.Path]::GetFullPath($config.installRoot)
     $updates = Join-Path $install 'updates'
     Assert-ChildPath $updates $job
-    $repo = Join-Path $install 'repo'
-    $releaseFile = Join-Path $repo 'release.json'
+    $releaseFile = Get-ReleaseFile $install $config
+    $repo = Split-Path $releaseFile
     $release = Get-Content -LiteralPath $releaseFile -Raw -Encoding UTF8 | ConvertFrom-Json
     $releaseHash = (Get-FileHash -LiteralPath $releaseFile -Algorithm SHA256).Hash
     if ($release.sourceCommit -notmatch '^[a-f0-9]{40}$') { throw 'Invalid DIY source commit.' }
@@ -693,7 +741,7 @@ try {
     # An OS file lock is released on crash, so it cannot leave a stale PID lock.
     $lock = [IO.File]::Open((Join-Path $updates 'update.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    if (-not (Get-Command git.exe -ErrorAction SilentlyContinue)) { throw 'Git is required; run the ForgeDIY launcher once to prepare it.' }
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw 'Git is required; run the ForgeDIY launcher once to prepare it.' }
     $generation = [guid]::NewGuid().ToString('N')
     $versionRoot = Join-Path $updates "versions/$generation"
     $source = Join-Path $versionRoot 'source'
@@ -772,8 +820,11 @@ try {
     $tools = Join-Path $updates 'tools'
     New-Item -ItemType Directory -Path $tools -Force | Out-Null
     $jdk = Get-JavaHome $config.javaHome $tools
-    $classpathRelease = if ($previousState) { [pscustomobject]@{moduleOverlays=@()} } else { $release }
+    $classpathRelease = if ($previousState) { [pscustomobject]@{moduleOverlays=@($previousState.moduleOverlays)} } else { $release }
     $baselineClasspath = Get-ApplicationClasspath $activeApp $classpathRelease
+    $platformOverlays = @(Get-PlatformOverlayNames $activeApp)
+    $platformHashes = @{}
+    foreach ($name in $platformOverlays) { $platformHashes[$name] = (Get-FileHash -LiteralPath (Join-Path $activeApp "overlays/$name") -Algorithm SHA256).Hash }
     Initialize-ProtectionTool $jdk $job $baselineClasspath
     # Carry the executing DIY policy into the candidate even when it was delivered as a
     # resource-only overlay over an earlier reviewed engine source commit.
@@ -820,8 +871,8 @@ try {
     Initialize-DesktopReactor $source
     $maven = Get-Maven $tools
     $env:JAVA_HOME = $jdk
-    $env:PATH = (Join-Path $jdk 'bin') + ';' + $env:PATH
-    $mavenCache = Join-Path $env:USERPROFILE '.m2/repository'
+    $env:PATH = (Join-Path $jdk 'bin') + [IO.Path]::PathSeparator + $env:PATH
+    $mavenCache = Join-Path ([Environment]::GetFolderPath('UserProfile')) '.m2/repository'
     if (-not (Test-Path -LiteralPath $mavenCache)) { $mavenCache = Join-Path $tools 'm2' }
     Write-Host '[6/7] 正在编译并测试 DIY 引擎与界面…'
     $testResult = Invoke-CheckedPackage $maven $source $mavenCache $job $config.controllerPid
@@ -830,7 +881,8 @@ try {
     Write-Host '[7/7] 正在验证并准备新版本…'
     Assert-DiyClasses $jar[0].FullName
     Assert-BundledProtection $jar[0].FullName $job
-    Invoke-Protection $jdk $job @('verify-bindings', $source, $catalog, $bindings, $jar[0].FullName)
+    $candidateClasspath = (@($platformOverlays | ForEach-Object { Join-Path $activeApp "overlays/$_" }) + @($jar[0].FullName)) -join [IO.Path]::PathSeparator
+    Invoke-Protection $jdk $job @('verify-bindings', $source, $catalog, $bindings, $candidateClasspath)
     Assert-ProtectedFiles $source $protectedFiles
     Invoke-Git $source @('add', '--', 'pom.xml', 'forge-gui/src/main/resources/forge/download/diy-updater.ps1', 'forge-gui/src/main/resources/forge/download/DiyProtection.java', 'forge-gui/src/main/resources/forge/download/diy-protection-history.tsv') | Out-Null
     Invoke-Git $source @('-c', 'user.name=ForgeDIY Local Updater', '-c', 'user.email=local-updater@invalid', 'commit', '-m', "Guarded selective upstream update $target") | Out-Null
@@ -838,7 +890,6 @@ try {
     New-Item -ItemType Directory -Path $app | Out-Null
     # Copy only application resources. Never traverse user profiles, managed custom payload or decks.
     Copy-DesktopResources $activeApp $app
-    if ($LASTEXITCODE -gt 7) { throw 'Cannot stage existing application resources.' }
     Copy-AuditedCardResources $source $activeApp $app $resourceAudit
     Assert-CardResourceCandidate $source $app $resourceAudit
     $resourceReceipt = [ordered]@{schema=1; cardResourceCommit=$target; officialFileCount=$resourceAudit.officialFileCount;
@@ -852,9 +903,15 @@ try {
     $resourceReceiptFile = Join-Path $versionRoot 'card-resource-receipt.json'
     Write-Utf8 $resourceReceiptFile ($resourceReceipt | ConvertTo-Json -Depth 8)
     Copy-Item -LiteralPath $jar[0].FullName -Destination $app
+    foreach ($name in $platformOverlays) {
+        $original = Join-Path $activeApp "overlays/$name"
+        if ((Get-FileHash -LiteralPath $original -Algorithm SHA256).Hash -ne $platformHashes[$name]) { throw 'Platform overlay changed during update.' }
+        New-Item -ItemType Directory -Path (Join-Path $app 'overlays') -Force | Out-Null
+        Copy-Item -LiteralPath $original -Destination (Join-Path $app 'overlays')
+    }
     $jarHash = (Get-FileHash -LiteralPath (Join-Path $app $jar[0].Name) -Algorithm SHA256).Hash
     Write-Utf8 (Join-Path $app 'BUILD-ID.txt') ("DIY-upstream-" + $target.Substring(0, 12))
-    $state = [ordered]@{schema=1; generation=$generation; upstreamCommit=$target; cardResourceCommit=$target; baseReleaseHash=$releaseHash;
+    $state = [ordered]@{schema=1; moduleOverlays=$platformOverlays; generation=$generation; upstreamCommit=$target; cardResourceCommit=$target; baseReleaseHash=$releaseHash;
         cardResourceReceiptHash=(Get-FileHash -LiteralPath $resourceReceiptFile -Algorithm SHA256).Hash;
         cardResourceCount=$resourceAudit.officialFileCount; cardResourceDiyOverrides=$resourceOverrides.Count;
         sourceCommit=(Invoke-Git $source @('rev-parse', 'HEAD')).Trim(); jar=$jar[0].Name; jarHash=$jarHash;
@@ -862,7 +919,7 @@ try {
         protectedFilesHash=(Get-FileHash -LiteralPath (Join-Path $versionRoot 'protected-files.json') -Algorithm SHA256).Hash;
         protectionPolicyHash=(Get-FileHash -LiteralPath (Join-Path $PSScriptRoot 'DiyProtection.java') -Algorithm SHA256).Hash;
         historyCatalogHash=(Get-FileHash -LiteralPath (Join-Path $PSScriptRoot 'diy-protection-history.tsv') -Algorithm SHA256).Hash;
-        javaVersion=(Invoke-Native (Join-Path $jdk 'bin/javac.exe') @('-version')).Trim();
+        javaVersion=(Invoke-Native (Get-JavaTool $jdk 'javac') @('-version')).Trim();
         testResult=$testResult;
         verification=@('desktop-package', 'protected-files', 'java-members', 'resolved-bindings-and-dependencies', 'bundled-policy', 'complete-official-card-resources')}
     if ($testResult.status -eq 'passed') { $state.verification += 'tests-passed' }

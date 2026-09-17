@@ -15,6 +15,57 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class DiyUpdateBridgeTest {
     @TempDir Path temp;
 
+    @Test void macCommandDoesNotRequireWindowsEnvironment() throws Exception {
+        Path repo = temp.resolve("repo with spaces");
+        Files.createDirectories(repo.resolve("tools"));
+        Files.writeString(repo.resolve("tools/run_diy_updater_macos.sh"), "fixture");
+        var command = DiyUpdateBridge.updateCommand("Mac OS X", null, temp, repo,
+                temp.resolve("job script.ps1"), temp.resolve("request.json"));
+        assertEquals("/bin/bash", command.get(0));
+        assertEquals(repo.resolve("tools/run_diy_updater_macos.sh").toString(), command.get(1));
+        assertFalse(command.contains("-WindowStyle"));
+    }
+
+    @Test void windowsCommandAndMissingEnvironmentAreExplicit() throws Exception {
+        var command = DiyUpdateBridge.updateCommand("Windows 11", "C:/Windows", temp, temp,
+                temp.resolve("script.ps1"), temp.resolve("request.json"));
+        assertTrue(command.get(0).endsWith("powershell.exe"));
+        assertTrue(command.contains("-WindowStyle"));
+        var error = assertThrows(java.io.IOException.class, () -> DiyUpdateBridge.updateCommand(
+                "Windows 11", null, temp, temp, temp, temp));
+        assertTrue(error.getMessage().contains("SystemRoot"));
+        assertEquals("NullPointerException", DiyUpdateBridge.errorDetail(new NullPointerException()));
+    }
+
+    @Test void macMissingHelperIsActionable() {
+        var error = assertThrows(java.io.IOException.class, () -> DiyUpdateBridge.updateCommand(
+                "Mac OS X", null, temp, temp, temp, temp));
+        assertTrue(error.getMessage().contains("helper missing"));
+    }
+
+    @Test void macHelperStartsPowerShellAndPreservesPaths() throws Exception {
+        assumeTrue(System.getProperty("os.name").startsWith("Mac"));
+        String helper = System.getProperty("forge.test.macosHelper");
+        String pwsh = System.getProperty("forge.test.pwshRoot");
+        assumeTrue(helper != null && pwsh != null);
+        Path repo = temp.resolve("repo spaces");
+        Files.createDirectories(repo.resolve("tools"));
+        Files.copy(Path.of(helper), repo.resolve("tools/run_diy_updater_macos.sh"));
+        Path tool = temp.resolve("updates/tools/powershell-7.6.6-macos");
+        Files.createDirectories(tool.getParent());
+        Files.createSymbolicLink(tool, Path.of(pwsh));
+        Path request = temp.resolve("request with spaces.json");
+        Files.writeString(request, "request fixture");
+        Path script = temp.resolve("script with spaces.ps1");
+        Files.writeString(script, "param([string]$Request)\n[IO.File]::WriteAllText(($Request + '.result'), [IO.File]::ReadAllText($Request))\n");
+        Path log = temp.resolve("log");
+        Process process = new ProcessBuilder(DiyUpdateBridge.updateCommand("Mac OS X", null, temp, repo,
+                script, request)).redirectErrorStream(true).redirectOutput(log.toFile()).start();
+        assertTrue(process.waitFor(30, TimeUnit.SECONDS));
+        assertEquals(0, process.exitValue(), Files.readString(log));
+        assertEquals("request fixture", Files.readString(Path.of(request + ".result")));
+    }
+
     @Test void decisionWaitsForExplicitChoiceAndRejectsReusedOrStaleAnswers() throws Exception {
         DiyUpdateDecision decision = new DiyUpdateDecision(temp);
         var requests = new java.util.ArrayList<String>();

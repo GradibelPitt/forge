@@ -57,3 +57,7 @@ python -m unittest discover -s tests -p "test_*.py"
 ## Historical research
 
 历史 design、plan 和被替代旧文档全部保存在 `docs/archive/`。先查看 [归档索引](docs/archive/README.md)，只读取与当前问题相关的文件。若归档内容与当前源码或主文档冲突，以当前源码、用户需求和主文档为准。
+
+## Updater platform parity
+
+Changes to the built-in DIY updater must update and validate macOS and Windows together. Keep one shared update policy, resource audit, DIY protection, test-failure acknowledgement and activation format. Platform branches may adapt process startup, native tools and paths only. Run both platform jobs before delivery, and publish the executing runtime components together with source changes.
