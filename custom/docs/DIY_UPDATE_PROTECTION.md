@@ -50,3 +50,7 @@ JDK 类型分析解析参数类型、局部变量作用域、符号引用、继�
 DIY 自有更新器变更也必须同步审核历史清单：2026-09-09 的 `47cf7555` 增加实时日志和测试失败确认，因此 `DiyUpdateBridge.java` 的完整文件保护摘要同步到该已发布版本。只校正这一条固定摘要，没有删除规则或运行时自动接受任意新摘要。`test_diy_update_history.ps1` 验证发布版本通过、随后修改仍被拦截；校验按本 Windows 更新器的 CRLF 检出内容执行。普通测试失败的选择窗口不会绕过此前的代码保护检查。
 
 替换运行模块前关闭 Forge；重新启动后的真实按钮和搜索交互是独立验收项。最新实际验证见 `../VERIFICATION.md`。
+
+## Adventure 资源明确排除（2026-09-17）
+
+`forge-gui/res/adventure/` 和专用 `forge-gui/res/skins/default/sprite_adventure.png` 在更新计划中直接跳过，在 blob:none 的稀疏检出中用否定路径排除；生成新运行目录时 robocopy 在遍历前排除旧安装中的对应目录与图片。不是按 adventure 关键词模糊删文件：历险牌、Venture／地城和 Subgame 不受影响。Git 仍获取提交及树元数据，但不会因检出这些排除路径而请求其资源 blob。运行仓库同步移除资源，并通过优先加载的 updater resource overlay 部署脚本。

@@ -91,6 +91,9 @@ function Invoke-Git([string]$Root, [string[]]$Arguments, [string]$OutputFile = '
 }
 function Get-UpdateDecision([string]$Status, [string]$Path) {
     if ($Path -match '(^|/)\.\.(/|$)|[:\\\x00-\x1f]' -or $Path.StartsWith('/')) { return 'block' }
+    # Adventure mode assets are never part of a desktop DIY update.
+    if ($Path -match '^forge-gui/res/adventure(/|$)' -or
+        $Path -eq 'forge-gui/res/skins/default/sprite_adventure.png') { return 'skip' }
     # Official deck examples are outside the allowed update surface, not a reason to block new cards.
     if ($Path -match '(?i)\.dck$') { return 'skip' }
     if ($Path -match '^forge-gui/src/main/java/forge/gui/(CardNameSearchIndex|LatestSearchGeneration)\.java$' -or
@@ -434,8 +437,18 @@ function Resolve-UpstreamBase($Release, $PreviousState, [string]$ExplicitBase = 
 function Set-DesktopSparseCheckout([string]$Root) {
     $patterns = @('/pom.xml', '/.mvn/', '/forge-core/', '/forge-game/', '/forge-ai/',
         '/forge-gui/', '/forge-gui-desktop/', '/custom/', '/checkstyle*', '/LICENSE*',
-        '/COPYING*', '!*.dck')
+        '/COPYING*', '!*.dck', '!/forge-gui/res/adventure/',
+        '!/forge-gui/res/skins/default/sprite_adventure.png')
     Invoke-Git $Root (@('sparse-checkout', 'set', '--no-cone', '--') + $patterns) | Out-Null
+}
+function Copy-DesktopResources([string]$ActiveApp, [string]$App) {
+    $source = Join-Path $ActiveApp 'res'
+    $destination = Join-Path $App 'res'
+    # Exclude before traversal/copy, including assets retained by an older release.
+    & robocopy $source $destination /E /XJ /XD (Join-Path $source 'adventure') `
+        /XF *.dck (Join-Path $source 'skins/default/sprite_adventure.png') `
+        /R:1 /W:1 /NFL /NDL /NJH /NJS /NP
+    if ($LASTEXITCODE -gt 7) { throw 'Runtime resource copy failed.' }
 }
 function Initialize-DesktopReactor([string]$Root) {
     $pom = Join-Path $Root 'pom.xml'
@@ -824,7 +837,7 @@ try {
     $app = Join-Path $versionRoot 'app'
     New-Item -ItemType Directory -Path $app | Out-Null
     # Copy only application resources. Never traverse user profiles, managed custom payload or decks.
-    & robocopy (Join-Path $activeApp 'res') (Join-Path $app 'res') /E /XJ /XF *.dck /R:1 /W:1 /NFL /NDL /NJH /NJS /NP
+    Copy-DesktopResources $activeApp $app
     if ($LASTEXITCODE -gt 7) { throw 'Cannot stage existing application resources.' }
     Copy-AuditedCardResources $source $activeApp $app $resourceAudit
     Assert-CardResourceCandidate $source $app $resourceAudit
