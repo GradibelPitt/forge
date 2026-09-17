@@ -36,11 +36,20 @@ jobs:
             custom/tests
             forge-gui/src/main/resources/forge/download
       - name: Same update policy, merge, resource and Adventure tests on both platforms
-        shell: ${{ matrix.shell }}
+        shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           & ./custom/tests/test_diy_updater.ps1
           & ./custom/tests/test_diy_resource_update.ps1
           & ./custom/tests/test_diy_adventure_exclusion.ps1
           if ($env:RUNNER_OS -eq 'macOS') { & ./custom/tests/test_diy_macos_platform.ps1 }
+          $global:LASTEXITCODE = 0
+      - name: Windows PowerShell 5.1 compatibility
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & ./custom/tests/test_diy_updater.ps1
+          & ./custom/tests/test_diy_resource_update.ps1
+          & ./custom/tests/test_diy_adventure_exclusion.ps1
           $global:LASTEXITCODE = 0
