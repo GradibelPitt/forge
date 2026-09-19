@@ -54,7 +54,7 @@ public class ComputerUtilMana {
     public static boolean canPayManaCost(ManaCostBeingPaid cost, final SpellAbility sa, final Player ai, final boolean effect) {
         //check copy of cost so it doesn't modify the exist cost being paid
         cost = new ManaCostBeingPaid(cost);
-        return payManaCost(cost, sa, ai, true, true, effect) != null;
+        return payManaCost(cost, sa, ai, true, true, effect, false) != null;
     }
     public static boolean canPayManaCost(final SpellAbility sa, final Player ai, final int extraMana, final boolean effect) {
         return canPayManaCost(sa.getPayCosts(), sa, ai, extraMana, effect);
@@ -64,14 +64,25 @@ public class ComputerUtilMana {
     }
 
     public static boolean payManaCost(ManaCostBeingPaid cost, final SpellAbility sa, final Player ai, final boolean effect) {
-        return payManaCost(cost, sa, ai, false, true, effect) != null;
+        return payManaCost(cost, sa, ai, false, true, effect, false) != null;
+    }
+
+    /**
+     * Pays as much of an interactive human mana cost as Auto can determine.
+     * If the whole cost cannot be paid, already spent mana remains committed to
+     * the cost so the human can finish the remaining choices manually.
+     */
+    public static boolean payManaCostPartial(ManaCostBeingPaid cost,
+            final SpellAbility sa, final Player payer, final boolean effect) {
+        return payManaCost(cost, sa, payer, false, true, effect, true) != null;
     }
     public static boolean payManaCost(final Cost cost, final Player ai, final SpellAbility sa, final boolean effect) {
         return payManaCost(cost, sa, ai, false, 0, true, effect);
     }
     private static boolean payManaCost(final Cost cost, final SpellAbility sa, final Player ai, final boolean test, final int extraMana, boolean checkPlayable, final boolean effect) {
         ManaCostBeingPaid manaCost = calculateManaCost(cost, sa, ai, test, extraMana, effect);
-        return payManaCost(manaCost, sa, ai, test, checkPlayable, effect) != null;
+        return payManaCost(manaCost, sa, ai, test, checkPlayable, effect,
+                false) != null;
     }
 
     /**
@@ -79,7 +90,7 @@ public class ComputerUtilMana {
      */
     public static int getConvergeCount(final SpellAbility sa, final Player ai) {
         ManaCostBeingPaid cost = calculateManaCost(sa.getPayCosts(), sa, ai, true, 0, false);
-        if (payManaCost(cost, sa, ai, true, true, false) != null) {
+        if (payManaCost(cost, sa, ai, true, true, false, false) != null) {
             return cost.getSunburst();
         }
         // TODO return -1 so API can bail out since it's unpayable
@@ -95,7 +106,8 @@ public class ComputerUtilMana {
     }
 
     public static CardCollection getManaSourcesToPayCost(final ManaCostBeingPaid cost, final SpellAbility sa, final Player ai, final boolean effect) {
-        final List<SpellAbility> payment = payManaCost(cost, sa, ai, true, true, effect);
+        final List<SpellAbility> payment = payManaCost(cost, sa, ai, true,
+                true, effect, false);
         if (payment == null) {
             return null;
         }
@@ -595,7 +607,10 @@ public class ComputerUtilMana {
     }
 
     // returns null if unpayable
-    private static List<SpellAbility> payManaCost(final ManaCostBeingPaid cost, final SpellAbility sa, final Player ai, final boolean test, boolean checkPlayable, boolean effect) {
+    private static List<SpellAbility> payManaCost(final ManaCostBeingPaid cost,
+            final SpellAbility sa, final Player ai, final boolean test,
+            boolean checkPlayable, boolean effect,
+            final boolean allowPartialPayment) {
         if ((sa.isOffering() && sa.getSacrificedAsOffering() == null) || (sa.isEmerge() && sa.getSacrificedAsEmerge() == null)) {
             // nothing was chosen
             return null;
@@ -799,9 +814,12 @@ public class ComputerUtilMana {
 //                    extraMana, sa.getHostCard(), sa.toUnsuppressedString(), StringUtils.join(paymentPlan, "\n\t"));
 //        }
 
-        // The cost is still unpaid, so refund the mana and report
+        // Full AI attempts roll back on failure. Interactive Auto keeps its
+        // committed portion so the human can finish the remaining choices.
         if (!cost.isPaid()) {
-            manapool.refundMana(manaSpentToPay);
+            if (!allowPartialPayment) {
+                manapool.refundMana(manaSpentToPay);
+            }
             if (test) {
                 resetPayment(paymentList);
                 // TODO should probably only record when canPlayAndPayFor
@@ -810,7 +828,7 @@ public class ComputerUtilMana {
                 if (unpaid != null) {
                     unpaid.add(cost);
                 }
-            } else {
+            } else if (!allowPartialPayment) {
                 System.out.println("ComputerUtilMana: payManaCost() cost was not paid for " + sa + " (" +  sa.getHostCard().getName() + "). Didn't find what to pay for " + toPay);
                 sa.setSkip(true);
             }

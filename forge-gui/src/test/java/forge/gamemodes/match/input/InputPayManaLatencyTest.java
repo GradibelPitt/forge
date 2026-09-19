@@ -258,6 +258,46 @@ class InputPayManaLatencyTest {
     }
 
     @Test
+    void incompleteAutoPaymentDoesNotRefundAlreadySpentMana()
+            throws Exception {
+        final Fixture fixture = fixture();
+        final Card autoSource = fixture.manaCard(705, MagicColor.GREEN);
+        final AbilityActivated paidFor = fixture.paidFor(fixture.card(706));
+        final InputPayManaOfCostPayment input =
+                new InputPayManaOfCostPayment(fixture.controller,
+                        new ManaCostBeingPaid(new ManaCost("2")), paidFor,
+                        fixture.player, null, false);
+        final RunningInput running = start(input);
+        drainUntil(() -> fixture.ui.promptCalls.get() == 1);
+
+        input.selectButtonOK();
+        waitFor(autoSource::isTapped);
+        drainUntil(() -> fixture.ui.promptCalls.get() >= 2);
+
+        assertEquals("{1}", input.manaCost.toString(),
+                "Auto should preserve the portion of the cost it paid");
+        assertTrue(fixture.player.getManaPool().isEmpty(),
+                "mana already credited toward the cost must not also remain "
+                        + "available in the pool");
+        assertEquals(1, paidFor.getPayingMana().size());
+        assertFalse(paidFor.isSkip(),
+                "an incomplete human Auto attempt must remain manually payable");
+
+        final Card manualSource = fixture.card(707);
+        fixture.player.getZone(ZoneType.Battlefield).add(manualSource);
+        fixture.player.getManaPool().addMana(new Mana(MagicColor.RED,
+                manualSource, null, fixture.player));
+        input.useManaFromPool(MagicColor.RED);
+
+        drainUntil(running.future::isDone);
+        running.future.get(1, TimeUnit.SECONDS);
+        assertTrue(input.isPaid());
+        assertTrue(fixture.player.getManaPool().isEmpty());
+        assertEquals(2, paidFor.getPayingMana().size());
+        running.close();
+    }
+
+    @Test
     void blockedPreviewQueuesEveryPoolCardAndLifeActionInFifoOrder()
             throws Exception {
         final Fixture fixture = fixture();

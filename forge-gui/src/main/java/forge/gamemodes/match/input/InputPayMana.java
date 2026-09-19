@@ -626,7 +626,7 @@ public abstract class InputPayMana extends InputSyncronizedBase {
         // Real Auto is deliberately not authorized by the advisory preview.
         // Re-run Forge's exact payment path against current state.
         player.runWithController(
-                () -> ComputerUtilMana.payManaCost(manaCost, saPaidFor,
+                () -> ComputerUtilMana.payManaCostPartial(manaCost, saPaidFor,
                         player, effect),
                 new PlayerControllerAi(game, player,
                         player.getOriginalLobbyPlayer()));
