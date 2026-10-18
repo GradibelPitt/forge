@@ -20,12 +20,12 @@ public class ImageCacheArtPreferenceTest {
     }
 
     @Test
-    public void existingFullImageWinsWhenCropModeIsEnabled() {
+    public void diyCropWinsOverAStaleFullImage() {
         Pair<String, Boolean> selectedImage = ImageCache.resolvePreferredCardImageKey(
                 FULL_KEY, BASE_FULL_KEY, true, false, FULL_KEY, key -> true);
 
-        Assert.assertEquals(selectedImage.getLeft(), FULL_KEY);
-        Assert.assertFalse(selectedImage.getRight());
+        Assert.assertEquals(selectedImage.getLeft(), CROP_KEY);
+        Assert.assertTrue(selectedImage.getRight());
     }
 
     @Test
@@ -35,6 +35,14 @@ public class ImageCacheArtPreferenceTest {
 
         Assert.assertEquals(selectedImage.getLeft(), CROP_KEY);
         Assert.assertTrue(selectedImage.getRight());
+    }
+
+    @Test
+    public void fullOnlyDiyCardsKeepTheirFinishedImage() {
+        Pair<String, Boolean> selectedImage = ImageCache.resolvePreferredCardImageKey(
+                FULL_KEY, null, true, false, FULL_KEY, FULL_KEY::equals);
+        Assert.assertEquals(selectedImage.getLeft(), FULL_KEY);
+        Assert.assertFalse(selectedImage.getRight());
     }
 
     @Test

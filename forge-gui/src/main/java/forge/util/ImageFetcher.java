@@ -174,6 +174,9 @@ public abstract class ImageFetcher {
                 System.err.println("Paper card not found for: " + imageKey);
                 return;
             }
+            if (fetchCardImage(paperCard, imageKey, callback)) {
+                return;
+            }
             // Skip fetching if it's a custom user card.
             if (paperCard.getRules().isCustom()) {
                 return;
@@ -409,6 +412,10 @@ public abstract class ImageFetcher {
     }
 
     protected abstract Runnable getDownloadTask(String[] toArray, String destPath, Runnable notifyObservers);
+
+    protected boolean fetchCardImage(PaperCard card, String imageKey, Callback callback) {
+        return false;
+    }
 
     public interface Callback {
         void onImageFetched();

@@ -5,6 +5,7 @@ import com.google.common.cache.CacheLoader;
 import forge.gui.error.BugReporter;
 import forge.localinstance.properties.ForgePreferences;
 import forge.model.FModel;
+import forge.util.CardImagePolicy;
 
 import javax.imageio.ImageIO;
 
@@ -18,7 +19,8 @@ final class ImageLoader extends CacheLoader<String, BufferedImage> {
         if (FModel.getPreferences().getPrefBoolean(ForgePreferences.FPref.UI_DISABLE_CARD_IMAGES))
             return null;
 
-        File file = ImageKeys.getImageFile(key);
+        File file = CardImagePolicy.isOfficialImageKey(key)
+                ? CardImagePolicy.officialImageFile(key) : ImageKeys.getImageFile(key);
         if (file != null) {
             if (!file.exists()) {
                 return null;

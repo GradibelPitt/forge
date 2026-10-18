@@ -60,6 +60,7 @@ import forge.toolbox.FSkin;
 import forge.toolbox.FSkin.SkinIcon;
 import forge.toolbox.imaging.FCardImageRenderer;
 import forge.util.ImageUtil;
+import forge.util.CardImagePolicy;
 import forge.util.TextUtil;
 
 /**
@@ -238,6 +239,7 @@ public class ImageCache {
             }
         }
 
+        String requestedImageKey = imageKey;
         IPaperCard ipc = null;
         boolean altState = imageKey.endsWith(ImageKeys.BACKFACE_POSTFIX);
         String specColor = "";
@@ -271,10 +273,9 @@ public class ImageCache {
             }
         }
 
-        // Prefer an existing full card image. Only fall back to an art crop when
-        // crop mode is enabled and the full image is unavailable.
-        boolean artCropPreferred = "Crop".equals(FModel.getPreferences().getPref(ForgePreferences.FPref.UI_CARD_ART_FORMAT))
-            && ipc != null && !ipc.getArtist().isEmpty();
+        boolean customCard = CardImagePolicy.isCustom(ipc);
+        boolean officialCard = ipc != null && !customCard;
+        boolean artCropPreferred = CardImagePolicy.prefersArtCrop(ipc);
         String originalKey = imageKey;
         String unrebalancedKey = artCropPreferred
                 ? getUnrebalancedImageKey(originalKey, ipc.isRebalanced()) : null;
@@ -286,16 +287,28 @@ public class ImageCache {
         imageKey = resolvedImage.getLeft();
         boolean useArtCrop = resolvedImage.getRight();
 
+        if (officialCard) {
+            imageKey = CardImagePolicy.officialImageKey(originalKey);
+        }
+
         // Load from file and add to cache if not found in cache initially.
         BufferedImage original = getImage(imageKey);
+        boolean fetcherEnabled = isPreferenceEnabled(ForgePreferences.FPref.UI_ENABLE_ONLINE_IMAGE_FETCHER);
+        if (original == null && officialCard && fetcherEnabled) {
+            GuiBase.getInterface().getImageFetcher().fetchImage(requestedImageKey, null);
+        }
 
         if (original == null && !useDefaultIfNotFound) {
             return Pair.of(null, false);
         }
 
         boolean noBorder = !useArtCrop && !isPreferenceEnabled(ForgePreferences.FPref.UI_RENDER_BLACK_BORDERS);
-        boolean fetcherEnabled = isPreferenceEnabled(ForgePreferences.FPref.UI_ENABLE_ONLINE_IMAGE_FETCHER);
         boolean isPlaceholder = (original == null) && fetcherEnabled;
+        if (original == null && officialCard) {
+            // Keep an old full scan visible while the separate Chinese-first cache is populated.
+            // It remains a placeholder, so it cannot suppress the download or get cached as final.
+            original = getImage(originalKey);
+        }
         String setCode = imageKey.split("/")[0].trim().toUpperCase();
 
         // If the user has indicated that they prefer Forge NOT render a black border, round the image corners
@@ -328,12 +341,12 @@ public class ImageCache {
             //System.out.println(setCode + " - " + original.getWidth() + " - " + radius);
             final BufferedImage unrounded = original;
             original = ProcessedImageCache.getOrCreate(_CACHE.asMap(),
-                    ProcessedImageCache.roundedKey(imageKey, radius), true,
+                    ProcessedImageCache.roundedKey(imageKey, radius), !isPlaceholder,
                     () -> makeRoundedCorner(unrounded, radius));
         }
 
         // if image has white corners, get try to crop it out
-        if (original != null && isWhite(FSkin.getColorFromPixel(original.getRGB(0, 0)))) {
+        if (original != null && !officialCard && isWhite(FSkin.getColorFromPixel(original.getRGB(0, 0)))) {
             if (!isWhiteBorderSet(setCode)) {
                 int xSpacing = original.getWidth() / 40;
                 int ySpacing = original.getHeight() / 57;
@@ -377,14 +390,17 @@ public class ImageCache {
         if (!artCropPreferred) {
             return Pair.of(originalKey, false);
         }
+        String artCropKey = TextUtil.fastReplace(flipCard ? frontImageKey : originalKey, ".full", ".artcrop");
+        if (imageAvailable.test(artCropKey)) {
+            return Pair.of(artCropKey, true);
+        }
         if (imageAvailable.test(originalKey)) {
             return Pair.of(originalKey, false);
         }
         if (fallbackFullImageKey != null && imageAvailable.test(fallbackFullImageKey)) {
             return Pair.of(fallbackFullImageKey, false);
         }
-        String artCropKey = flipCard ? frontImageKey : originalKey;
-        return Pair.of(TextUtil.fastReplace(artCropKey, ".full", ".artcrop"), true);
+        return Pair.of(artCropKey, true);
     }
 
     static String getUnrebalancedImageKey(String imageKey, boolean rebalanced) {

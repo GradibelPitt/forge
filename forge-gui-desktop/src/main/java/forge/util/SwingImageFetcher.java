@@ -13,6 +13,14 @@ import java.net.URL;
 public class SwingImageFetcher extends ImageFetcher {
 
     @Override
+    protected boolean fetchCardImage(forge.item.PaperCard card, String imageKey, Callback callback) {
+        if (!CardImagePolicy.isCustom(card)) {
+            OfficialCardImageFetcher.fetch(card, imageKey, callback);
+        }
+        return true;
+    }
+
+    @Override
     protected Runnable getDownloadTask(String[] downloadUrls, String destPath, Runnable notifyObservers) {
         return new SwingDownloadTask(downloadUrls, destPath, notifyObservers);
     }
