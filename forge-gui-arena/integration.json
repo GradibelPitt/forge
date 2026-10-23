@@ -1,0 +1,10 @@
+{
+  "reference": "https://github.com/Ordoviciancn/MTGAPRO-I",
+  "referenceCommit": "e14175ee91c0dad399809086841e7c364c55313c",
+  "frontend": "web",
+  "host": "JavaFX WebView 21.0.5 / loopback HttpServer",
+  "fallback": "NeoForge TableScreen",
+  "sha256": {
+    "vendor/javafx-web-21.0.5-win.jar": "ac700dc802ea56f5b46569dd371eacca988c40f1622a3aa92847f9af76a7e454"
+  }
+}

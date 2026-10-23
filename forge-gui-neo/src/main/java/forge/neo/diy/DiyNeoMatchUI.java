@@ -31,6 +31,7 @@ public final class DiyNeoMatchUI extends NeoMatchUI implements ICDoc, IVTopLevel
     private FScreen screen;
     private TableScreen table;
     private TableBinder binder;
+    private AutoCloseable arena;
     private final CompletableFuture<Void> ready = new CompletableFuture<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final CardImages.Listener artListener = () -> {
@@ -80,6 +81,15 @@ public final class DiyNeoMatchUI extends NeoMatchUI implements ICDoc, IVTopLevel
         NeoFonts.apply(scene);
         DiyMatchAppearance.install(scene);
         DiyMatchControls.install(scene, table, this);
+        try {
+            arena = (AutoCloseable) Class.forName("forge.arena.ArenaSurface")
+                    .getMethod("install", TableScreen.class, NeoMatchUI.class, Scene.class)
+                    .invoke(null, table, this, scene);
+        } catch (ClassNotFoundException e) {
+            // The optional browser payload is absent; retain the original match scene.
+        } catch (ReflectiveOperationException | LinkageError e) {
+            System.err.println("[arena] Browser unavailable; using NeoForge: " + e);
+        }
         CardImages.addListener(artListener);
         panel.setScene(scene);
         setOnClosed(this::closeMatchTab);
@@ -103,6 +113,10 @@ public final class DiyNeoMatchUI extends NeoMatchUI implements ICDoc, IVTopLevel
         if (!closed.compareAndSet(false, true)) { return; }
         shutdown();
         Platform.runLater(() -> {
+            if (arena != null) {
+                try { arena.close(); } catch (Exception e) { System.err.println("[arena] Close failed: " + e); }
+                arena = null;
+            }
             CardImages.removeListener(artListener);
             table.forgetEngineDialogs();
             binder.setGameView(null);
