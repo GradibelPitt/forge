@@ -9,6 +9,7 @@
 | Task | Required documents |
 |---|---|
 | 新增或修改卡牌脚本 | [PROJECT.md](PROJECT.md)、[CARDS.md](CARDS.md)、相关 `reference/` 文档 |
+| 同步官方新卡 | [docs/OFFICIAL_CARD_SYNC.md](docs/OFFICIAL_CARD_SYNC.md)、[official-card-sync.json](official-card-sync.json)；从记录的官方 commit 和逐卡编号增量比较，不重扫全卡库 |
 | 新增关键词或 Java 机制 | [PROJECT.md](PROJECT.md)、[ARCHITECTURE.md](ARCHITECTURE.md)、[KEYWORDS.md](KEYWORDS.md)、[docs/DESIGN.md](docs/DESIGN.md) |
 | 卡图 | [ARCHITECTURE.md](ARCHITECTURE.md)、[VERIFICATION.md](VERIFICATION.md)、[图片导入流程.md](图片导入流程.md)、[简洁版图片工作流.md](简洁版图片工作流.md) |
 | 汉化或部署 | [ARCHITECTURE.md](ARCHITECTURE.md)、[VERIFICATION.md](VERIFICATION.md) |

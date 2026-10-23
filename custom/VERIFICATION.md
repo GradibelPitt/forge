@@ -682,3 +682,9 @@ Java 测试从 `D:\Forge\forge-latest` 执行，并使用实际模块和测试�
 - This record distinguishes source/testing from deployment. GUI deck editing and real multiplayer gameplay have not been newly accepted; byte-identical online source and existing online regressions are retained.
 
 - User accepted the nine baseline failures for this release on 2026-09-17; Aya emblem/print linkage remains a deferred bug. This acknowledgement does not disable future updater test-failure confirmation.
+
+## 2026-10-22 — scoped official card import
+
+- Compared local official snapshot `2ca9b8cab4ad8be7ce9535e783726d8bc2da4cf0` with DIY only within HOB (2026-08-14), HOC and later edition entries. Imported 354 missing scripts / 366 faces, three token scripts, seven edition files, 17 necessary subtype definitions and 89 available official Chinese records. Existing official scripts and DIY content remain unchanged.
+- Before the engine patch, 351/354 scripts instantiated; the three failures identified missing CombatDamageNegatePower, IgnorePlaneswalkerZeroLoyaltyRule and Vengeance. After the minimal backport, all 354 scripts instantiate in the installed Java 17 runtime with the compiled patch. Four new behavioral tests pass; 21 existing Boarding/CardDiscover tests also pass. Targeted production compilation with `javac --release 17` and `git diff --check` pass.
+- Exact official ref, set codes, 1,712 collector entries, pending entries and LF-normalized script hashes are saved in `official-card-sync.json`; future imports start from this checkpoint. Runtime deployment and Git delivery are identified by the corresponding runtime `release.json`; no interactive match validation of every imported card is claimed.

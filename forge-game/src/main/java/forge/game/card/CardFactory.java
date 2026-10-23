@@ -17,6 +17,8 @@
  */
 package forge.game.card;
 
+import forge.game.zone.ZoneType;
+
 import com.google.common.collect.Lists;
 
 import forge.ImageKeys;
@@ -413,6 +415,10 @@ public class CardFactory {
 
             // add spells only after
             CardFactoryUtil.addAbilityFactoryAbilities(c, face.getAbilities());
+
+            if (c.getType().hasSubtype("Vengeance")) {
+                c.getFirstSpellAbility().getRestrictions().setZone(ZoneType.Graveyard);
+            }
         }
     }
 

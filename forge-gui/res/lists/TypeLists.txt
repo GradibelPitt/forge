@@ -18,6 +18,21 @@ Tower
 Town:Towns
 Urza's
 [CreatureTypes]
+Xindi:Xindi
+Vulcan:Vulcans
+Vorta:Vorta
+Tholian:Tholians
+Tellarite:Tellarites
+Talosian:Talosians
+Orion:Orions
+Mindless-One:Mindless-Ones
+Lanthanite:Lanthanites
+Klingon:Klingons
+Kelpien:Kelpiens
+Gorn:Gorns
+Caitian:Caitians
+Borg:Borg
+Andorian:Andorians
 Advisor:Advisors
 Aetherborn:Aetherborn
 Alien:Aliens
@@ -341,6 +356,7 @@ Yeti:Yetis
 Zombie:Zombies
 Zubera:Zuberas
 [SpellTypes]
+Vengeance
 Adventure
 Arcane
 Chorus
@@ -364,6 +380,7 @@ Saga:Sagas
 Shrine:Shrines
 Shard
 [ArtifactTypes]
+Communicator:Communicators
 Attraction
 Blood
 Bobblehead:Bobbleheads
