@@ -34,7 +34,6 @@ public final class HearthHomeScene {
     private final IntConsumer navigate;
     private final Runnable sound;
     private Timeline clickAnimation;
-    private Timeline lookAnimation;
     private boolean active = true;
     private int pending = -1;
     private final PhongMaterial bronze = material("#a47a40", "#bda47a", 64);
@@ -78,16 +77,6 @@ public final class HearthHomeScene {
         sub.widthProperty().bind(root.widthProperty()); sub.heightProperty().bind(root.heightProperty());
         root.widthProperty().addListener((o, old, value) -> fitCamera(camera, root));
         root.heightProperty().addListener((o, old, value) -> fitCamera(camera, root));
-        sub.setOnMouseMoved(e -> {
-            if (!active || pending >= 0) { return; }
-            double targetYaw = -3 + (e.getX() / Math.max(1, sub.getWidth()) - .5) * 4;
-            double targetPitch = -2 - (e.getY() / Math.max(1, sub.getHeight()) - .5) * 3;
-            if (lookAnimation != null) { lookAnimation.stop(); }
-            lookAnimation = new Timeline(new KeyFrame(Duration.millis(180),
-                    new KeyValue(yaw.angleProperty(), targetYaw, Interpolator.EASE_OUT),
-                    new KeyValue(pitch.angleProperty(), targetPitch, Interpolator.EASE_OUT)));
-            lookAnimation.play();
-        });
         root.getChildren().add(sub);
     }
 
@@ -97,7 +86,6 @@ public final class HearthHomeScene {
         this.active = active;
         if (!active) {
             if (clickAnimation != null) { clickAnimation.stop(); }
-            if (lookAnimation != null) { lookAnimation.stop(); }
             pending = -1;
             for (Group key : keys) { if (key != null) { key.setTranslateZ(-100); key.setRotate(0); } }
         }
