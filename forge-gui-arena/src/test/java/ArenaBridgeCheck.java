@@ -50,7 +50,61 @@ public final class ArenaBridgeCheck {
             }catch(Exception e){throw new RuntimeException(e);}});
             for(int i=0;i<40&&(mana.get()!=1||hand.get()!=1);i++)Thread.sleep(25);
             if(mana.get()!=1||hand.get()!=1)throw new AssertionError("Native cheat callbacks were swallowed");
+            fx(()->checkLayers(surface,table));
             System.out.println("BRIDGE_AUTH_COMMAND_DEDUP_STALE_VISIBILITY_TOOLS_AND_FALLBACK_OK");
         }catch(Exception e){throw new CompletionException(e);}
     });}
+
+    private static void checkLayers(ArenaSurface surface,TableScreen table) {
+        try {
+            var refresh=ArenaSurface.class.getDeclaredMethod("refresh");refresh.setAccessible(true);
+            var toggle=ArenaSurface.class.getDeclaredMethod("toggle");toggle.setAccessible(true);
+            // Simulate a missing WebKit frame. A dormant board must never show through it.
+            var legacy=new javafx.scene.shape.Rectangle(1440,900,javafx.scene.paint.Color.MAGENTA);
+            legacy.setManaged(false);
+            var clip=new javafx.scene.shape.Rectangle(1440,900);legacy.setClip(clip);
+            table.getChildren().add(table.getChildren().indexOf(surface.webView()),legacy);
+            try {
+                refresh.invoke(surface);
+                surface.webView().setOpacity(0);
+                var pixel=table.snapshot(null,null).getPixelReader().getColor(8,8);
+                if(pixel.getRed()>.5||pixel.getBlue()>.5)throw new AssertionError("Legacy board leaks through a missing browser frame: "+pixel);
+                toggle.invoke(surface);
+                if(legacy.getClip()!=clip)throw new AssertionError("Legacy viewport clip not restored");
+                pixel=table.snapshot(null,null).getPixelReader().getColor(8,8);
+                if(pixel.getRed()<.9||pixel.getBlue()<.9)throw new AssertionError("Manual legacy fallback did not render");
+                toggle.invoke(surface);
+            } finally { surface.webView().setOpacity(1);table.getChildren().remove(legacy); }
+
+            AtomicInteger acknowledged=new AtomicInteger();
+            table.getPromptBanner().showAlert("Native engine notice","Continue",()->{acknowledged.incrementAndGet();table.getPromptBanner().hide();});
+            refresh.invoke(surface);
+            if(!surface.webView().isVisible())throw new AssertionError("Native alert switches back to the legacy board");
+            if(table.getChildren().indexOf(table.getPromptBanner())<table.getChildren().indexOf(surface.webView())||table.getPromptBanner().getBoundsInLocal().isEmpty())throw new AssertionError("Native alert is covered");
+            if(!table.getPromptBanner().acknowledge()||acknowledged.get()!=1)throw new AssertionError("Native alert callback lost");
+            refresh.invoke(surface);
+            if(table.getPromptBanner().isAlerting()||!surface.webView().isVisible())throw new AssertionError("Closing native alert changed renderer");
+
+            table.getOverlay().show(new javafx.scene.layout.VBox(new Label("Native card selection")));
+            refresh.invoke(surface);
+            if(!surface.webView().isVisible()||table.getOverlay().getClip()!=null||table.getChildren().indexOf(table.getOverlay())<table.getChildren().indexOf(surface.webView()))throw new AssertionError("Native dialog not above browser");
+            table.getOverlay().hide();
+            table.showCurtain("Opponent");refresh.invoke(surface);
+            if(surface.webView().isVisible())throw new AssertionError("Previous seat visible behind hotseat curtain");
+            table.hideCurtain();refresh.invoke(surface);
+            if(!surface.webView().isVisible())throw new AssertionError("Hotseat reveal changed renderer");
+
+            var state=ArenaSurface.class.getDeclaredField("state");state.setAccessible(true);
+            byte[] previous=(byte[])state.get(surface);
+            ArenaSceneProbe.failProjection=true;
+            try {
+                for(int i=0;i<5;i++)refresh.invoke(surface);
+                if(!surface.webView().isVisible())throw new AssertionError("Snapshot failure switches back to the legacy board");
+                if(!Arrays.equals(previous,(byte[])state.get(surface)))throw new AssertionError("Incomplete snapshot replaced the last good frame");
+            } finally { ArenaSceneProbe.failProjection=false; }
+            refresh.invoke(surface);
+            if(!surface.webView().isVisible())throw new AssertionError("Snapshot recovery hid browser");
+            System.out.println("ARENA_LAYERS_ALERTS_AND_REFRESH_RECOVERY_OK");
+        } catch(ReflectiveOperationException e) { throw new RuntimeException(e); }
+    }
 }

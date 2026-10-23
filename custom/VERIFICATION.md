@@ -1,5 +1,11 @@
 # Forge DIY Verification Status
 
+## 2026-10-23 — MTGAPRO match renderer flicker
+
+- Client logs showed repeated D3D texture/resource-lock and WebKit render failures. The retained Neo board was still drawing beneath WebView; snapshot exceptions and native alerts also hid WebView. `BoardLayers` now clips the dormant board without changing its layout/input state, restores its original clips on manual fallback, and supplies an opaque browser background. Native alerts and engine dialogs remain above the browser; hotseat curtains conceal it without revealing the old board. Snapshot failures retain the last complete state and selection map.
+- The new missing-browser-frame regression failed on the released payload because the old board rendered through it. It now passes together with manual fallback, alert acknowledgement, native dialog ordering, hotseat concealment and repeated snapshot failure/recovery. Existing authenticated commands, duplicate/stale input, hidden opponent hand, developer-tool callbacks and DIY image checks pass.
+- Java 17 compilation, the offscreen scene check, a 30-second 2560×1440 Swing `JFXPanel` render with repeated native effects, and a real completed `HostedMatch` pass. The embedded probe confirms `com.sun.prism.d3d.D3DPipeline` and rejects the observed graphics error signatures; none occurred. Only three arena payload class entries change; the original React assets, Neo backup, lobby and engine payloads remain unchanged. The user's running client was not closed or restarted; these results are isolated automated checks, not interactive acceptance in that process.
+
 ## 2026-10-23 — Neo card image latency and clarity
 
 - The old download callback checked Neo filenames after the desktop fetcher had saved a localized scan, incorrectly entering a 90-second retry cooldown. The callback now reads through desktop `ImageCache`, clears failed/pending state and notifies JavaFX. The isolated callback regression reaches the UI in 152 ms, with the original 745x1040 image also used by card zoom. No visible test window is created.

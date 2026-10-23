@@ -38,7 +38,9 @@ public final class ArenaSurface implements AutoCloseable {
     private final String token=UUID.randomUUID().toString()+UUID.randomUUID();
     private final Timeline clock;
     private final MatchTools tools;
+    private final BoardLayers layers;
     private final Map<String,CardView> cards=new HashMap<>();
+    private Map<String,CardView> nextCards=new HashMap<>();
     private volatile Map<String,String> images=Map.of();
     private Map<String,String> nextImages=new HashMap<>();
     private final Map<String,byte[]> imageCache=Collections.synchronizedMap(new LinkedHashMap<>());
@@ -49,6 +51,7 @@ public final class ArenaSurface implements AutoCloseable {
     private long revision,eventSequence,promptRevision;
     private int gameId=-1;
     private String lastView="",lastPrompt="";
+    private String lastPublishFailure="";
     private boolean old,loaded,closed,fullControl;
     private long imageEpoch;
     private final forge.neo.card.CardImages.Listener imageListener=()->{imageCache.clear();imageEpoch++;};
@@ -71,13 +74,15 @@ public final class ArenaSurface implements AutoCloseable {
         table.widthProperty().addListener((o,a,b)->web.resize(table.getWidth(),table.getHeight()));
         table.heightProperty().addListener((o,a,b)->web.resize(table.getWidth(),table.getHeight()));
         web.resize(table.getWidth(),table.getHeight());
-        table.getChildren().add(table.getChildren().indexOf(table.getOverlay()),web);
+        table.getChildren().add(table.getChildren().indexOf(table.getPromptBanner()),web);
         tools=new MatchTools(table,ui,this::toggle);
+        layers=new BoardLayers(table,web,tools.button());
         old="neo".equalsIgnoreCase(System.getProperty("forge.match.ui"))||forge.neo.NeoSettings.getBool("diy.arena.legacy",false);
         web.setVisible(false);
+        layers.setActive(!old);
         web.getEngine().getLoadWorker().stateProperty().addListener((o,a,b)->{
             if(b==Worker.State.SUCCEEDED){loaded=true;refresh();}
-            if(b==Worker.State.FAILED){old=true;table.showInfo("局内界面","网页界面加载失败，已保留旧界面。可从工具菜单重试。");}
+            if(b==Worker.State.FAILED){loaded=false;old=true;refresh();table.showInfo("局内界面","网页界面加载失败，已保留旧界面。可从工具菜单重试。");}
         });
         web.getEngine().load("http://127.0.0.1:"+server.getAddress().getPort()+"/?embedded#"+token);
         ui.setEventSpy(this::event);
@@ -89,12 +94,20 @@ public final class ArenaSurface implements AutoCloseable {
     private void toggle(){old=!old;forge.neo.NeoSettings.setBool("diy.arena.legacy",old);if(!loaded&&!old)web.getEngine().reload();refresh();}
     private void refresh(){
         if(closed)return;
+        // Renderer selection is independent of transient snapshots and native notices.
+        boolean supported=ui.getGameView()==null||ui.getGameView().getPlayers().size()<=2;
+        boolean active=!old&&supported;
+        layers.setActive(active);
+        web.setVisible(loaded&&active&&!table.isCurtainUp());
+        tools.toFront();
         try{
-            // Native rule dialogs stay above the web surface. Alerts and multiplayer/hot-seat use the intact legacy board.
-            boolean supported=ui.getGameView()==null||ui.getGameView().getPlayers().size()==2;
-            web.setVisible(loaded&&!old&&supported&&!table.isCurtainUp()&&!table.getPromptBanner().isAlerting());
-            tools.toFront();publish();
-        }catch(Exception e){web.setVisible(false);System.err.println("[arena] "+e);}
+            publish();lastPublishFailure="";
+        }catch(Exception e){
+            if(!e.toString().equals(lastPublishFailure)){
+                lastPublishFailure=e.toString();
+                System.err.println("[arena] Keeping the last complete snapshot: "+e);
+            }
+        }
     }
     private static Map<String,Object> obj(Object... values){Map<String,Object> out=new LinkedHashMap<>();for(int i=0;i<values.length;i+=2)out.put((String)values[i],values[i+1]);return out;}
     private static String id(PlayerView p){return p==null?null:"p"+p.getId();}
@@ -104,8 +117,8 @@ public final class ArenaSurface implements AutoCloseable {
         boolean visible=ui.mayView(c);var s=c.getCurrentState();
         Map<String,Object> out=obj("id",id(c),"name",visible?s.getName():"牌面朝下","ownerId",id(c.getOwner()),"controllerId",id(c.getController()),"hidden",!visible,"kind",visible&&s.isCreature()?"creature":visible&&s.isLand()?"land":"permanent","tapped",c.isTapped(),"actionable",visible&&ui.actionableStrength(c)>0,"token",visible&&c.isToken());
         // Only cards present in this viewer's projection can be selected or requested as images.
-        cards.put(id(c),c);
-        if(visible){nextImages.put(s.getName(),s.getImageKey());if(s.isCreature()){out.put("power",s.getPower());out.put("toughness",s.getToughness());}
+        nextCards.put(id(c),c);
+        if(visible){if(s.getName()!=null&&s.getImageKey()!=null)nextImages.put(s.getName(),s.getImageKey());if(s.isCreature()){out.put("power",s.getPower());out.put("toughness",s.getToughness());}
             if(c.getAttachedTo()!=null)out.put("attachedTo",id(c.getAttachedTo()));
             Map<String,Integer> counters=new LinkedHashMap<>();if(c.getCounters()!=null)c.getCounters().elementSet().forEach(k->counters.put(k.toString(),c.getCounters(k)));out.put("counters",counters);
         }
@@ -115,7 +128,7 @@ public final class ArenaSurface implements AutoCloseable {
         GameView game=ui.getGameView();PlayerView me=ui.localPlayerView();
         if(game==null||me==null||ui.getGameController()==null||table.isCurtainUp())return;
         if(gameId!=game.getId()){gameId=game.getId();events.clear();history.clear();commands.clear();eventSequence=0;lastView="";}
-        cards.clear();nextImages=new HashMap<>();List<Object> players=new ArrayList<>();
+        nextCards=new HashMap<>();nextImages=new HashMap<>();List<Object> players=new ArrayList<>();
         for(PlayerView p:game.getPlayers()){
             List<Object> hand=new ArrayList<>();if(p.equals(me))hand=zone(p,ZoneType.Hand);else if(p.getHand()!=null)for(CardView c:p.getHand())if(ui.mayView(c))hand.add(card(c));
             players.add(obj("id",id(p),"name",p.getName(),"life",p.getLife(),"handCount",p.getZoneSize(ZoneType.Hand),"libraryCount",p.getZoneSize(ZoneType.Library),"hand",hand,"battlefield",zone(p,ZoneType.Battlefield),"graveyard",zone(p,ZoneType.Graveyard),"exile",zone(p,ZoneType.Exile),"command",zone(p,ZoneType.Command)));
@@ -137,8 +150,10 @@ public final class ArenaSurface implements AutoCloseable {
         Map<String,Object> room=obj("matchId",Integer.toString(game.getId()),"code","DIY","playerId",id(me),"seat",0,"status","playing","snapshot",snapshot,"prompt",prompt,"fullControl",fullControl,"recentStackEvents",history,"imageEpoch",imageEpoch);
         String canonical=JSON.toJson(room);if(!lastView.equals(canonical)){revision++;lastView=canonical;}room.put("revision",revision);
         List<Object> messages=new ArrayList<>();messages.add(obj("type","view","room",room));for(var event:events)messages.add(obj("type","event","matchId",Integer.toString(game.getId()),"event",event));
+        byte[] nextState=JSON.toJson(messages).getBytes(StandardCharsets.UTF_8);
         images=Map.copyOf(nextImages);
-        state=JSON.toJson(messages).getBytes(StandardCharsets.UTF_8);
+        cards.clear();cards.putAll(nextCards);
+        state=nextState;
     }
     private void event(GameEvent event){
         if(table.isCurtainUp()||ui.getGameController()==null)return;
@@ -164,7 +179,7 @@ public final class ArenaSurface implements AutoCloseable {
         if(commands.contains(key)){receipt.put("status","accepted");return obj("type","receipt","receipt",receipt);}
         if(ui.getGameView()==null||!Integer.toString(ui.getGameView().getId()).equals(c.get("matchId").getAsString())||!Objects.equals(id(ui.localPlayerView()),c.get("playerId").getAsString()))return obj("type","receipt","receipt",receipt);
         if(c.get("expectedRevision").getAsLong()!=revision){receipt.put("status","resync");return obj("type","receipt","receipt",receipt);}
-        if(table.isModalShowing())return obj("type","receipt","receipt",receipt);
+        if(table.isModalShowing()||table.isCurtainUp()||table.getPromptBanner().isAlerting())return obj("type","receipt","receipt",receipt);
         String op=c.get("operation").getAsString();JsonObject p=c.getAsJsonObject("parameters");boolean accepted=true;
         switch(op){
             case "ok" -> accepted=table.getActionBar().pressPrimary();
@@ -205,5 +220,5 @@ public final class ArenaSurface implements AutoCloseable {
         }catch(Exception e){reply(exchange,500,"text/plain","Bridge request failed".getBytes(StandardCharsets.UTF_8));}finally{exchange.close();}
     }
     private static void reply(HttpExchange x,int status,String type,byte[] data)throws IOException{x.getResponseHeaders().set("Content-Type",type+((type.startsWith("text/")||type.equals("application/json"))?"; charset=utf-8":""));x.getResponseHeaders().set("Cache-Control","no-store");x.getResponseHeaders().set("X-Content-Type-Options","nosniff");x.sendResponseHeaders(status,data.length);x.getResponseBody().write(data);}
-    public void close(){closed=true;clock.stop();ui.setEventSpy(null);forge.neo.card.CardImages.removeListener(imageListener);tools.close();web.getEngine().load(null);table.getChildren().remove(web);server.stop(0);http.shutdownNow();imageCache.clear();}
+    public void close(){closed=true;clock.stop();ui.setEventSpy(null);forge.neo.card.CardImages.removeListener(imageListener);layers.close();tools.close();web.getEngine().load(null);table.getChildren().remove(web);server.stop(0);http.shutdownNow();imageCache.clear();}
 }

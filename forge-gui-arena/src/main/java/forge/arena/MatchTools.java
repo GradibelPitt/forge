@@ -64,5 +64,6 @@ public final class MatchTools implements AutoCloseable {
     private void check(String text,java.util.function.BiConsumer<IDevModeCheats,Boolean> action){CheckMenuItem item=new CheckMenuItem(text);item.setUserData(true);item.setOnAction(e->run(c->action.accept(c,item.isSelected())));menu.getItems().add(item);}
     private void run(Consumer<IDevModeCheats> action){if(!allowed())return;worker.execute(()->{try{action.accept(ui.getGameController().cheat());}catch(Exception e){javafx.application.Platform.runLater(()->table.showInfo("开发者工具",e.getMessage()));}});}
     public void toFront(){button.toFront();}
+    Button button(){return button;}
     public void close(){menu.hide();worker.shutdownNow();table.getChildren().remove(button);}
 }

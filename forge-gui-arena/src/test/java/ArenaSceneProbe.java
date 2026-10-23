@@ -18,6 +18,7 @@ import forge.localinstance.properties.ForgeConstants;
 public class ArenaSceneProbe {
     static final String APP = System.getProperty("forge.test.app") + "/";
     static forge.util.ImageFetcher imageFetcher;
+    static boolean failProjection;
     public static void main(String[] args) throws Exception {
         GuiBase.setInterface((IGuiBase) Proxy.newProxyInstance(IGuiBase.class.getClassLoader(), new Class[]{IGuiBase.class}, (p,m,a) -> {
             if (m.getName().equals("getAssetsDir")) return APP;
@@ -89,14 +90,31 @@ public class ArenaSceneProbe {
         }
         CountDownLatch done = new CountDownLatch(1);
         var error = new java.util.concurrent.atomic.AtomicReference<Throwable>();
-        Platform.startup(() -> {
+        var embeddedPanel = new javafx.embed.swing.JFXPanel[1];
+        var embeddedFrame = new javax.swing.JFrame[1];
+        if (Boolean.getBoolean("forge.test.embedded")) {
+            javax.swing.SwingUtilities.invokeAndWait(() -> {
+                embeddedPanel[0] = new javafx.embed.swing.JFXPanel();
+                embeddedFrame[0] = new javax.swing.JFrame("Arena rendering probe");
+                embeddedFrame[0].setUndecorated(true);
+                embeddedFrame[0].add(embeddedPanel[0]);
+                embeddedFrame[0].setBounds(-12000, 0, 2560, 1440);
+                embeddedFrame[0].setVisible(true);
+            });
+        }
+        Runnable createScene = () -> {
             try {
                 Platform.setImplicitExit(false);
                 var table = new TableScreen(150, 300);
                 var scene = new Scene(table, 1440, 900);
                 scene.getStylesheets().add(TableScreen.class.getResource("/forge/neo/neo.css").toExternalForm());
                 forge.neo.platform.NeoFonts.apply(scene);
-                var ui = new NeoMatchUI(NeoMatchUI.Mode.HUMAN, false);
+                var ui = new NeoMatchUI(NeoMatchUI.Mode.HUMAN, false) {
+                    @Override public int actionableStrength(forge.game.card.CardView card) {
+                        if (failProjection) throw new IllegalStateException("Injected snapshot failure");
+                        return super.actionableStrength(card);
+                    }
+                };
                 var binder = new TableBinder(table); binder.setMatchUi(ui); ui.setBinder(binder); ui.setTable(table);
                 ui.setGameView(game.getView());
                 table.setSelfBattlefield(cards.subList(0, 2)); table.setOpponentBattlefield(cards.subList(2, 4)); table.setHand(cards.subList(4, 6));
@@ -116,11 +134,19 @@ public class ArenaSceneProbe {
                 System.out.println("LOCAL_CARD_ART_OK " + loaded.getWidth() + "x" + loaded.getHeight());
                 forge.neo.diy.DiyCardImages.read(cards.get(5).getCurrentState().getImageKey());
                 table.setPrompt("NeoForge original match UI — actual card scripts");
-                var stage=new javafx.stage.Stage(javafx.stage.StageStyle.UTILITY);stage.setScene(scene);stage.setX(-12000);stage.setY(0);stage.show();
+                var stage=embeddedPanel[0]==null?new javafx.stage.Stage(javafx.stage.StageStyle.UTILITY):null;
+                if(stage!=null){stage.setScene(scene);stage.setX(-12000);stage.setY(0);stage.show();}
+                else embeddedPanel[0].setScene(scene);
                 var surface = (forge.arena.ArenaSurface) forge.arena.ArenaSurface.install(table,ui,scene);
                 table.applyCss();table.layout();
                 var bridgeChecks=ArenaBridgeCheck.run(surface,ui,table);
-                var delay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(9));
+                var effects = new javafx.animation.Timeline(new javafx.animation.KeyFrame(javafx.util.Duration.millis(250), event -> {
+                    table.strike(cards.get(0), cards.get(2));
+                    table.damagePop(cards.get(2), 3, true, false);
+                }));
+                effects.setCycleCount(javafx.animation.Timeline.INDEFINITE);
+                if(embeddedPanel[0]!=null)effects.play();
+                var delay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(embeddedPanel[0]==null?9:30));
                 delay.setOnFinished(ev -> {
                     try {
                         table.refreshAll(); table.applyCss(); table.layout();
@@ -152,12 +178,18 @@ public class ArenaSceneProbe {
                         ImageIO.write(SwingFXUtils.fromFXImage(scene.snapshot(null), null), "png", Path.of(args[0], "mtgapro-scene.png").toFile());
                         System.out.println("ORIGINAL_NEO_SCENE_OK cards=" + cards.size() + " arrows=3 impacts=active");
                     } catch (Throwable e) { error.set(e); e.printStackTrace(); }
-                    finally { stage.close(); surface.close(); ui.shutdown(); scene.setRoot(new javafx.scene.layout.Pane()); done.countDown(); }
+                    finally {
+                        effects.stop();
+                        if(stage!=null)stage.close();
+                        else { embeddedPanel[0].setScene(null);javax.swing.SwingUtilities.invokeLater(embeddedFrame[0]::dispose); }
+                        surface.close();ui.shutdown();scene.setRoot(new javafx.scene.layout.Pane());done.countDown();
+                    }
                 });
                 delay.play();
             } catch (Throwable e) { error.set(e); e.printStackTrace(); }
             finally { if (error.get() != null) done.countDown(); }
-        });
+        };
+        if(embeddedPanel[0]==null)Platform.startup(createScene);else Platform.runLater(createScene);
         if (!done.await(45, TimeUnit.SECONDS)) throw new AssertionError("Scene check timed out");
         Platform.exit();
         System.exit(error.get() == null ? 0 : 1);

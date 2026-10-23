@@ -13,6 +13,16 @@ if($LASTEXITCODE -ne 0){Get-Content "$BuildRoot/test-compile.log";throw 'Test co
 Get-Content "$BuildRoot/scene.log" -Tail 35
 if($LASTEXITCODE -ne 0){throw 'Arena scene test failed'}
 
+& java '-Dprism.order=d3d,sw' '-Dprism.verbose=true' '-Dforge.test.embedded=true' '-Duser.language=en' "-Duser.home=$BuildRoot/test-home" "-Dforge.test.app=$app" -cp $cp ArenaSceneProbe "$BuildRoot/tests" *> "$BuildRoot/embedded.log"
+Get-Content "$BuildRoot/embedded.log" -Tail 8
+if($LASTEXITCODE -ne 0){throw 'Embedded renderer test failed'}
+Select-String -LiteralPath "$BuildRoot/embedded.log" -Pattern 'Initialized prism pipeline' | ForEach-Object { $_.Line }
+foreach($log in @('scene.log','embedded.log')){
+    if(Select-String -LiteralPath "$BuildRoot/$log" -Pattern 'RenderJob error|RenderJob.run: internal exception|Texture must be non-null|Operation requires resource lock|Register not found for:'){
+        throw "Graphics error in $log"
+    }
+}
+
 & java '-Djava.awt.headless=true' '-Dprism.order=sw' '-Duser.language=en' "-Duser.home=$BuildRoot/test-home" "-Dforge.test.app=$app" -cp $cp ArenaSceneProbe "$BuildRoot/tests" --match *> "$BuildRoot/match.log"
 Get-Content "$BuildRoot/match.log" -Tail 8
 if($LASTEXITCODE -ne 0){throw 'Real match test failed'}
