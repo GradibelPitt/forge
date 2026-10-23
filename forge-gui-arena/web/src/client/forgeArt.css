@@ -66,3 +66,6 @@ html[data-forge-embedded] .arena-stack-tab,
 html[data-forge-embedded] .arena-stack-panel{backdrop-filter:none;-webkit-backdrop-filter:none}
 
 html[data-forge-embedded] .forge-enemy-hand .forge-card{width:60px;height:84px;margin-left:-18px}
+
+/* Keep the ambient art static so an idle WebKit board does not repaint every frame. */
+html[data-forge-embedded] .forge-mote{animation:none;opacity:.25}

@@ -89,6 +89,12 @@ public class ArenaSceneProbe {
             cards.add(c.getView()); i++;
         }
         CountDownLatch done = new CountDownLatch(1);
+        if (Boolean.getBoolean("forge.test.performance")) {
+            for (int n = 0; n < 60; n++) {
+                var extra = Card.fromPaperCard(data.getCommonCards().getCard(n % 2 == 0 ? "Drakuseth, Maw of Flames" : "Golgari Guildgate", "FDN", n % 2 == 0 ? 2 : 1), game.getPlayers().get(n % 2));
+                extra.getOwner().getZone(ZoneType.Battlefield).add(extra);
+            }
+        }
         var error = new java.util.concurrent.atomic.AtomicReference<Throwable>();
         var embeddedPanel = new javafx.embed.swing.JFXPanel[1];
         var embeddedFrame = new javax.swing.JFrame[1];
@@ -139,7 +145,7 @@ public class ArenaSceneProbe {
                 else embeddedPanel[0].setScene(scene);
                 var surface = (forge.arena.ArenaSurface) forge.arena.ArenaSurface.install(table,ui,scene);
                 table.applyCss();table.layout();
-                var bridgeChecks=ArenaBridgeCheck.run(surface,ui,table);
+                var bridgeChecks=Boolean.getBoolean("forge.test.performance") ? ArenaPerformanceCheck.run(surface,table) : ArenaBridgeCheck.run(surface,ui,table);
                 var effects = new javafx.animation.Timeline(new javafx.animation.KeyFrame(javafx.util.Duration.millis(250), event -> {
                     table.strike(cards.get(0), cards.get(2));
                     table.damagePop(cards.get(2), 3, true, false);

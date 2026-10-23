@@ -1,4 +1,4 @@
-import {embedded,createArenaSocket,EmbeddedArtEpoch} from './embeddedTransport';
+import {embedded,createArenaSocket,EmbeddedArtVersions} from './embeddedTransport';
 import {useCallback,useEffect,useRef,useState,type CSSProperties} from 'react';
 import type {ArenaCard,ArenaEvent,ArenaRoomView,ArenaServerMessage,ArenaRoomListing} from '../shared/arenaProtocol';
 import type {Command} from '../shared/matchProtocol';
@@ -76,7 +76,7 @@ export function ArenaClient(){
         if(message.type==='credential'){sessionStorage.setItem(seatStorageKey(endpoint),JSON.stringify(message.credential));}
         if(message.type==='view'){
           const first=roomRef.current?.matchId!==message.room.matchId;
-          roomRef.current=message.room;setRoom(message.room);
+          if(!embedded||first||!hydrated||roomRef.current?.revision!==message.room.revision){roomRef.current=message.room;setRoom(message.room);}
           if(first||!hydrated){hydrated=true;lastSequence.current=message.room.snapshot?.lastEventSequence??0;setEvents([]);setAnimationBaseline(old=>({epoch:old.epoch+1,sequence:lastSequence.current}));}
           if(message.room.status==='failed'){pendingCommand.current=null;setPending(false);}
           // A reconnect reuses the command ID; the server ledger decides whether it already ran.
@@ -134,7 +134,7 @@ export function ArenaClient(){
   </button>;}
   const prompt=room?.prompt?{...room.prompt,okLabel:label(room.prompt.okLabel??''),cancelLabel:label(room.prompt.cancelLabel??'')}:undefined;
   useEffect(()=>{setBarMinimized(false);},[prompt?.requestId]);
-  return <EmbeddedArtEpoch.Provider value={room?.imageEpoch??0}><main className="forge-app">
+  return <EmbeddedArtVersions.Provider value={room?.imageVersions??{}}><main className="forge-app">
     <ArenaAtmosphere/>
     {cardDrag.drag&&<div className={`forge-drag-card ${cardDrag.drag.returning?'returning':''}`} aria-hidden="true" style={{left:cardDrag.drag.originX,top:cardDrag.drag.originY,translate:`${cardDrag.drag.x-cardDrag.drag.startX}px ${cardDrag.drag.y-cardDrag.drag.startY}px`,width:cardDrag.drag.width,height:cardDrag.drag.height}}><LocalizedCardImage name={cardDrag.drag.card.name} hidden={cardDrag.drag.card.hidden} alt=""/><i/></div>}
     {!room&&embedded?<section className="forge-wait"><h1>正在连接对局…</h1></section>:!room?<ArenaLobby connected={connected} name={name} onName={setName} deck={deck} onDeck={setDeck} bestOf={bestOf} onBestOf={setBestOf} endpoint={endpoint} defaultEndpoint={defaultEndpoint} onConnect={connectServer} rooms={rooms} onRefresh={()=>send({type:"listRooms"})} onCreate={()=>send({type:"create",name,deckText:deck,bestOf})} onJoin={code=>send({type:"join",code,name,deckText:deck})} error={error}/>:<>
@@ -160,10 +160,10 @@ export function ArenaClient(){
         {prompt?.kind==='sideboard'&&<div className="forge-modal forge-sideboard-modal"><fieldset className="forge-input forge-sideboard-input" disabled={!connected||pending||room.status==='failed'||state.gameOver}><ForgeControls prompt={prompt} fullControl={room.fullControl} onControl={fullControl=>command('control',{fullControl})} onDecision={decision=>command(decision.type,{...decision})}/></fieldset></div>}
         <EventMotion key={`${room.matchId}:${animationBaseline.epoch}`} events={events} ownPlayerId={room.playerId} baseline={animationBaseline.sequence}/><GameResult key={room.matchId} state={state} playerId={room.playerId}/>
         <SemanticCanvas key={`${room.matchId}:${animationBaseline.epoch}`} events={events} ownPlayerId={room.playerId} baseline={animationBaseline.sequence}/>
-        {preview&&!zone&&!cardDrag.drag&&<div className="forge-preview"><LocalizedCardImage name={preview.name} hidden={preview.hidden} token={preview.token}/><ChineseCardText name={preview.name} hidden={preview.hidden}/></div>}
+        {preview&&!zone&&!cardDrag.drag&&<div className="forge-preview"><LocalizedCardImage preview name={preview.name} hidden={preview.hidden} token={preview.token}/><ChineseCardText name={preview.name} hidden={preview.hidden}/></div>}
         {zone&&<div className="forge-modal" onClick={()=>setZone(null)}><section onClick={e=>e.stopPropagation()}><header><h2>{zone.title}</h2><button onClick={()=>setZone(null)}>关闭</button></header><div>{zone.cards.map(c=>cardNode(c))}</div></section></div>}
       </>}
     </>}
     {(error||room?.error)&&<div className="forge-error" role="alert">{room?.error||error}<button onClick={()=>setError('')}>×</button></div>}
-  </main></EmbeddedArtEpoch.Provider>;
+  </main></EmbeddedArtVersions.Provider>;
 }

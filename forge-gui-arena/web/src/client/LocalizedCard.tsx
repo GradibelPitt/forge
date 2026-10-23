@@ -1,5 +1,5 @@
 import {useContext} from 'react';
-import {embedded,embeddedImage,EmbeddedArtEpoch} from './embeddedTransport';
+import {embedded,embeddedImage,EmbeddedArtVersions} from './embeddedTransport';
 import {useEffect,useState,useSyncExternalStore,type ImgHTMLAttributes} from 'react';
 import {canLookup,chineseCard,type ChineseCard} from './chineseCards';
 const cache=new Map<string,ChineseCard|undefined>(),pending=new Set<string>(),listeners=new Set<()=>void>();
@@ -87,7 +87,7 @@ function useTokenArt(name?:string,enabled=false){
 export function LocalizedName({name,hidden=false}:{name:string;hidden?:boolean}){
   const card=useChineseCard(name,hidden);return <>{hidden?'牌面朝下':card?.zhName||name}</>;
 }
-function RemoteCardImage({name,hidden=false,token=false,...props}:Omit<ImgHTMLAttributes<HTMLImageElement>,'src'> & {name?:string;hidden?:boolean;token?:boolean}){
+function RemoteCardImage({name,hidden=false,token=false,preview=false,...props}:Omit<ImgHTMLAttributes<HTMLImageElement>,'src'> & {name?:string;hidden?:boolean;token?:boolean;preview?:boolean}){
   const card=useChineseCard(name,hidden),[failed,setFailed]=useState<string[]>([]);
   const english=embedded&&!hidden?embeddedImage(name):canLookup(name,hidden)?`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name!)}&format=image&version=normal`:'/mtg-card-back.png';
   // token 名称常带 Token 后缀且精确匹配往往失败；仅在精确卡图加载失败后才发起 token 印刷检索。
@@ -103,13 +103,14 @@ export function ChineseCardText({name,hidden=false}:{name:string;hidden?:boolean
   return card?.text?<div className="chinese-card-text"><strong>{card.zhName}</strong><p>{card.text}</p><small>{card.source} · 卡牌参考，实际结算以引擎为准</small></div>:null;
 }
 
-function EmbeddedCardImage({name,hidden=false,...props}:Omit<ImgHTMLAttributes<HTMLImageElement>,'src'> & {name?:string;hidden?:boolean;token?:boolean}){
-  const epoch=useContext(EmbeddedArtEpoch);
+function EmbeddedCardImage({name,hidden=false,token,preview=false,...props}:Omit<ImgHTMLAttributes<HTMLImageElement>,'src'> & {name?:string;hidden?:boolean;token?:boolean;preview?:boolean}){
+  const versions=useContext(EmbeddedArtVersions);
+  const version=name?versions[name]??0:0;
   const [attempt,setAttempt]=useState(0),[missing,setMissing]=useState(false);
   useEffect(()=>{setAttempt(0);setMissing(false);},[name,hidden]);
   useEffect(()=>{if(!missing)return;const timer=setTimeout(()=>setAttempt(value=>value+1),2000);return()=>clearTimeout(timer);},[missing,attempt]);
-  return <img {...props} src={hidden?'/mtg-card-back.png':`${embeddedImage(name)}&retry=${attempt}&epoch=${epoch}`} alt={hidden?'牌背':name} draggable={false} onLoad={()=>setMissing(false)} onError={()=>setMissing(true)}/>;
+  return <img {...props} src={hidden?'/mtg-card-back.png':`${embeddedImage(name)}&retry=${attempt}&v=${version}&size=${preview?'preview':'board'}`} alt={hidden?'牌背':name} draggable={false} onLoad={()=>setMissing(false)} onError={()=>setMissing(true)}/>;
 }
-export function LocalizedCardImage(props:Omit<ImgHTMLAttributes<HTMLImageElement>,'src'> & {name?:string;hidden?:boolean;token?:boolean}){
+export function LocalizedCardImage(props:Omit<ImgHTMLAttributes<HTMLImageElement>,'src'> & {name?:string;hidden?:boolean;token?:boolean;preview?:boolean}){
   return embedded?<EmbeddedCardImage {...props}/>:<RemoteCardImage {...props}/>;
 }

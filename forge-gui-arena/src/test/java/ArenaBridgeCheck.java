@@ -26,6 +26,10 @@ public final class ArenaBridgeCheck {
             HttpClient client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
             var denied=client.send(HttpRequest.newBuilder(URI.create(root+"/state")).build(),HttpResponse.BodyHandlers.ofString());
             if(denied.statusCode()!=403)throw new AssertionError("State accessible without token");
+            var deniedStream=client.send(HttpRequest.newBuilder(URI.create(root+"/events")).build(),HttpResponse.BodyHandlers.ofString());
+            if(deniedStream.statusCode()!=403)throw new AssertionError("Push stream accessible without token");
+            var foreignStream=client.send(HttpRequest.newBuilder(URI.create(root+"/events?token="+token)).header("Origin","https://example.invalid").build(),HttpResponse.BodyHandlers.ofString());
+            if(foreignStream.statusCode()!=403)throw new AssertionError("Foreign origin can read push stream");
             var badImage=client.send(HttpRequest.newBuilder(URI.create(root+"/image?name=Unknown&token="+token)).build(),HttpResponse.BodyHandlers.ofString());
             if(badImage.statusCode()!=404)throw new AssertionError("Unprojected image was accessible");
             AtomicInteger calls=new AtomicInteger();fx(()->{table.getActionBar().setButtons("Confirm","Cancel",true,true);table.getActionBar().setOnOk(calls::incrementAndGet);});

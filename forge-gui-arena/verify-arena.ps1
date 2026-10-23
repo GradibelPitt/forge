@@ -7,7 +7,7 @@ $env:LOCALAPPDATA=Join-Path $BuildRoot 'test-local'
 $env:APPDATA=Join-Path $BuildRoot 'test-roaming'
 $cp="$BuildRoot/tests;$BuildRoot/overlays/*;$app/overlays/*;$aggregate"
 if($RuntimeOnly){$cp="$BuildRoot/tests;$app/overlays/*;$aggregate"}
-& javac '-J-Duser.language=en' --release 17 -encoding UTF-8 -cp $cp -d "$BuildRoot/tests" "$PSScriptRoot/src/test/java/ArenaSceneProbe.java" "$PSScriptRoot/src/test/java/ArenaBridgeCheck.java" 2> "$BuildRoot/test-compile.log"
+& javac '-J-Duser.language=en' --release 17 -encoding UTF-8 -cp $cp -d "$BuildRoot/tests" "$PSScriptRoot/src/test/java/ArenaSceneProbe.java" "$PSScriptRoot/src/test/java/ArenaBridgeCheck.java" "$PSScriptRoot/src/test/java/ArenaPerformanceCheck.java" 2> "$BuildRoot/test-compile.log"
 if($LASTEXITCODE -ne 0){Get-Content "$BuildRoot/test-compile.log";throw 'Test compile failed'}
 & java '-Djava.awt.headless=true' '-Dprism.order=d3d,sw' '-Duser.language=en' "-Duser.home=$BuildRoot/test-home" "-Dforge.test.app=$app" -cp $cp ArenaSceneProbe "$BuildRoot/tests" *> "$BuildRoot/scene.log"
 Get-Content "$BuildRoot/scene.log" -Tail 35
@@ -17,7 +17,10 @@ if($LASTEXITCODE -ne 0){throw 'Arena scene test failed'}
 Get-Content "$BuildRoot/embedded.log" -Tail 8
 if($LASTEXITCODE -ne 0){throw 'Embedded renderer test failed'}
 Select-String -LiteralPath "$BuildRoot/embedded.log" -Pattern 'Initialized prism pipeline' | ForEach-Object { $_.Line }
-foreach($log in @('scene.log','embedded.log')){
+& java '-Dprism.order=d3d,sw' '-Dforge.test.embedded=true' '-Dforge.test.performance=true' '-Duser.language=en' "-Duser.home=$BuildRoot/test-home" "-Dforge.test.app=$app" -cp $cp ArenaSceneProbe "$BuildRoot/tests" *> "$BuildRoot/performance.log"
+Select-String -LiteralPath "$BuildRoot/performance.log" -Pattern 'ARENA_PERF' | ForEach-Object { $_.Line }
+if($LASTEXITCODE -ne 0){Get-Content "$BuildRoot/performance.log" -Tail 30;throw 'Arena performance check failed'}
+foreach($log in @('scene.log','embedded.log','performance.log')){
     if(Select-String -LiteralPath "$BuildRoot/$log" -Pattern 'java\.lang\.NullPointerException|com\.sun\.javafx\.tk\.RenderJob\.run|RenderJob error|RenderJob.run: internal exception|Texture must be non-null|Operation requires resource lock|Register not found for:'){
         throw "Graphics error in $log"
     }

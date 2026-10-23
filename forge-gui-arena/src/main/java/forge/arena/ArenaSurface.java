@@ -24,8 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.lang.reflect.*;
-import java.awt.image.BufferedImage;
-import javax.imageio.ImageIO;
 
 /** A loopback service renders the upstream React board over the existing match controller. */
 public final class ArenaSurface implements AutoCloseable {
@@ -41,20 +39,24 @@ public final class ArenaSurface implements AutoCloseable {
     private final BoardLayers layers;
     private final Map<String,CardView> cards=new HashMap<>();
     private Map<String,CardView> nextCards=new HashMap<>();
-    private volatile Map<String,String> images=Map.of();
+    private volatile Map<String,ArenaImages.Reference> images=Map.of();
     private Map<String,String> nextImages=new HashMap<>();
-    private final Map<String,byte[]> imageCache=Collections.synchronizedMap(new LinkedHashMap<>());
+    private final ArenaImages imageService=new ArenaImages();
+    private final Map<String,java.lang.ref.WeakReference<javafx.scene.image.Image>> imageSources=new HashMap<>();
+    private long imageVersion;
     private final Set<String> commands=new LinkedHashSet<>();
     private final List<Map<String,Object>> events=new ArrayList<>(), history=new ArrayList<>();
     private final Method cardClick,playerClick;
     private volatile byte[] state="[]".getBytes(StandardCharsets.UTF_8);
+    private record Published(String etag,byte[] body) { }
+    private volatile Published published=new Published("\"0\"",state);
+    private final Object changes=new Object();
     private long revision,eventSequence,promptRevision;
     private int gameId=-1;
     private String lastView="",lastPrompt="";
     private String lastPublishFailure="";
-    private boolean old,loaded,closed,fullControl;
-    private long imageEpoch;
-    private final forge.neo.card.CardImages.Listener imageListener=()->{imageCache.clear();imageEpoch++;};
+    private boolean old,loaded,fullControl;
+    private volatile boolean closed;
 
     public static AutoCloseable install(TableScreen table,NeoMatchUI ui,Scene scene) throws Exception {return new ArenaSurface(table,ui,scene);}
     private ArenaSurface(TableScreen table,NeoMatchUI ui,Scene scene) throws Exception {
@@ -86,7 +88,6 @@ public final class ArenaSurface implements AutoCloseable {
         });
         web.getEngine().load("http://127.0.0.1:"+server.getAddress().getPort()+"/?embedded#"+token);
         ui.setEventSpy(this::event);
-        forge.neo.card.CardImages.addListener(imageListener);
         clock=new Timeline(new KeyFrame(Duration.millis(100),e->refresh()));clock.setCycleCount(Timeline.INDEFINITE);clock.play();
     }
     public String url(){return "http://127.0.0.1:"+server.getAddress().getPort()+"/?embedded#"+token;}
@@ -147,13 +148,28 @@ public final class ArenaSurface implements AutoCloseable {
         if(!signature.equals(lastPrompt)){lastPrompt=signature;promptRevision++;}
         Map<String,Object> prompt=obj("seat",0,"requestId",Long.toString(promptRevision),"kind","input","message",table.getLastPrompt(),"okEnabled",ok!=null&&!ok.isDisabled(),"cancelEnabled",cancel!=null&&!cancel.isDisabled(),"okLabel",ok==null?"确认":ok.getText(),"cancelLabel",cancel==null?"取消":cancel.getText());
         Map<String,Object> snapshot=obj("players",players,"stack",stack,"combat",combat,"phase",game.getPhase()==null?"null":game.getPhase().name(),"activePlayerId",id(game.getPlayerTurn()),"gameOver",game.isGameOver(),"lastEventSequence",eventSequence);
-        Map<String,Object> room=obj("matchId",Integer.toString(game.getId()),"code","DIY","playerId",id(me),"seat",0,"status","playing","snapshot",snapshot,"prompt",prompt,"fullControl",fullControl,"recentStackEvents",history,"imageEpoch",imageEpoch);
-        String canonical=JSON.toJson(room);if(!lastView.equals(canonical)){revision++;lastView=canonical;}room.put("revision",revision);
+        Map<String,ArenaImages.Reference> nextArt=new HashMap<>();
+        Map<String,Long> versions=new HashMap<>();
+        for(var image:nextImages.entrySet()){
+            var previous=images.get(image.getKey());
+            var source=forge.neo.card.CardImages.peek(image.getValue());
+            var previousSource=imageSources.get(image.getKey());
+            // Native notifications also announce scaled copies. Only a changed original invalidates web art.
+            boolean changed=previous==null||!previous.key().equals(image.getValue())||(source!=null&&(previousSource==null||source!=previousSource.get()));
+            var reference=changed?new ArenaImages.Reference(image.getValue(),++imageVersion):previous;
+            nextArt.put(image.getKey(),reference);versions.put(image.getKey(),reference.version());
+            if(changed&&source!=null)imageSources.put(image.getKey(),new java.lang.ref.WeakReference<>(source));
+        }
+        imageSources.keySet().retainAll(nextArt.keySet());
+        Map<String,Object> room=obj("matchId",Integer.toString(game.getId()),"code","DIY","playerId",id(me),"seat",0,"status","playing","snapshot",snapshot,"prompt",prompt,"fullControl",fullControl,"recentStackEvents",history,"imageVersions",versions);
+        String canonical=JSON.toJson(room);
+        images=Map.copyOf(nextArt);cards.clear();cards.putAll(nextCards);
+        if(lastView.equals(canonical))return;
+        revision++;lastView=canonical;room.put("revision",revision);
         List<Object> messages=new ArrayList<>();messages.add(obj("type","view","room",room));for(var event:events)messages.add(obj("type","event","matchId",Integer.toString(game.getId()),"event",event));
         byte[] nextState=JSON.toJson(messages).getBytes(StandardCharsets.UTF_8);
-        images=Map.copyOf(nextImages);
-        cards.clear();cards.putAll(nextCards);
         state=nextState;
+        synchronized(changes){published=new Published("\""+revision+"\"",nextState);changes.notifyAll();}
     }
     private void event(GameEvent event){
         if(table.isCurtainUp()||ui.getGameController()==null)return;
@@ -194,15 +210,24 @@ public final class ArenaSurface implements AutoCloseable {
         return obj("type","receipt","receipt",receipt);
     }
     private void handle(HttpExchange exchange) throws IOException {
+        boolean imageRequest=false;
         try{
             String path=exchange.getRequestURI().getPath();Map<String,String> query=new HashMap<>();String raw=exchange.getRequestURI().getRawQuery();if(raw!=null)for(String part:raw.split("&")){String[] pair=part.split("=",2);query.put(URLDecoder.decode(pair[0],StandardCharsets.UTF_8),pair.length<2?"":URLDecoder.decode(pair[1],StandardCharsets.UTF_8));}
             String origin=exchange.getRequestHeaders().getFirst("Origin");String local="http://127.0.0.1:"+server.getAddress().getPort();
             if(origin!=null&&!origin.equals(local)){reply(exchange,403,"text/plain",new byte[0]);return;}
-            if(path.equals("/state")||path.equals("/command")||path.equals("/image")){
+            if(path.equals("/state")||path.equals("/events")||path.equals("/command")||path.equals("/image")){
                 String supplied=exchange.getRequestHeaders().getFirst("X-Forge-Token");if(supplied==null)supplied=query.get("token");
                 if(!token.equals(supplied)){reply(exchange,403,"text/plain",new byte[0]);return;}
             }
-            if(path.equals("/state")&&exchange.getRequestMethod().equals("GET")){reply(exchange,200,"application/json",state);return;}
+            if(path.equals("/state")&&exchange.getRequestMethod().equals("GET")){
+                var current=published;exchange.getResponseHeaders().set("ETag",current.etag());
+                if(current.etag().equals(exchange.getRequestHeaders().getFirst("If-None-Match"))){exchange.sendResponseHeaders(304,-1);return;}
+                reply(exchange,200,"application/json",current.body());return;
+            }
+            if(path.equals("/events")&&exchange.getRequestMethod().equals("GET")){
+                try{stream(exchange);}catch(IOException disconnected){}catch(InterruptedException interrupted){Thread.currentThread().interrupt();}
+                return;
+            }
             if(path.equals("/command")&&exchange.getRequestMethod().equals("POST")){
                 byte[] body=exchange.getRequestBody().readNBytes(16385);if(body.length>16384){reply(exchange,413,"text/plain",new byte[0]);return;}
                 JsonObject message=JSON.fromJson(new String(body,StandardCharsets.UTF_8),JsonObject.class);
@@ -210,15 +235,30 @@ public final class ArenaSurface implements AutoCloseable {
                 reply(exchange,200,"application/json",JSON.toJson(task.get(8,TimeUnit.SECONDS)).getBytes(StandardCharsets.UTF_8));return;
             }
             if(path.equals("/image")){
-                String imageKey=images.get(query.get("name"));if(imageKey==null){reply(exchange,404,"text/plain",new byte[0]);return;}
-                byte[] bytes=imageCache.get(imageKey);if(bytes==null){FutureTask<BufferedImage> task=new FutureTask<>(()->forge.ImageCache.getOriginalImage(imageKey,true,null));javax.swing.SwingUtilities.invokeLater(task);BufferedImage face=task.get(6,TimeUnit.SECONDS);if(face==null){reply(exchange,404,"text/plain",new byte[0]);return;}ByteArrayOutputStream out=new ByteArrayOutputStream();ImageIO.write(face,"png",out);bytes=out.toByteArray();synchronized(imageCache){if(imageCache.size()>128)imageCache.clear();imageCache.put(imageKey,bytes);}}
-                reply(exchange,200,"image/png",bytes);return;
+                var reference=images.get(query.get("name"));if(reference==null){reply(exchange,404,"text/plain",new byte[0]);return;}
+                imageRequest=true;imageService.serve(exchange,reference,"preview".equals(query.get("size")));return;
             }
             if(!exchange.getRequestMethod().equals("GET")||path.contains("..")){reply(exchange,404,"text/plain",new byte[0]);return;}
             if(path.equals("/"))path="/index.html";
             try(InputStream in=ArenaSurface.class.getResourceAsStream("/web"+path)){if(in==null){reply(exchange,404,"text/plain",new byte[0]);return;}String type=path.endsWith(".js")?"text/javascript":path.endsWith(".css")?"text/css":path.endsWith(".png")?"image/png":path.endsWith(".jpg")?"image/jpeg":"text/html";reply(exchange,200,type,in.readAllBytes());}
-        }catch(Exception e){reply(exchange,500,"text/plain","Bridge request failed".getBytes(StandardCharsets.UTF_8));}finally{exchange.close();}
+        }catch(Exception e){reply(exchange,500,"text/plain","Bridge request failed".getBytes(StandardCharsets.UTF_8));}finally{if(!imageRequest)exchange.close();}
+    }
+    private void stream(HttpExchange exchange)throws IOException,InterruptedException{
+        exchange.getResponseHeaders().set("Content-Type","text/event-stream; charset=utf-8");
+        exchange.getResponseHeaders().set("Cache-Control","no-store");exchange.sendResponseHeaders(200,0);
+        String previous="";var output=exchange.getResponseBody();
+        while(!closed){
+            Published current;
+            synchronized(changes){
+                if(published.etag().equals(previous)&&!closed)changes.wait(2000);
+                current=published;
+            }
+            if(closed)return;
+            byte[] body=current.etag().equals(previous)?"[{\"type\":\"heartbeat\"}]".getBytes(StandardCharsets.UTF_8):current.body();
+            output.write("data: ".getBytes(StandardCharsets.UTF_8));output.write(body);output.write('\n');output.write('\n');output.flush();
+            previous=current.etag();
+        }
     }
     private static void reply(HttpExchange x,int status,String type,byte[] data)throws IOException{x.getResponseHeaders().set("Content-Type",type+((type.startsWith("text/")||type.equals("application/json"))?"; charset=utf-8":""));x.getResponseHeaders().set("Cache-Control","no-store");x.getResponseHeaders().set("X-Content-Type-Options","nosniff");x.sendResponseHeaders(status,data.length);x.getResponseBody().write(data);}
-    public void close(){closed=true;clock.stop();ui.setEventSpy(null);forge.neo.card.CardImages.removeListener(imageListener);layers.close();tools.close();web.getEngine().load(null);table.getChildren().remove(web);server.stop(0);http.shutdownNow();imageCache.clear();}
+    public void close(){closed=true;clock.stop();ui.setEventSpy(null);synchronized(changes){changes.notifyAll();}layers.close();tools.close();web.getEngine().load(null);table.getChildren().remove(web);server.stop(0);http.shutdownNow();imageService.close();imageSources.clear();}
 }

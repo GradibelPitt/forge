@@ -12,6 +12,17 @@ as the initial lookup, then notifies the JavaFX scene with the full-resolution i
 `DiyMatchAppearance` preserves the user's scale override, keeps automatic text at
 least the 1080-height baseline and chooses an installed CJK font for Chinese UI.
 
+The optional `forge-gui-arena` surface hosts the pinned MTGAPRO React board in
+JavaFX WebView over the same native match controller. Its authenticated loopback
+service pushes changed snapshots through SSE, with idle heartbeats and explicit
+resync; unchanged revisions do not update React. Image URLs have per-card versions
+based on the native original image, so scaled-image notifications cannot reload
+the entire board. Two dedicated image workers resize/encode cacheable 320-pixel
+board images and up-to-1000-pixel inspection images; desktop `ImageCache` access
+still runs on Swing EDT. The encoded LRU is bounded by 32 MiB and 256 variants.
+Embedded ambient motes are static, while input and game-event animations remain.
+Native dialogs, the tools menu and manual Neo fallback continue to share the scene.
+
 本文件是项目路径和数据流的权威说明。当前状态见 [PROJECT.md](PROJECT.md)，机制入口见 [KEYWORDS.md](KEYWORDS.md)。
 
 ## Repository layout
