@@ -18,7 +18,7 @@ Get-Content "$BuildRoot/embedded.log" -Tail 8
 if($LASTEXITCODE -ne 0){throw 'Embedded renderer test failed'}
 Select-String -LiteralPath "$BuildRoot/embedded.log" -Pattern 'Initialized prism pipeline' | ForEach-Object { $_.Line }
 foreach($log in @('scene.log','embedded.log')){
-    if(Select-String -LiteralPath "$BuildRoot/$log" -Pattern 'RenderJob error|RenderJob.run: internal exception|Texture must be non-null|Operation requires resource lock|Register not found for:'){
+    if(Select-String -LiteralPath "$BuildRoot/$log" -Pattern 'java\.lang\.NullPointerException|com\.sun\.javafx\.tk\.RenderJob\.run|RenderJob error|RenderJob.run: internal exception|Texture must be non-null|Operation requires resource lock|Register not found for:'){
         throw "Graphics error in $log"
     }
 }

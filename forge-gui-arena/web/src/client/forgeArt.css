@@ -56,4 +56,13 @@
 html[data-forge-embedded] .forge-avatar-crest{filter:none}
 html[data-forge-embedded] .forge-app .forge-avatar.active{filter:none}
 
+/* Avoid full-window offscreen buffers in the embedded D3D renderer. */
+html[data-forge-embedded] .forge-app{isolation:auto}
+html[data-forge-embedded] .forge-light-wash{mix-blend-mode:normal}
+html[data-forge-embedded] .forge-top button,
+html[data-forge-embedded] .forge-input,
+html[data-forge-embedded] .forge-modal,
+html[data-forge-embedded] .arena-stack-tab,
+html[data-forge-embedded] .arena-stack-panel{backdrop-filter:none;-webkit-backdrop-filter:none}
+
 html[data-forge-embedded] .forge-enemy-hand .forge-card{width:60px;height:84px;margin-left:-18px}
