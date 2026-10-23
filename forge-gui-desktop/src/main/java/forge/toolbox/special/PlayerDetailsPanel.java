@@ -1,6 +1,7 @@
 package forge.toolbox.special;
 
 import java.awt.Component;
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.MouseEvent;
@@ -126,6 +127,26 @@ public class PlayerDetailsPanel extends JPanel {
 
     public Component getLblLibrary() {
         return zoneLabels.get(ZoneType.Library);
+    }
+
+    /** Match player bar; all labels and their input listeners remain the same objects. */
+    public void useHorizontalLayout(final Color textColor) {
+        removeAll();
+        setLayout(new java.awt.GridLayout(2, 7, 4, 2));
+        for (final ZoneType zone : new ZoneType[] {ZoneType.Hand, ZoneType.Library,
+                ZoneType.Graveyard, ZoneType.Exile, ZoneType.Flashback, ZoneType.Command,
+                ZoneType.Sideboard}) {
+            final DetailLabel label = zoneLabels.get(zone);
+            label.setForeground(textColor);
+            add(label);
+        }
+        extraLabel.setForeground(textColor);
+        add(extraLabel);
+        for (final DetailLabelMana label : manaLabels) {
+            label.setForeground(textColor);
+            add(label);
+        }
+        revalidate();
     }
 
     /**

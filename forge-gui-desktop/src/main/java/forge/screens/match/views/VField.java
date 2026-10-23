@@ -18,11 +18,16 @@
 package forge.screens.match.views;
 
 import java.awt.Color;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 import javax.swing.JPanel;
+import javax.swing.JLabel;
 import javax.swing.SwingConstants;
 import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
@@ -39,6 +44,7 @@ import forge.gui.framework.EDocID;
 import forge.gui.framework.IVDoc;
 import forge.localinstance.skin.FSkinProp;
 import forge.screens.match.CMatchUI;
+import forge.screens.match.NeoBoardStyle;
 import forge.screens.match.controllers.CField;
 import forge.toolbox.FLabel;
 import forge.toolbox.FScrollPane;
@@ -69,6 +75,7 @@ public class VField implements IVDoc<CField> {
     // Other fields
     private final CMatchUI matchUI;
     private final PlayerView player;
+    private final boolean mirror;
     private boolean commanderBracketTooltipCalculated = false;
     private String commanderBracketTooltipLine;
 
@@ -76,6 +83,7 @@ public class VField implements IVDoc<CField> {
     private final FScrollPane scroller = new FScrollPane(false);
     private final PlayArea tabletop;
     private final SkinnedPanel avatarArea = new SkinnedPanel();
+    private final JPanel playerBar;
 
     private final PlayerDetailsPanel detailsPanel;
 
@@ -91,7 +99,7 @@ public class VField implements IVDoc<CField> {
     private final PhaseIndicator phaseIndicator = new PhaseIndicator();
 
     private final Border borderAvatarSimple = new LineBorder(new Color(0, 0, 0, 0), 1);
-    private final Border borderAvatarHighlighted = new LineBorder(Color.red, 2);
+    private final Border borderAvatarHighlighted = new LineBorder(NeoBoardStyle.ACCENT, 2);
 
     private final TabDiffTracker tabDiff = new TabDiffTracker();
 
@@ -108,10 +116,30 @@ public class VField implements IVDoc<CField> {
 
         this.matchUI = matchUI;
         this.player = p;
+        this.mirror = mirror;
         if (p != null) { tab.setText(Localizer.getInstance().getMessage("lblPlayField", p.getName())); }
         else { tab.setText(Localizer.getInstance().getMessage("lblNoPlayerForEDocID", docID.toString())); }
 
         detailsPanel = new PlayerDetailsPanel(player, CMatchUI.FLOATING_ZONE_TYPES);
+        detailsPanel.useHorizontalLayout(NeoBoardStyle.TEXT);
+        playerBar = new JPanel() {
+            @Override
+            protected void paintComponent(final Graphics graphics) {
+                final boolean active = matchUI.getGameView() != null
+                        && player.equals(matchUI.getGameView().getPlayerTurn());
+                NeoBoardStyle.paintPlayerBar((Graphics2D) graphics, getWidth(), getHeight(), mirror, active);
+            }
+        };
+        playerBar.setLayout(new MigLayout("insets 4 8 4 8, gap 8, fill",
+                "[56!][60:95:130][grow,fill]", "[54!]"));
+        playerBar.setPreferredSize(new Dimension(0, 62));
+        playerBar.add(avatarArea, "w 56!, h 54!");
+        final JLabel playerName = new JLabel(player.getName());
+        playerName.setForeground(NeoBoardStyle.TEXT);
+        playerName.setFont(playerName.getFont().deriveFont(Font.BOLD, 13f));
+        playerName.setToolTipText(player.getName());
+        playerBar.add(playerName);
+        playerBar.add(detailsPanel, "growx, h 54!");
 
         // TODO player is hard-coded into tabletop...should be dynamic
         // (haven't looked into it too deeply). Doublestrike 12-04-12
@@ -128,10 +156,11 @@ public class VField implements IVDoc<CField> {
         lblRad.setFocusable(false);
 
         avatarArea.setOpaque(false);
-        avatarArea.setBackground(FSkin.getColor(FSkin.Colors.CLR_HOVER));
-        avatarArea.setLayout(new MigLayout("insets 0, gap 0"));
-        avatarArea.add(lblAvatar, "w 100%-6px!, h 100%-23px!, wrap, gap 3 3 3 0");
-        avatarArea.add(lblLife, "w 100%!, h 20px!, wrap");
+        avatarArea.setBackground(new Color(30, 63, 79));
+        avatarArea.setLayout(new MigLayout("insets 0, gap 0, fill, wrap 1", "[grow,fill]", "[grow,fill][20!]"));
+        avatarArea.add(lblAvatar, "growx, h 29!, gap 3 3 0 0");
+        avatarArea.add(lblLife, "growx, h 20!, wrap");
+        lblLife.setFont(FSkin.getBoldFont(18));
 
         // Player area hover effect
         avatarArea.addMouseListener(new MouseAdapter() {
@@ -152,7 +181,7 @@ public class VField implements IVDoc<CField> {
             }
         });
 
-        tabletop.setBorder(new FSkin.MatteSkinBorder(0, 1, 0, 0, FSkin.getColor(FSkin.Colors.CLR_BORDERS)));
+        tabletop.setBorder((Border) null);
         tabletop.setOpaque(false);
 
         scroller.setViewportView(this.tabletop);
@@ -163,12 +192,14 @@ public class VField implements IVDoc<CField> {
     @Override
     public void populate() {
         final JPanel pnl = parentCell.getBody();
-        pnl.setLayout(new MigLayout("insets 0, gap 0"));
-
-        pnl.add(avatarArea, "w 10%!, h 35%!");
-        pnl.add(phaseIndicator, "w 5%!, h 100%!, span 1 2");
-        pnl.add(scroller, "w 85%!, h 100%!, span 1 2, wrap");
-        pnl.add(detailsPanel, "w 10%!, h 64%!, gapleft 1px");
+        pnl.setLayout(new BorderLayout());
+        final JPanel board = new JPanel(new BorderLayout());
+        board.setBackground(NeoBoardStyle.BACKGROUND);
+        phaseIndicator.setPreferredSize(new Dimension(36, 0));
+        board.add(scroller, BorderLayout.CENTER);
+        board.add(phaseIndicator, BorderLayout.EAST);
+        pnl.add(playerBar, mirror ? BorderLayout.NORTH : BorderLayout.SOUTH);
+        pnl.add(board, BorderLayout.CENTER);
     }
 
     @Override
@@ -247,8 +278,8 @@ public class VField implements IVDoc<CField> {
         }
         avatarArea.remove(lblLife);
         lblLife.setIcon(FSkin.getImage(FSkinProp.ICO_QUEST_LIFE));
-        avatarArea.add(lblLife, "w 50%!, h 20px!, split 2");
-        avatarArea.add(lblTicket, "w 50%!, h 20px!, wrap");
+        avatarArea.add(lblLife, "growx, h 20!, split 2");
+        avatarArea.add(lblTicket, "growx, h 20!, wrap");
     }
 
     private void removeLblTicket() {
@@ -257,7 +288,7 @@ public class VField implements IVDoc<CField> {
         }
         avatarArea.remove(lblTicket);
         avatarArea.remove(lblLife);
-        avatarArea.add(lblLife, "w 100%!, h 20px!, wrap");
+        avatarArea.add(lblLife, "growx, h 20!, wrap");
     }
 
     private void addLblRad() {
@@ -266,8 +297,8 @@ public class VField implements IVDoc<CField> {
         }
         avatarArea.remove(lblLife);
         lblLife.setIcon(FSkin.getImage(FSkinProp.ICO_QUEST_LIFE));
-        avatarArea.add(lblLife, "w 50%!, h 20px!, split 2");
-        avatarArea.add(lblRad, "w 50%!, h 20px!, wrap");
+        avatarArea.add(lblLife, "growx, h 20!, split 2");
+        avatarArea.add(lblRad, "growx, h 20!, wrap");
     }
 
     private void removeLblRad() {
@@ -276,7 +307,7 @@ public class VField implements IVDoc<CField> {
         }
         avatarArea.remove(lblRad);
         avatarArea.remove(lblLife);
-        avatarArea.add(lblLife, "w 100%!, h 20px!, wrap");
+        avatarArea.add(lblLife, "growx, h 20!, wrap");
     }
 
     private void addLblExperience() {
@@ -285,8 +316,8 @@ public class VField implements IVDoc<CField> {
         }
         avatarArea.remove(lblLife);
         lblLife.setIcon(FSkin.getImage(FSkinProp.ICO_QUEST_LIFE));
-        avatarArea.add(lblLife, "w 50%!, h 20px!, split 2");
-        avatarArea.add(lblExperience, "w 50%!, h 20px!, wrap");
+        avatarArea.add(lblLife, "growx, h 20!, split 2");
+        avatarArea.add(lblExperience, "growx, h 20!, wrap");
     }
 
     private void removeLblExperience() {
@@ -295,7 +326,7 @@ public class VField implements IVDoc<CField> {
         }
         avatarArea.remove(lblExperience);
         avatarArea.remove(lblLife);
-        avatarArea.add(lblLife, "w 100%!, h 20px!, wrap");
+        avatarArea.add(lblLife, "growx, h 20!, wrap");
     }
 
     private void addLblEnergy() {
@@ -304,8 +335,8 @@ public class VField implements IVDoc<CField> {
         }
         avatarArea.remove(lblLife);
         lblLife.setIcon(FSkin.getImage(FSkinProp.ICO_QUEST_LIFE));
-        avatarArea.add(lblLife, "w 50%!, h 20px!, split 2");
-        avatarArea.add(lblEnergy, "w 50%!, h 20px!, wrap");
+        avatarArea.add(lblLife, "growx, h 20!, split 2");
+        avatarArea.add(lblEnergy, "growx, h 20!, wrap");
     }
     
     private void removeLblEnergy() {
@@ -314,7 +345,7 @@ public class VField implements IVDoc<CField> {
         }
         avatarArea.remove(lblEnergy);
         avatarArea.remove(lblLife);
-        avatarArea.add(lblLife, "w 100%!, h 20px!, wrap");
+        avatarArea.add(lblLife, "growx, h 20!, wrap");
     }
 
     private void addLblPoison() {
@@ -323,8 +354,8 @@ public class VField implements IVDoc<CField> {
         }
         avatarArea.remove(lblLife);
         lblLife.setIcon(FSkin.getImage(FSkinProp.ICO_QUEST_LIFE));
-        avatarArea.add(lblLife, "w 50%!, h 20px!, split 2");
-        avatarArea.add(lblPoison, "w 50%!, h 20px!, wrap");
+        avatarArea.add(lblLife, "growx, h 20!, split 2");
+        avatarArea.add(lblPoison, "growx, h 20!, wrap");
     }
     private void removeLblPoison() {
         if (!lblPoison.isShowing()) {
@@ -332,7 +363,7 @@ public class VField implements IVDoc<CField> {
         }
         avatarArea.remove(lblPoison);
         avatarArea.remove(lblLife);
-        avatarArea.add(lblLife, "w 100%!, h 20px!, wrap");
+        avatarArea.add(lblLife, "growx, h 20!, wrap");
     }
 
     public void updateDetails() {
@@ -340,9 +371,9 @@ public class VField implements IVDoc<CField> {
         final int life = player.getLife();
         lblLife.setText(String.valueOf(life));
         if (life > LIFE_CRITICAL) {
-            lblLife.setForeground(FSkin.getColor(FSkin.Colors.CLR_TEXT));
+            lblLife.setForeground(NeoBoardStyle.TEXT);
         } else {
-            lblLife.setForeground(Color.RED);
+            lblLife.setForeground(NeoBoardStyle.DANGER);
         }
 
         // Update poison and/or energy counters, poison counters take precedence
@@ -414,6 +445,7 @@ public class VField implements IVDoc<CField> {
         this.avatarArea.setBorder(highlighted ? borderAvatarHighlighted : borderAvatarSimple);
         this.avatarArea.setOpaque(highlighted);
         this.avatarArea.setToolTipText(getPlayerDetailsHtml());
+        this.playerBar.repaint();
     }
 
     private String getPlayerDetailsHtml() {
