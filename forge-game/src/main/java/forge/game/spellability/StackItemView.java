@@ -142,7 +142,11 @@ public class StackItemView extends TrackableObject implements IHasCardView {
         return get(TrackableProperty.TargetCards);
     }
     void updateTargetCards(SpellAbilityStackInstance si) {
-        set(TrackableProperty.TargetCards, CardView.getCollection(si.getTargetChoices().getTargetCards()));
+        final forge.game.card.CardCollection targets = new forge.game.card.CardCollection(si.getTargetChoices().getTargetCards());
+        for (SpellAbility spell : si.getTargetChoices().getTargetSpells()) {
+            targets.add(spell.getHostCard());
+        }
+        set(TrackableProperty.TargetCards, CardView.getCollection(targets));
     }
 
     public FCollectionView<PlayerView> getTargetPlayers() {

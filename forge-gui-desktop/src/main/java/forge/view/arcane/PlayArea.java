@@ -6,12 +6,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -19,8 +19,6 @@ package forge.view.arcane;
 
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.IllegalComponentStateException;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -44,8 +42,6 @@ import forge.localinstance.properties.ForgePreferences.FPref;
 import forge.util.Localizer;
 import forge.model.FModel;
 import forge.screens.match.CMatchUI;
-import forge.screens.match.NeoBoardLayout;
-import forge.screens.match.NeoBoardStyle;
 import forge.toolbox.FScrollPane;
 import forge.toolbox.MouseTriggerEvent;
 import forge.view.arcane.util.Animation;
@@ -55,7 +51,7 @@ import forge.view.arcane.util.CardPanelMouseListener;
  * <p>
  * PlayArea class.
  * </p>
- * 
+ *
  * @author Forge
  * @version $Id: PlayArea.java 24769 2014-02-09 13:56:04Z Hellfish $
  */
@@ -95,8 +91,6 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
     private int playAreaWidth, playAreaHeight;
     private int extraCardSpacingX, cardSpacingX, cardSpacingY;
     private int stackSpacingX, stackSpacingY;
-    private final List<Rectangle> landLanes = new ArrayList<>();
-    private final List<Rectangle> permanentLanes = new ArrayList<>();
 
     private final PlayerView model;
     private final ZoneType zone;
@@ -114,17 +108,6 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
         this.model = player;
         this.zone = zone;
         updateGroupScope();
-    }
-
-    @Override
-    protected void paintComponent(final Graphics graphics) {
-        NeoBoardStyle.paintField((Graphics2D) graphics, getWidth(), getHeight(), mirror);
-        for (final Rectangle lane : landLanes) {
-            NeoBoardStyle.paintSupport((Graphics2D) graphics, lane.x, lane.y, lane.width, lane.height, true);
-        }
-        for (final Rectangle lane : permanentLanes) {
-            NeoBoardStyle.paintSupport((Graphics2D) graphics, lane.x, lane.y, lane.width, lane.height, false);
-        }
     }
 
     private void updateGroupScope() {
@@ -443,7 +426,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
         this.makeTokenRow = FModel.getPreferences().getPrefBoolean(FPref.UI_TOKENS_IN_SEPARATE_ROW);
         updateGroupScope();
         combatAssignments = buildCombatAssignments();
-        final Rectangle rect = new Rectangle(this.getScrollPane().getViewport().getExtentSize());
+        final Rectangle rect = this.getScrollPane().getVisibleRect();
 
         this.playAreaWidth = rect.width;
         this.playAreaHeight = rect.height;
@@ -495,7 +478,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
         while (deltaCardWidth > 0) {
             List<CardStackRow> template = tryArrangePilesOfWidth(lands, tokens, creatures, others);
             //System.out.println(template == null ? "won't fit" : "Fits @ " + cardWidth + " !!! " + template.toString());
-            
+
             deltaCardWidth = (getCardWidth() - lastGoodCardWidth) / 2;
             if (template != null) {
                 lastTemplate = template;
@@ -510,7 +493,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
             }
         }
         setCardWidth(lastGoodCardWidth);
-        if (null == lastTemplate) 
+        if (null == lastTemplate)
             lastTemplate = tryArrangePilesOfWidth(lands, tokens, creatures, others);
         assert(lastTemplate != null); //Layout failure at every possible size?
 
@@ -528,8 +511,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
             y = rowBottom;
             maxRowWidth = Math.max(maxRowWidth, x);
         }
-        this.setPreferredSize(new Dimension(Math.max(playAreaWidth, maxRowWidth - this.cardSpacingX),
-                Math.max(playAreaHeight, y - this.cardSpacingY)));
+        this.setPreferredSize(new Dimension(maxRowWidth - this.cardSpacingX, y - this.cardSpacingY));
         this.revalidate();
         positionAllCards(lastTemplate);
         repaint();
@@ -540,20 +522,12 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
     // Position all card panels
     private void positionAllCards(List<CardStackRow> template)  {
         int x = 0;
-        final int[] rowHeights = template.stream().mapToInt(CardStackRow::getHeight).toArray();
-        final boolean supportOnly = template.size() == 1 && isSupportRow(template.get(0));
-        final int[] rowTops = NeoBoardLayout.rowTops(playAreaHeight, rowHeights, mirror,
-                supportOnly, PlayArea.GUTTER_Y);
-        landLanes.clear();
-        permanentLanes.clear();
-        int rowIndex = 0;
+        int y = PlayArea.GUTTER_Y;
 
         //System.out.println("-------- " + (mirror ? "^" : "_") + " (Positioning) Card width = " + cardWidth + ". Playarea = " + playAreaWidth + " x " + playAreaHeight);
         for (final CardStackRow row : template) {
-            final int y = rowTops[rowIndex++];
-            final boolean support = isSupportRow(row);
-            x = support ? PlayArea.GUTTER_X : NeoBoardLayout.centeredRowLeft(playAreaWidth,
-                    row.getWidth() - cardSpacingX, PlayArea.GUTTER_X);
+            int rowBottom = 0;
+            x = PlayArea.GUTTER_X;
             for (int stackIndex = 0, stackCount = row.size(); stackIndex < stackCount; stackIndex++) {
                 final CardStack stack = row.get(stackIndex);
                 // Align others to the right.
@@ -563,11 +537,6 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
                         CardStack r = row.get(i);
                         x -= r.getWidth();
                     }
-                    x = Math.max(PlayArea.GUTTER_X, x);
-                }
-                if (support && !stack.isEmpty()) {
-                    final Rectangle lane = new Rectangle(x, y, stack.getWidth(), row.getHeight());
-                    (stack.get(0).getCard().getCurrentState().isLand() ? landLanes : permanentLanes).add(lane);
                 }
                 int maxVisible = maxStackDepth;
 
@@ -606,33 +575,61 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
                         stack.get(0).setGroupCount(groupCount);
                     }
                 }
+                rowBottom = Math.max(rowBottom, y + stack.getHeight());
                 x += stack.getWidth();
             }
+            y = rowBottom;
         }
-    }
-
-    private boolean isSupportRow(final CardStackRow row) {
-        return row.stream().filter(stack -> !stack.isEmpty())
-                .noneMatch(stack -> stack.get(0).getCard().getCurrentState().isCreature());
     }
 
     private List<CardStackRow> tryArrangePilesOfWidth(final CardStackRow lands, final CardStackRow tokens, final CardStackRow creatures, CardStackRow others) {
-        // NeoForge PlayerField: creatures face the combat line; lands and support sit behind.
-        final List<CardStackRow> template = new ArrayList<>();
-        final CardStackRow support = new CardStackRow();
-        support.addAll(lands);
-        support.addAll(others);
-        boolean fits = true;
-        if (mirror) {
-            fits &= planRow(support, template, -1);
-            fits &= planRow(tokens, template, -1);
-            fits &= planRow(creatures, template, -1);
+        List<CardStackRow> template = new ArrayList<>();
+
+        int afterFirstRow;
+
+        //System.out.println("======== "  + (mirror ? "^" : "_") + " (try arrange) Card width = " + cardWidth + ". PlayArea = " + playAreaWidth + " x " + playAreaHeight + " ========");
+        boolean allFit = true;
+        if (this.mirror) {
+            // Wrap all creatures and lands.
+            allFit &= this.planRow(lands, template, -1);
+            afterFirstRow = template.size();
+            allFit &= this.planRow(tokens, template, afterFirstRow);
+            allFit &= this.planRow(creatures, template, template.size());
         } else {
-            fits &= planRow(creatures, template, -1);
-            fits &= planRow(tokens, template, -1);
-            fits &= planRow(support, template, -1);
+            // Wrap all creatures and lands.
+            allFit &= this.planRow(creatures, template, -1);
+            afterFirstRow = template.size();
+            allFit &= this.planRow(tokens, template, afterFirstRow);
+            allFit &= this.planRow(lands, template, template.size());
         }
-        return fits ? template : null;
+
+        if (!allFit) {
+            return null;
+        }
+        // Other cards may be stored at end of usual rows or on their own row.
+        int cntOthers = others.size();
+
+        // Copy the template for the case 1st approach won't work
+        final List<CardStackRow> templateCopy = new ArrayList<>(template.size());
+        for (final CardStackRow row : template) {
+            templateCopy.add((CardStackRow) row.clone());
+        }
+
+        // Fill in all rows with others.
+        int nextOther = 0;
+        for (final CardStackRow row : template) {
+            nextOther = this.planOthersRow(others, nextOther, template, row);
+            if (nextOther == cntOthers) {
+                return template; // everything was successfully placed
+            }
+        }
+
+        template = templateCopy;
+        // Try to put others on their own row(s)
+        if (this.planRow(others, template, afterFirstRow)) {
+            return template;
+        }
+        return null; // Cannot fit everything with that width;
     }
 
     // Won't modify the first parameter
@@ -647,21 +644,21 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
         for (final CardStack stack : sourceRow) {
             final int rowWidth = currentRow.getWidth();
             final int stackWidth = stack.getWidth();
-            //System.out.printf("Adding %s (+%dpx), current row is %dpx and has %s \n", stack, stackWidth, rowWidth, currentRow); 
+            //System.out.printf("Adding %s (+%dpx), current row is %dpx and has %s \n", stack, stackWidth, rowWidth, currentRow);
             // If the row is not empty and this stack doesn't fit, add the row.
             if (rowWidth + stackWidth > this.playAreaWidth && !currentRow.isEmpty()) {
 
                 // Stop processing if the row is too wide or tall.
                 if (rowWidth > this.playAreaWidth || this.getRowsHeight(template) + sourceRow.getHeight() > this.playAreaHeight) {
-                    if (!isMinimalSize) 
+                    if (!isMinimalSize)
                         return false;
                 }
 
                 if (insertIndex == -1)
                     template.add(currentRow);
-                else 
+                else
                     template.add(insertIndex, currentRow);
-                
+
                 currentRow = new CardStackRow();
             }
 
@@ -673,12 +670,33 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
             if (isMinimalSize || rowWidth <= this.playAreaWidth && this.getRowsHeight(template) + sourceRow.getHeight() <= this.playAreaHeight) {
                 if (insertIndex == -1)
                     template.add(currentRow);
-                else 
+                else
                     template.add(insertIndex, currentRow);
             } else return false;
         }
         //System.out.println("... row complete! " + currentRow.getWidth() + "px");
         return true;
+    }
+
+    private int planOthersRow(final List<CardStack> sourceRow, final int firstPile, final List<CardStackRow> template, final CardStackRow rowToFill) {
+        int rowWidth = rowToFill.getWidth();
+
+        //System.out.println("This row has:" + rowToFill + "; want to add:" + sourceRow);
+        for (int i = firstPile; i < sourceRow.size(); i++) {
+            CardStack stack = sourceRow.get(i);
+
+            rowWidth += stack.getWidth();
+            if (rowWidth > this.playAreaWidth) return i; // cannot add any more piles in a row
+
+            if (stack.getHeight() > rowToFill.getHeight()) { // if row becomes taller
+                int newAllRowsHeight = this.getRowsHeight(template) - rowToFill.getHeight() + stack.getHeight();
+                if (newAllRowsHeight > this.playAreaHeight) {
+                    return i; // refuse to add here because it won't fit in height
+                }
+            }
+            rowToFill.add(stack);
+        }
+        return sourceRow.size();
     }
 
     private int getRowsHeight(final List<CardStackRow> rows) {
@@ -1000,7 +1018,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
             doLayout();
         }
 
-        invalidate(); //pfps do the extra invalidate before any scrolling 
+        invalidate(); //pfps do the extra invalidate before any scrolling
         if (!newPanels.isEmpty()) {
             int i = newPanels.size();
             for (final CardPanel toPanel : newPanels) {
@@ -1203,7 +1221,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
             };
         }
     }
-    
+
     private class CardStackRow extends ArrayList<CardStack> {
         private static final long serialVersionUID = 716489891951011846L;
 

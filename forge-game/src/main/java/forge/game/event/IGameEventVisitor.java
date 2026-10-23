@@ -38,6 +38,7 @@ public interface IGameEventVisitor<T> {
     T visit(GameEventPlayerStatsChanged event);
     T visit(GameEventRandomLog event);
     T visit(GameEventRollDie event);
+    default T visit(GameEventRollDice event) { return null; }
     T visit(GameEventScry event);
     T visit(GameEventShuffle event);
     T visit(GameEventSpeedChanged event);

@@ -315,6 +315,7 @@ public class RollDiceEffect extends SpellAbilityEffect {
             }
         }
 
+        player.getGame().fireEvent(new forge.game.event.GameEventRollDice(sides, List.copyOf(getFinalResults(resultsList))));
         int rollNum = 1;
         for (DieRollResult roll : resultsList) {
             final Map<AbilityKey, Object> runParams = AbilityKey.mapFromPlayer(player);

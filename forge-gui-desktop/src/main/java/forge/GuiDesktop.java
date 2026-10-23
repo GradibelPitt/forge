@@ -328,6 +328,18 @@ public class GuiDesktop implements IGuiBase {
 
     @Override
     public IGuiGame getNewGuiGame() {
+        // The optional Windows JavaFX payload only replaces the match tab.
+        if (System.getProperty("os.name", "").startsWith("Windows")
+                && !"swing".equalsIgnoreCase(System.getProperty("forge.match.ui"))) {
+            try {
+                return (IGuiGame) Class.forName("forge.neo.diy.DiyNeoMatchUI")
+                        .getMethod("create").invoke(null);
+            } catch (ClassNotFoundException e) {
+                // Source builds without the optional payload retain the native match UI.
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalStateException("Cannot initialize the NeoForge match UI", e);
+            }
+        }
         return new CMatchUI();
     }
 

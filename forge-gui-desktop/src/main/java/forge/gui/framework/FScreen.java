@@ -180,6 +180,11 @@ public class FScreen {
                 true);
     }
 
+    public static FScreen getEmbeddedMatchScreen(final ICDoc controller, final IVTopLevelUI view) {
+        return new FScreen(view, controller, "lblGame", FSkin.getIcon(FSkinProp.ICO_ALPHASTRIKE),
+                true, "lblConcedeGame", null, true);
+    }
+
     public IVTopLevelUI getView() {
         return view;
     }

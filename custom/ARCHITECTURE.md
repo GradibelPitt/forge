@@ -1,5 +1,12 @@
 # Forge DIY Architecture
 
+Windows match presentation additionally uses the optional `forge-gui-neo` payload:
+`GuiDesktop.getNewGuiGame` → `DiyNeoMatchUI` → `JFXPanel` → original NeoForge
+`TableScreen`/`TableBinder`. The Swing lobby still owns `HostedMatch` and navigation.
+DIY card images are read through desktop `ImageCache` on the Swing EDT; JavaFX
+scene mutations stay on the JavaFX thread. Build inputs, pinned upstream sources
+and offscreen verification are maintained in `forge-gui-neo/`.
+
 本文件是项目路径和数据流的权威说明。当前状态见 [PROJECT.md](PROJECT.md)，机制入口见 [KEYWORDS.md](KEYWORDS.md)。
 
 ## Repository layout

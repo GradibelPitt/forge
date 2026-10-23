@@ -2599,8 +2599,8 @@ public class GameAction {
 
         boolean isFirstGame = lastGameOutcome == null;
         if (isFirstGame) {
-            game.fireEvent(new GameEventFlipCoin()); // Play the Flip Coin sound
             goesFirst = Aggregates.random(game.getPlayers());
+            game.fireEvent(new GameEventFlipCoin(goesFirst.getView(), true, true));
         } else {
             for (Player p : game.getPlayers()) {
                 if (!lastGameOutcome.isWinner(p.getRegisteredPlayer())) {
