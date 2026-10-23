@@ -1421,6 +1421,17 @@ public class NeoMatchUI extends NetworkGuiGame implements OverlookedSink {
      * no se toca: un OK ahi confirmaria algo que el jugador no ha decidido. El
      * pase ya armado se encarga del resto en cuanto conteste.
      */
+    public boolean passPriorityShortcut(final forge.gamemodes.match.PriorityPass.Mode mode) {
+        if (!interactive() || finished.get() || !forge.gamemodes.match.PriorityShortcuts.isEnabled()) return false;
+        final IGameController gc = getGameController();
+        final PlayerView me = getCurrentPlayer();
+        if (gc == null || me == null) return false;
+        respondLater(() -> {
+            forge.gamemodes.match.PriorityShortcuts.perform(seated(gc), gc, me, mode);
+        });
+        return true;
+    }
+
     public boolean passTurn() {
         if (!interactive() || finished.get()) {
             return false;

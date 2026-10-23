@@ -2802,7 +2802,7 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
     public void passPriority() {
         final Input inp = inputProxy.getInput();
         if (inp instanceof InputPassPriority) {
-            inp.selectButtonOK();
+            ((InputPassPriority) inp).passOnce();
         }
     }
 
@@ -3916,6 +3916,7 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
     }
 
     public boolean isUiSetToSkipPhase(final PlayerView turnPlayer, final PhaseType phase) {
+        if (yieldController.mustStopPriority()) return false;
         if (isRemoteClient()) {
             return yieldController.isSkippingPhase(turnPlayer, phase);
         }
@@ -3944,6 +3945,7 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
                 getGui().updateAutoPassPrompt();
             }
         }
+        if (update instanceof YieldUpdate.PriorityShortcut u && u.mode() == forge.gamemodes.match.PriorityPass.Mode.OFF) return;
         tryAutoPassNow();
     }
 

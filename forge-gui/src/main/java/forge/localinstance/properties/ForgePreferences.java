@@ -323,6 +323,8 @@ public class ForgePreferences extends PreferencesStore<ForgePreferences.FPref> {
         BRAWL_P7_DECK_STATE(""),
         BRAWL_P8_DECK_STATE(""),
 
+        UI_PRIORITY_SHORTCUTS("true"),
+
         SHORTCUT_SHOWSTACK ("83"),
         SHORTCUT_SHOWCOMBAT ("67"),
         SHORTCUT_SHOWCONSOLE ("76"),

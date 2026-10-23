@@ -66,6 +66,19 @@ public class YieldController {
 
     private final PlayerControllerHuman owner;
 
+    private final PriorityPass priorityPass = new PriorityPass();
+
+    public PriorityPass getPriorityPass() { return priorityPass; }
+
+    private GameView priorityView() {
+        return owner != null && owner.getGui() != null ? owner.getGui().getGameView() : null;
+    }
+
+    public boolean mustStopPriority() {
+        GameView view = priorityView();
+        return view != null && priorityPass.mustStop(view.getTurn(), view.getPhase());
+    }
+
     private boolean autoPassUntilEOT;
     private boolean autoPassUntilStackEmpty;
     /** When true, an active stack-yield is cleared by interrupt classifiers; when false, only stack-empty turns it off. */
@@ -126,6 +139,7 @@ public class YieldController {
     // Activating any yield type clears the others — only one yield type may be active at a time (APINA is orthogonal).
     public synchronized void setAutoPassUntilStackEmpty(boolean active, boolean respectsInterrupts) {
         if (active) {
+            priorityPass.clear();
             autoPassUntilEOT = false;
             clearMarker();
         }
@@ -134,6 +148,7 @@ public class YieldController {
     }
     public synchronized void setAutoPassUntilEndOfTurn(boolean active) {
         if (active) {
+            priorityPass.clear();
             autoPassUntilStackEmpty = false;
             stackYieldRespectsInterrupts = false;
             clearMarker();
@@ -141,6 +156,7 @@ public class YieldController {
         this.autoPassUntilEOT = active;
     }
     public synchronized void setMarker(PlayerView phaseOwner, PhaseType phase, boolean atOrPastAtClick) {
+        priorityPass.clear();
         autoPassUntilEOT = false;
         autoPassUntilStackEmpty = false;
         stackYieldRespectsInterrupts = false;
@@ -164,6 +180,9 @@ public class YieldController {
     }
 
     public boolean shouldAutoYield() {
+        GameView view = priorityView();
+        if (view != null && priorityPass.shouldYield(view.getTurn(), view.getPhase())) return true;
+        if (mustStopPriority()) return false;
         if (autoPassUntilEOT) return true;
         GameView gv = owner != null && owner.getGui() != null ? owner.getGui().getGameView() : null;
         if (autoPassUntilStackEmpty) {
@@ -190,6 +209,7 @@ public class YieldController {
     // ---- Auto-yield (per-card/ability) and trigger decisions ----
 
     public boolean shouldAutoYield(String key) {
+        if (mustStopPriority()) return false;
         AutoYieldStore store = activeStore();
         if (store.isDisabled()) return false;
         if (!tierAware()) {
@@ -363,7 +383,10 @@ public class YieldController {
      * is responsible for ensuring only valid variants reach each side.
      */
     public boolean apply(YieldUpdate update) {
-        if (update instanceof YieldUpdate.SetMarker u) {
+        if (update instanceof YieldUpdate.PriorityShortcut u) {
+            setPriorityPass(u.mode());
+            return u.mode() != PriorityPass.Mode.OFF;
+        } else if (update instanceof YieldUpdate.SetMarker u) {
             setMarker(u.phaseOwner(), u.phase(), u.atOrPastAtClick());
             return true;
         } else if (update instanceof YieldUpdate.ClearMarker) {
@@ -392,8 +415,17 @@ public class YieldController {
         return false;
     }
 
+    private synchronized void setPriorityPass(PriorityPass.Mode mode) {
+        autoPassUntilEOT = false;
+        autoPassUntilStackEmpty = false;
+        stackYieldRespectsInterrupts = false;
+        clearMarker();
+        GameView view = priorityView();
+        priorityPass.start(mode, view == null ? 0 : view.getTurn());
+    }
+
     public boolean isYieldActive() {
-        return autoPassUntilEOT || autoPassUntilStackEmpty || autoPassUntilMarker != null;
+        return priorityPass.isYielding() || autoPassUntilEOT || autoPassUntilStackEmpty || autoPassUntilMarker != null;
     }
 
     /** EOT, marker, and interruptible stack-yields back off via {@link #applyInterrupt()}. The non-interruptible stack-yield is fire-and-forget — only stack-empty turns it off. */
@@ -407,7 +439,11 @@ public class YieldController {
         PlayerView local = owner != null ? owner.getLocalPlayerView() : null;
         if (local == null) return;
         IGuiGame gui = owner.getGui();
-        boolean anyCleared = false;
+        boolean anyCleared = priorityPass.mode() != PriorityPass.Mode.OFF;
+        if (anyCleared) {
+            priorityPass.clear();
+            if (gui != null) gui.applyYieldUpdate(new YieldUpdate.PriorityShortcut(local, PriorityPass.Mode.OFF));
+        }
         if (autoPassUntilMarker != null) {
             clearMarker();
             if (gui != null) gui.applyYieldUpdate(new YieldUpdate.ClearMarker(local));
@@ -463,11 +499,13 @@ public class YieldController {
 
     /** Eager check at REVEAL/notifyOfValue call sites — no GameEventReveal exists. */
     public void maybeInterruptOnReveal() {
+        priorityPass.response();
         if (!getBoolPref(FPref.YIELD_INTERRUPT_ON_REVEAL)) return;
         applyInterrupt();
     }
 
     public void onSpellAbilityCast(SpellAbilityStackInstance si) {
+        priorityPass.response();
         if (!shouldEvaluateInterrupts()) return;
         PlayerView local = owner.getLocalPlayerView();
         if (local == null) return;
@@ -494,6 +532,7 @@ public class YieldController {
     }
 
     public void onAttackersDeclared(CombatView combat) {
+        priorityPass.response();
         if (!shouldEvaluateInterrupts()) return;
         PlayerView local = owner.getLocalPlayerView();
         if (local == null) return;
@@ -568,6 +607,7 @@ public class YieldController {
 
     /** Per-tick predicate (distinct from one-shot yields). Used by mayAutoPass. */
     public boolean isAutoPassingNoActions(PlayerView player) {
+        if (mustStopPriority()) return false;
         if (!getBoolPref(FPref.YIELD_AUTO_PASS_NO_ACTIONS)) return false;
         if (autoPassInterrupted) return false;
         GameView gv = owner != null && owner.getGui() != null ? owner.getGui().getGameView() : null;

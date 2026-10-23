@@ -129,6 +129,12 @@ public enum VSubmenuPreferences implements IVSubmenu<CSubmenuPreferences> {
     private final JCheckBox cbShowDraftRanking = new OptionsCheckBox(localizer.getMessage("lblShowDraftRankingOverlay"));
     private final JCheckBox cbOrderHand = new OptionsCheckBox(localizer.getMessage("cbOrderHand"));
 
+    private final JCheckBox cbPriorityShortcuts = new OptionsCheckBox(
+            FModel.getPreferences().getPref(FPref.UI_LANGUAGE).startsWith("zh")
+                    ? "全局局内让过快捷键（1 / 2 / 6 / 0）" : "Shared match priority shortcuts (1 / 2 / 6 / 0)");
+
+    public JCheckBox getCbPriorityShortcuts() { return cbPriorityShortcuts; }
+
     private final Map<FPref, KeyboardShortcutField> shortcutFields = new HashMap<>();
 
     // Search functionality
@@ -499,6 +505,11 @@ public enum VSubmenuPreferences implements IVSubmenu<CSubmenuPreferences> {
 
         // Keyboard shortcuts
         pnlPrefs.add(new SectionLabel(localizer.getMessage("KeyboardShortcuts")), sectionConstraints);
+
+        pnlPrefs.add(cbPriorityShortcuts, titleConstraints);
+        pnlPrefs.add(new NoteLabel(FModel.getPreferences().getPref(FPref.UI_LANGUAGE).startsWith("zh")
+                ? "1：让过一次；2：让过直到需要响应；6：整回合完全让过；0：让过到结束步骤。默认开启，切换局内界面后保留。"
+                : "1: Pass; 2: Pass until response; 6: Yield the entire turn; 0: Stop at the end step. Enabled by default; shared across match interfaces."), descriptionConstraints);
 
         final List<Shortcut> shortcuts = KeyboardShortcuts.getKeyboardShortcuts();
 

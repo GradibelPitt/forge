@@ -67,6 +67,9 @@ public class InputPassPriority extends InputSyncronizedBase {
 
     @Override
     protected void onStop() {
+        if (getController().getYieldController().mustStopPriority()) {
+            getController().getYieldController().getPriorityPass().clear();
+        }
         getController().clearActionableCards();
     }
 
@@ -213,6 +216,15 @@ public class InputPassPriority extends InputSyncronizedBase {
             if (getController().getYieldController().getBoolPref(FPref.YIELD_SUPPRESS_ON_OWN_TURN)) return false;
         }
         return !checkHasAvailableActions();
+    }
+
+    /** Pass only this priority window, even if its prompt was suggesting an auto-yield. */
+    public final void passOnce() {
+        if (isFinished()) return;
+        pendingSuggestion = null;
+        pendingSuggestionMessage = null;
+        getController().getYieldController().getPriorityPass().clear();
+        selectButtonOK();
     }
 
     /** {@inheritDoc} */

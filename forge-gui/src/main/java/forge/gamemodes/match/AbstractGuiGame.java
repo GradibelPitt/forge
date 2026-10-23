@@ -590,6 +590,17 @@ public abstract class AbstractGuiGame implements IGuiGame, IMayViewCards {
         }
         if (yielding == null) return null;
         Localizer loc = Localizer.getInstance();
+        if (yielding.getPriorityPass().isYielding()) {
+            if (yielding.getPriorityPass().mode() == PriorityPass.Mode.UNTIL_RESPONSE) {
+                String fallback = FModel.getPreferences().getPref(FPref.UI_LANGUAGE).startsWith("zh")
+                        ? "让过直到需要响应" : "Passing until response";
+                return loc.getMessageorUseDefault("lblYieldingUntilResponse", fallback);
+            }
+            if (yielding.getPriorityPass().mode() == PriorityPass.Mode.UNTIL_END_STEP && gameView != null) {
+                return loc.getMessage("lblYieldingUntilPhaseFmt", gameView.getPlayerTurn().getName(), PhaseType.END_OF_TURN.nameForUi);
+            }
+            return loc.getMessage("lblYieldingUntilEndOfTurn");
+        }
         if (yielding.getAutoPassUntilMarker() != null) {
             YieldMarker m = yielding.getAutoPassUntilMarker();
             return loc.getMessage("lblYieldingUntilPhaseFmt", m.getPhaseOwner().getName(), m.getPhase().nameForUi);
@@ -710,7 +721,8 @@ public abstract class AbstractGuiGame implements IGuiGame, IMayViewCards {
     @Override
     public void applyYieldUpdate(YieldUpdate update) {
         PlayerView pv;
-        if (update instanceof YieldUpdate.ClearMarker u) pv = u.player();
+        if (update instanceof YieldUpdate.PriorityShortcut u) pv = u.player();
+        else if (update instanceof YieldUpdate.ClearMarker u) pv = u.player();
         else if (update instanceof YieldUpdate.StackYield u) pv = u.player();
         else if (update instanceof YieldUpdate.SetAutoPassUntilEndOfTurn u) pv = u.player();
         else return;

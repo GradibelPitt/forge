@@ -79,6 +79,10 @@ foreach ($notice in Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'vendor\
 }
 $neo['META-INF/sources/neo-forge-1.0.31-source.zip'] = Join-Path $PSScriptRoot 'vendor\neo-forge-1.0.31-source.zip'
 $neo['META-INF/neo-integration.json'] = Join-Path $PSScriptRoot 'integration.json'
+foreach ($resource in $spec.resources) {
+    $name = ($resource -split '/src/main/resources/')[1]
+    $neo[$name] = Join-Path $sourceRoot $resource
+}
 $neo['forge/neo/diy/match.css'] = Join-Path $PSScriptRoot 'src\main\resources\forge\neo\diy\match.css'
 Write-PatchJar $neoBase (Join-Path $payload 'forge-gui-neo.jar') @() $neo
 Copy-Item -Path (Join-Path $PSScriptRoot 'vendor\win\*.jar') -Destination $payload -Force

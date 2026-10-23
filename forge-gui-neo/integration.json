@@ -44,11 +44,31 @@
     "forge-gui/src/main/java/forge/util/ScryfallCardImages.java",
     "forge-gui/src/main/java/forge/util/CardImagePolicy.java",
     "forge-gui-neo/src/main/java/forge/gamemodes/match/input/NeoPaymentPeek.java",
-    "forge-gui-neo/src/main/java/forge/game/cost/NeoCostRelease.java"
+    "forge-gui-neo/src/main/java/forge/game/cost/NeoCostRelease.java",
+    "forge-gui/src/main/java/forge/gamemodes/match/PriorityPass.java",
+    "forge-gui/src/main/java/forge/gamemodes/match/YieldController.java",
+    "forge-gui/src/main/java/forge/gamemodes/match/YieldUpdate.java",
+    "forge-gui/src/main/java/forge/gamemodes/match/AbstractGuiGame.java",
+    "forge-gui/src/main/java/forge/gamemodes/match/input/InputPassPriority.java",
+    "forge-gui/src/main/java/forge/player/PlayerControllerHuman.java",
+    "forge-gui-neo/src/main/java/forge/neo/NeoShortcuts.java",
+    "forge-gui/src/main/java/forge/gamemodes/match/PriorityShortcuts.java",
+    "forge-gui/src/main/java/forge/localinstance/properties/ForgePreferences.java",
+    "forge-gui-desktop/src/main/java/forge/control/KeyboardShortcuts.java",
+    "forge-gui-desktop/src/main/java/forge/screens/home/settings/VSubmenuPreferences.java",
+    "forge-gui-desktop/src/main/java/forge/screens/home/settings/CSubmenuPreferences.java"
   ],
   "guiOverlayClasses": [
     "forge/util/CardImagePolicy",
-    "forge/util/ScryfallCardImages"
+    "forge/util/ScryfallCardImages",
+    "forge/gamemodes/match/PriorityPass",
+    "forge/gamemodes/match/YieldController",
+    "forge/gamemodes/match/YieldUpdate",
+    "forge/gamemodes/match/AbstractGuiGame",
+    "forge/gamemodes/match/input/InputPassPriority",
+    "forge/player/PlayerControllerHuman",
+    "forge/gamemodes/match/PriorityShortcuts",
+    "forge/localinstance/properties/ForgePreferences"
   ],
   "retiredDesktopClasses": [
     "forge/screens/match/NeoBoardLayout",
@@ -74,5 +94,9 @@
     "vendor/win/javafx-graphics-21.0.5-win.jar": "0c5ce5a4f27be1d0c898c29fae86356f5ccf78401cc6bd243fc146f4a61dff74",
     "vendor/win/javafx-media-21.0.5-win.jar": "80009894a5ed610fa3a3a7e45dc177a9e0c32803c6fef3bbd2697722c008ec66",
     "vendor/win/javafx-swing-21.0.5-win.jar": "a2da42f64b675a2f73b5576b82649cd375f04eeec6e01df5464968eeaf1b503b"
-  }
+  },
+  "resources": [
+    "forge-gui-neo/src/main/resources/forge/neo/lang/neo-zh-CN.properties",
+    "forge-gui-neo/src/main/resources/forge/neo/lang/neo-en-US.properties"
+  ]
 }

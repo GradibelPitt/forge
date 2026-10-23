@@ -14,7 +14,8 @@ import java.io.Serializable;
  * (host-side) and NetworkGuiGame (client-side).
  */
 public sealed interface YieldUpdate extends Serializable
-        permits YieldUpdate.SetMarker,
+        permits YieldUpdate.PriorityShortcut,
+                YieldUpdate.SetMarker,
                 YieldUpdate.ClearMarker,
                 YieldUpdate.StackYield,
                 YieldUpdate.SetAutoPassUntilEndOfTurn,
@@ -29,6 +30,8 @@ public sealed interface YieldUpdate extends Serializable
 
     /** {@code atOrPastAtClick}: priority was at-or-past target on owner's turn when the user clicked — computed by the UI so client cache and host PCH initialize identically. */
     record SetMarker(PlayerView phaseOwner, PhaseType phase, boolean atOrPastAtClick) implements YieldUpdate {}
+
+    record PriorityShortcut(PlayerView player, PriorityPass.Mode mode) implements YieldUpdate {}
 
     record ClearMarker(PlayerView player) implements YieldUpdate {}
 

@@ -170,9 +170,16 @@ public final class DiyMatchControls {
                     return true;
                 }
                 // Pasar prioridad. Es lo que acaba usando todo el mundo.
-                return free && table.getActionBar().pressPrimary();
+                return free && (forge.gamemodes.match.PriorityShortcuts.isEnabled()
+                        ? ui != null && ui.passPriorityShortcut(forge.gamemodes.match.PriorityPass.Mode.OFF)
+                        : table.getActionBar().pressPrimary());
             case PASS_TURN:
-                return free && ui != null && ui.passTurn();
+                return free && ui != null && (forge.gamemodes.match.PriorityShortcuts.isEnabled()
+                        ? ui.passPriorityShortcut(forge.gamemodes.match.PriorityPass.Mode.WHOLE_TURN) : ui.passTurn());
+            case PASS_UNTIL_RESPONSE:
+                return free && ui != null && ui.passPriorityShortcut(forge.gamemodes.match.PriorityPass.Mode.UNTIL_RESPONSE);
+            case PASS_END_STEP:
+                return free && ui != null && ui.passPriorityShortcut(forge.gamemodes.match.PriorityPass.Mode.UNTIL_END_STEP);
             case ALPHA_STRIKE:
                 return free && ui != null && ui.alphaStrike();
             case ATTACK_NON_TOKENS:

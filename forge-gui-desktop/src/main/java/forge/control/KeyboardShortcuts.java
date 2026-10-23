@@ -131,6 +131,7 @@ public class KeyboardShortcuts {
             public void actionPerformed(final ActionEvent e) {
                 if (!Singletons.getControl().getCurrentScreen().isMatchScreen()) { return; }
                 if (matchUI == null) { return; }
+                if (forge.gamemodes.match.PriorityShortcuts.isEnabled()) return;
                 YieldController.endTurn(matchUI.getGameController(), matchUI.getCurrentPlayer());
             }
         };
@@ -291,6 +292,31 @@ public class KeyboardShortcuts {
         list.add(new Shortcut(FPref.SHORTCUT_SHOWHOTKEYS, localizer.getMessage("lblSHORTCUT_SHOWHOTKEYS"), actShowHotkeys, am, im));
         list.add(new Shortcut(FPref.SHORTCUT_PANELTABS, localizer.getMessage("lblSHORTCUT_PANELTABS"), actPanelTabs, am, im));
         list.add(new Shortcut(FPref.SHORTCUT_CARDOVERLAYS, localizer.getMessage("lblSHORTCUT_CARDOVERLAYS"), actCardOverlays, am, im));
+        if (matchUI != null) {
+            for (final int digit : new int[]{1, 2, 6, 0}) {
+                for (final int code : new int[]{KeyEvent.VK_0 + digit, KeyEvent.VK_NUMPAD0 + digit}) {
+                    final KeyStroke stroke = KeyStroke.getKeyStroke(code, 0);
+                    final Object previousKey = im.get(stroke);
+                    final Action previous = previousKey == null ? null : am.get(previousKey);
+                    final String id = "diy-priority-" + code;
+                    im.put(stroke, id);
+                    am.put(id, new AbstractAction() {
+                        @Override public void actionPerformed(final ActionEvent event) {
+                            if (!forge.gamemodes.match.PriorityShortcuts.isEnabled()) {
+                                if (previous != null) previous.actionPerformed(event);
+                                return;
+                            }
+                            if (Singletons.getControl().getCurrentScreen().getController() != matchUI) return;
+                            if (java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner()
+                                    instanceof javax.swing.text.JTextComponent) return;
+                            forge.gamemodes.match.PriorityShortcuts.perform(matchUI.getGameController(),
+                                    matchUI.getGameController(), matchUI.getCurrentPlayer(),
+                                    forge.gamemodes.match.PriorityShortcuts.modeForDigit(digit));
+                        }
+                    });
+                }
+            }
+        }
         cachedShortcuts = list;
         return list;
     } // End initMatchShortcuts()
