@@ -361,7 +361,8 @@ public final class CardImages {
         try {
             final PaperCard pc = ImageUtil.getPaperCardFromImageKey(imageKey);
             return pc != null && (pc.getRules().isCustom()
-                    || forge.item.IPaperCard.NO_COLLECTOR_NUMBER.equals(pc.getCollectorNumber()));
+                    || (forge.item.IPaperCard.NO_COLLECTOR_NUMBER.equals(pc.getCollectorNumber())
+                        && !(GuiBase.getInterface().getImageFetcher() instanceof forge.util.SwingImageFetcher)));
         } catch (final Exception e) {
             return false;
         }
@@ -482,12 +483,14 @@ public final class CardImages {
         // Mirar el disco es I/O: fuera del hilo de interfaz.
         final Runnable job = () -> {
             try {
-                final Image diy = forge.neo.diy.DiyCardImages.read(imageKey);
-                if (diy != null) {
-                    CACHE.put(imageKey, diy);
-                    PENDING.remove(imageKey);
-                    noteCeiling();
-                    notifyReady(imageKey);
+                if (loadDiyImage(imageKey)) {
+                    return;
+                }
+                if (imageKey.startsWith(ImageKeys.CARD_PREFIX)
+                        && GuiBase.getInterface().getImageFetcher() instanceof forge.util.SwingImageFetcher
+                        && !cannotBeDownloaded(imageKey)) {
+                    // Register even if ImageCache already started this request without a callback.
+                    requestDownload(imageKey);
                     return;
                 }
 
@@ -788,6 +791,9 @@ public final class CardImages {
 
     private static void resolveAfterDownload(final String imageKey) {
         LOADERS.submit(() -> {
+            // Desktop downloads use its localized/versioned cache and card renderer.
+            // Resolve through that same component before trying Neo's file conventions.
+            if (loadDiyImage(imageKey)) { return; }
             final File direct = downloadedFile(imageKey);
             if (direct != null) {
                 decode(imageKey, direct);
@@ -808,6 +814,18 @@ public final class CardImages {
                 }
             }), 300, java.util.concurrent.TimeUnit.MILLISECONDS);
         });
+    }
+
+    private static boolean loadDiyImage(final String imageKey) {
+        final Image image = forge.neo.diy.DiyCardImages.read(imageKey);
+        if (image == null) { return false; }
+        CACHE.put(imageKey, image);
+        PENDING.remove(imageKey);
+        FAILED.remove(imageKey);
+        TRIES.remove(imageKey);
+        noteCeiling();
+        notifyReady(imageKey);
+        return true;
     }
 
     // ---------------------------------------------------------------

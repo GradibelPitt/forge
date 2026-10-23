@@ -58,15 +58,18 @@ function Write-PatchJar([string]$Baseline, [string]$Destination, [string[]]$Remo
 }
 
 $gameFamilies = @($spec.sources | Where-Object { $_.StartsWith('forge-game/') } | ForEach-Object { ($_ -split '/src/main/java/')[1] -replace '\.java$', '' })
+$guiFamilies = @($spec.guiOverlayClasses)
 $desktopFamilies = @($spec.sources | Where-Object { $_.StartsWith('forge-gui-desktop/') } | ForEach-Object { ($_ -split '/src/main/java/')[1] -replace '\.java$', '' })
-$game = @{}; $desktop = @{}; $neo = @{}
+$game = @{}; $desktop = @{}; $neo = @{}; $gui = @{}
 foreach ($file in Get-ChildItem -LiteralPath $classes -Recurse -Filter '*.class') {
     $name = $file.FullName.Substring($classes.Length + 1).Replace('\', '/')
     if (Test-ClassFamily $name $gameFamilies) { $game[$name] = $file.FullName }
+    elseif (Test-ClassFamily $name $guiFamilies) { $gui[$name] = $file.FullName }
     elseif (Test-ClassFamily $name $desktopFamilies) { $desktop[$name] = $file.FullName }
     else { $neo[$name] = $file.FullName }
 }
 Write-PatchJar (Join-Path $runtimeApp 'overlays\forge-game.jar') (Join-Path $payload 'forge-game.jar') $gameFamilies $game
+Write-PatchJar (Join-Path $runtimeApp 'overlays\forge-gui.jar') (Join-Path $payload 'forge-gui.jar') $guiFamilies $gui
 Write-PatchJar (Join-Path $runtimeApp 'overlays\forge-gui-desktop.jar') (Join-Path $payload 'forge-gui-desktop.jar') @($desktopFamilies + $spec.retiredDesktopClasses) $desktop
 $neo['META-INF/licenses/NeoForge-LICENSE'] = Join-Path $PSScriptRoot 'vendor\NeoForge-LICENSE'
 $neo['META-INF/licenses/OpenJFX-LICENSE'] = Join-Path $PSScriptRoot 'vendor\OpenJFX-LICENSE'
@@ -76,6 +79,7 @@ foreach ($notice in Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'vendor\
 }
 $neo['META-INF/sources/neo-forge-1.0.31-source.zip'] = Join-Path $PSScriptRoot 'vendor\neo-forge-1.0.31-source.zip'
 $neo['META-INF/neo-integration.json'] = Join-Path $PSScriptRoot 'integration.json'
+$neo['forge/neo/diy/match.css'] = Join-Path $PSScriptRoot 'src\main\resources\forge\neo\diy\match.css'
 Write-PatchJar $neoBase (Join-Path $payload 'forge-gui-neo.jar') @() $neo
 Copy-Item -Path (Join-Path $PSScriptRoot 'vendor\win\*.jar') -Destination $payload -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'vendor\NeoForge-LICENSE') -Destination (Join-Path $OutputRoot 'NeoForge-LICENSE') -Force

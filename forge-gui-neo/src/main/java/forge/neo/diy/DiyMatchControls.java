@@ -109,7 +109,7 @@ public final class DiyMatchControls {
             public void applyScale() {
                 final Scene s = table.getScene();
                 if (s != null && s.getRoot() != null) {
-                    s.getRoot().setStyle(forge.neo.ui.UiScale.rootStyle(s.getHeight()));
+                    DiyMatchAppearance.apply(s);
                 }
             }
 

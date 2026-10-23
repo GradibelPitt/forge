@@ -1,0 +1,4 @@
+.caption, .zone-label, .turn-mark, .phase-label, .zoom-browse-hint,
+.player-bar:slim .caption {
+    -fx-font-size: 0.85em;
+}

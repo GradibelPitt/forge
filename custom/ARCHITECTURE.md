@@ -7,6 +7,11 @@ DIY card images are read through desktop `ImageCache` on the Swing EDT; JavaFX
 scene mutations stay on the JavaFX thread. Build inputs, pinned upstream sources
 and offscreen verification are maintained in `forge-gui-neo/`.
 
+Neo card download completion resolves through the same desktop `ImageCache` bridge
+as the initial lookup, then notifies the JavaFX scene with the full-resolution image.
+`DiyMatchAppearance` preserves the user's scale override, keeps automatic text at
+least the 1080-height baseline and chooses an installed CJK font for Chinese UI.
+
 本文件是项目路径和数据流的权威说明。当前状态见 [PROJECT.md](PROJECT.md)，机制入口见 [KEYWORDS.md](KEYWORDS.md)。
 
 ## Repository layout
@@ -68,6 +73,13 @@ and offscreen verification are maintained in `forge-gui-neo/`.
 对应 Java 测试位于各模块的 `src/test/java/`。
 
 ## Card images
+
+Official full-card scans use the quality-versioned `.full.zh-CN.v2.jpg` cache.
+`ScryfallCardImages` prefers a high-resolution simplified Chinese print, then
+traditional Chinese, then English; a low-resolution Chinese scan is used only
+when no high-resolution source is available. PNG is preferred and saved without
+JPEG recompression. Old `.zh-CN`/unversioned scans remain available as offline
+fallbacks; they are not deleted. DIY generated full faces keep their existing path.
 
 源图片放在 `cards/pictures/`。当前已存在：
 

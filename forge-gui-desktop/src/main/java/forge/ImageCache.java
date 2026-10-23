@@ -297,6 +297,10 @@ public class ImageCache {
         if (original == null && officialCard && fetcherEnabled) {
             GuiBase.getInterface().getImageFetcher().fetchImage(requestedImageKey, null);
         }
+        if (original == null && officialCard && !fetcherEnabled) {
+            original = getImage(CardImagePolicy.legacyOfficialImageKey(originalKey));
+            if (original == null) { original = getImage(originalKey); }
+        }
 
         if (original == null && !useDefaultIfNotFound) {
             return Pair.of(null, false);
@@ -307,7 +311,8 @@ public class ImageCache {
         if (original == null && officialCard) {
             // Keep an old full scan visible while the separate Chinese-first cache is populated.
             // It remains a placeholder, so it cannot suppress the download or get cached as final.
-            original = getImage(originalKey);
+            original = getImage(CardImagePolicy.legacyOfficialImageKey(originalKey));
+            if (original == null) { original = getImage(originalKey); }
         }
         String setCode = imageKey.split("/")[0].trim().toUpperCase();
 

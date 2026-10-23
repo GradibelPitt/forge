@@ -25,7 +25,7 @@ public class OfficialCardImageFetcherTest {
     }
 
     @Test
-    public void transparentImageIsSavedAsACompleteJpeg() throws Exception {
+    public void transparentImageIsSavedAsAnOpaqueScan() throws Exception {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         ImageIO.write(new BufferedImage(64, 90, BufferedImage.TYPE_INT_ARGB), "png", bytes);
         withServer(200, bytes.toByteArray(), (url, destination) -> {
@@ -38,6 +38,22 @@ public class OfficialCardImageFetcherTest {
             try (var files = Files.list(destination.getParent())) {
                 Assert.assertEquals(files.count(), 1L);
             }
+        });
+    }
+
+    @Test
+    public void pngScanPixelsAreNotDegradedByJpegReencoding() throws Exception {
+        BufferedImage scan = new BufferedImage(64, 90, BufferedImage.TYPE_INT_RGB);
+        for (int y = 0; y < scan.getHeight(); y++) {
+            for (int x = 0; x < scan.getWidth(); x++) {
+                scan.setRGB(x, y, ((x + y) % 2 == 0) ? 0x224466 : 0xffffff);
+            }
+        }
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        ImageIO.write(scan, "png", bytes);
+        withServer(200, bytes.toByteArray(), (url, destination) -> {
+            OfficialCardImageFetcher.save(url, destination);
+            Assert.assertEquals(Files.readAllBytes(destination), bytes.toByteArray());
         });
     }
 

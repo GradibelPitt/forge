@@ -78,8 +78,7 @@ public final class DiyNeoMatchUI extends NeoMatchUI implements ICDoc, IVTopLevel
         final Scene scene = new Scene(table);
         scene.getStylesheets().add(DiyNeoMatchUI.class.getResource("/forge/neo/neo.css").toExternalForm());
         NeoFonts.apply(scene);
-        scene.heightProperty().addListener((o, a, b) ->
-                table.setStyle(forge.neo.ui.UiScale.rootStyle(b.doubleValue())));
+        DiyMatchAppearance.install(scene);
         DiyMatchControls.install(scene, table, this);
         CardImages.addListener(artListener);
         panel.setScene(scene);

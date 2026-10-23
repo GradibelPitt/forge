@@ -114,6 +114,62 @@ public class ScryfallCardImagesTest {
     }
 
     @Test
+    public void lowResolutionChineseDoesNotHideSharpEnglish() throws Exception {
+        Fixture fixture = new Fixture();
+        JsonObject low = card("zhs", "blurry");
+        low.addProperty("image_status", "lowres");
+        low.addProperty("highres_image", false);
+        fixture.replies.put("tst/1/zhs", low);
+        fixture.search("zhs", low);
+        Assertions.assertEquals(CDN + "english.jpg", fixture.resolve());
+    }
+
+    @Test
+    public void searchSkipsLowResolutionPrintsUntilItFindsSharpChinese() throws Exception {
+        Fixture fixture = new Fixture();
+        JsonObject low = card("zhs", "blurry");
+        low.addProperty("image_status", "lowres");
+        fixture.replies.put("tst/1/zhs", low);
+        fixture.search("zhs", low, card("zhs", "sharp-reprint"));
+        Assertions.assertEquals(CDN + "sharp-reprint.jpg", fixture.resolve());
+    }
+
+    @Test
+    public void sharpTraditionalWinsBeforeEnglishWhenSimplifiedIsLowResolution() throws Exception {
+        Fixture fixture = new Fixture();
+        JsonObject low = card("zhs", "blurry");
+        low.addProperty("image_status", "lowres");
+        fixture.replies.put("tst/1/zhs", low);
+        fixture.replies.put("tst/1/zht", card("zht", "sharp-traditional"));
+        Assertions.assertEquals(CDN + "sharp-traditional.jpg", fixture.resolve());
+    }
+
+    @Test
+    public void keepsChineseFallbackIfNoSharpImageExistsInAnyLanguage() throws Exception {
+        Fixture fixture = new Fixture();
+        fixture.replies.get(PRINT).addProperty("image_status", "lowres");
+        JsonObject low = card("zhs", "only-available");
+        low.addProperty("image_status", "lowres");
+        fixture.replies.put("tst/1/zhs", low);
+        Assertions.assertEquals(CDN + "only-available.jpg", fixture.resolve());
+    }
+
+    @Test
+    public void searchesForSharpEnglishWhenTheExactEnglishPrintIsLowResolution() throws Exception {
+        Fixture fixture = new Fixture();
+        fixture.replies.get(PRINT).addProperty("image_status", "lowres");
+        fixture.search("en", card("en", "sharp-english"));
+        Assertions.assertEquals(CDN + "sharp-english.jpg", fixture.resolve());
+    }
+
+    @Test
+    public void pngScanIsPreferredOverLossyJpeg() {
+        JsonObject scan = card("en", "normal");
+        scan.getAsJsonObject("image_uris").addProperty("png", "https://cards.scryfall.io/png/front/sharp.png");
+        Assertions.assertEquals("https://cards.scryfall.io/png/front/sharp.png", ScryfallCardImages.imageUrl(scan, "front"));
+    }
+
+    @Test
     public void wrongLanguageAndWrongIdentityCannotMasqueradeAsChinese() throws Exception {
         Fixture fixture = new Fixture();
         fixture.replies.put("tst/1/zhs", card("en", "english-redirect"));
@@ -193,7 +249,9 @@ public class ScryfallCardImagesTest {
 
     @Test
     public void chineseCacheDoesNotReuseAnUnverifiedEnglishCacheKey() {
-        Assertions.assertEquals(CardImagePolicy.officialImageKey("M21/Opt.full"), "M21/Opt.full.zh-CN");
+        Assertions.assertEquals(CardImagePolicy.officialImageKey("M21/Opt.full"), "M21/Opt.full.zh-CN.v2");
+        Assertions.assertEquals(CardImagePolicy.legacyOfficialImageKey("M21/Opt.full"), "M21/Opt.full.zh-CN");
+        Assertions.assertTrue(CardImagePolicy.isOfficialImageKey("M21/Opt.full.zh-CN.v2"));
         Assertions.assertTrue(CardImagePolicy.isOfficialImageKey("M21/Opt.full.zh-CN"));
         Assertions.assertFalse(CardImagePolicy.isOfficialImageKey("PH01/马克扎尔的小鬼.full"));
         Assertions.assertFalse(CardImagePolicy.isOfficialImageKey("PH01/卡.artcrop"));

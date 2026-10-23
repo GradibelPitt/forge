@@ -9,6 +9,7 @@ import java.io.File;
 
 public final class CardImagePolicy {
     private static final String CHINESE_FULL_SUFFIX = ".zh-CN";
+    private static final String QUALITY_SUFFIX = CHINESE_FULL_SUFFIX + ".v2";
 
     private CardImagePolicy() { }
 
@@ -25,6 +26,10 @@ public final class CardImagePolicy {
     }
 
     public static String officialImageKey(String fullImageKey) {
+        return fullImageKey + QUALITY_SUFFIX;
+    }
+
+    public static String legacyOfficialImageKey(String fullImageKey) {
         return fullImageKey + CHINESE_FULL_SUFFIX;
     }
 
@@ -34,7 +39,7 @@ public final class CardImagePolicy {
     }
 
     public static boolean isOfficialImageKey(String key) {
-        return key != null && key.endsWith(CHINESE_FULL_SUFFIX);
+        return key != null && (key.endsWith(QUALITY_SUFFIX) || key.endsWith(CHINESE_FULL_SUFFIX));
     }
 
     public static File officialImageFile(String key) {

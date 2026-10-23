@@ -10,9 +10,10 @@ $tests = Join-Path $BuildRoot 'tests'
 New-Item -ItemType Directory -Path $tests -Force | Out-Null
 $cp = "$tests;$BuildRoot/overlays/*;$app/overlays/*;$($aggregate[0].FullName)"
 $probe = Join-Path $PSScriptRoot 'src\test\java\forge\neo\diy\NeoSceneProbe.java'
-& javac '-J-Duser.language=en' --release 17 -encoding UTF-8 -cp $cp -d $tests $probe
+$imageProbe = Join-Path $PSScriptRoot 'src\test\java\forge\neo\diy\NeoImageBridgeCheck.java'
+& javac '-J-Duser.language=en' --release 17 -encoding UTF-8 -cp $cp -d $tests $probe $imageProbe
 if ($LASTEXITCODE -ne 0) { throw 'Probe compilation failed.' }
-foreach ($mode in @('scene', '--match')) {
+foreach ($mode in @('--images', 'scene', '--match')) {
     $log = Join-Path $BuildRoot ($mode.TrimStart('-') + '-verification.log')
     & java '-Djava.awt.headless=true' '-Dprism.order=sw' "-Dforge.test.app=$app" -cp $cp NeoSceneProbe $tests $mode *> $log
     if ($LASTEXITCODE -ne 0) { Get-Content -LiteralPath $log -Tail 40; throw "Neo probe failed: $mode" }

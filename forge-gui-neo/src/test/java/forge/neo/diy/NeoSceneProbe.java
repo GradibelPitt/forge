@@ -17,9 +17,11 @@ import forge.localinstance.properties.ForgeConstants;
 
 public class NeoSceneProbe {
     static final String APP = System.getProperty("forge.test.app") + "/";
+    static forge.util.ImageFetcher imageFetcher;
     public static void main(String[] args) throws Exception {
         GuiBase.setInterface((IGuiBase) Proxy.newProxyInstance(IGuiBase.class.getClassLoader(), new Class[]{IGuiBase.class}, (p,m,a) -> {
             if (m.getName().equals("getAssetsDir")) return APP;
+            if (m.getName().equals("getImageFetcher")) return imageFetcher;
             if (m.getName().equals("isRunningOnDesktop")) return true;
             if (m.getName().equals("isGuiThread")) return javax.swing.SwingUtilities.isEventDispatchThread();
             if (m.getName().equals("invokeInEdtLater")) { javax.swing.SwingUtilities.invokeLater((Runnable)a[0]); return null; }
@@ -62,6 +64,11 @@ public class NeoSceneProbe {
         var unsafe = (sun.misc.Unsafe)uf.get(null);
         var db = forge.model.FModel.class.getDeclaredField("magicDb");
         unsafe.putObject(unsafe.staticFieldBase(db), unsafe.staticFieldOffset(db), (com.google.common.base.Supplier<forge.StaticData>)() -> data);
+        if (args.length > 1 && args[1].equals("--images")) {
+            try { NeoImageBridgeCheck.run(data, Path.of(args[0])); }
+            catch (Throwable e) { e.printStackTrace(); Platform.exit(); System.exit(1); }
+            return;
+        }
         if (args.length > 1 && args[1].equals("--match")) {
             try { runMatch(data); }
             catch (Throwable e) { e.printStackTrace(); Platform.exit(); System.exit(1); }

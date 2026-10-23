@@ -49,6 +49,10 @@ final class OfficialCardImageFetcher {
             return;
         }
         String key = CardImagePolicy.officialImageKey(fullKey);
+        if (CardImagePolicy.officialImageFile(key).isFile()) {
+            if (callback != null) { callback.onImageFetched(); }
+            return;
+        }
         if (RETRY_LATER.getIfPresent(key) != null) {
             return;
         }
@@ -137,18 +141,19 @@ final class OfficialCardImageFetcher {
         Files.createDirectories(destination.getParent());
         Path temporary = Files.createTempFile(destination.getParent(), "card-image-", ".tmp");
         try {
-            if (downloaded.length > 2 && downloaded[0] == (byte) 0xff && downloaded[1] == (byte) 0xd8) {
+            if ((downloaded.length > 2 && downloaded[0] == (byte) 0xff && downloaded[1] == (byte) 0xd8)
+                    || !image.getColorModel().hasAlpha()) {
                 Files.write(temporary, downloaded);
             } else {
-                // PNG scans can have alpha; normalize only when JPEG conversion is necessary.
+                // ImageIO identifies the format from its bytes, including PNG in the .jpg cache.
                 BufferedImage rgb = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
                 Graphics2D graphics = rgb.createGraphics();
                 graphics.setColor(Color.WHITE);
                 graphics.fillRect(0, 0, rgb.getWidth(), rgb.getHeight());
                 graphics.drawImage(image, 0, 0, null);
                 graphics.dispose();
-                if (!ImageIO.write(rgb, "jpg", temporary.toFile())) {
-                    throw new IOException("JPEG encoder unavailable");
+                if (!ImageIO.write(rgb, "png", temporary.toFile())) {
+                    throw new IOException("PNG encoder unavailable");
                 }
             }
             try {

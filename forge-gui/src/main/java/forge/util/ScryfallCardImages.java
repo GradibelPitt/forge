@@ -57,27 +57,35 @@ public final class ScryfallCardImages {
         String oracle = string(original, "oracle_id");
         // A meld back/specialized face has its own identity, supplied by the exact print lookup.
         String searchName = original == null ? name : string(original, "name");
+        String chineseFallback = null;
         for (String language : new String[] {"zhs", "zht"}) {
             if (englishPrintPath != null) {
                 String path = englishPrintPath.substring(0, englishPrintPath.lastIndexOf('/') + 1) + language;
                 JsonObject translated = source.read(API + path);
                 if (matches(translated, language, oracle)) {
                     String url = imageUrl(translated, face);
-                    if (url != null) {
+                    if (url != null && isHighResolution(translated)) {
                         return url;
                     }
+                    if (chineseFallback == null) { chineseFallback = url; }
                 }
             }
             JsonObject translated = find(searchName, oracle, language, face);
             if (translated != null) {
-                return imageUrl(translated, face);
+                String url = imageUrl(translated, face);
+                if (isHighResolution(translated)) { return url; }
+                if (chineseFallback == null) { chineseFallback = url; }
             }
         }
         String fallback = imageUrl(original, face);
-        if (fallback != null) {
+        if (fallback != null && isHighResolution(original)) {
             return fallback;
         }
-        return imageUrl(find(searchName, oracle, "en", face), face);
+        JsonObject english = find(searchName, oracle, "en", face);
+        String englishUrl = imageUrl(english, face);
+        if (englishUrl != null && isHighResolution(english)) { return englishUrl; }
+        if (chineseFallback != null) { return chineseFallback; }
+        return fallback != null ? fallback : englishUrl;
     }
 
     private JsonObject find(String name, String oracle, String language, String face) throws IOException {
@@ -86,13 +94,14 @@ public final class ScryfallCardImages {
         String url = API + "search?include_multilingual=true&include_extras=true&unique=prints&order=released&dir=desc&q="
                 + URLEncoder.encode(identity + " lang:" + language, StandardCharsets.UTF_8);
         Set<String> pages = new HashSet<>();
+        JsonObject fallback = null;
         while (url != null) {
             if (!url.startsWith(API + "search?") || !pages.add(url) || pages.size() > 20) {
                 throw new IOException("Invalid or excessive Scryfall pagination");
             }
             JsonObject page = source.read(url);
             if (page == null) {
-                return null;
+                return fallback;
             }
             if (!page.has("data") || !page.get("data").isJsonArray()) {
                 throw new IOException("Invalid Scryfall search response");
@@ -100,7 +109,8 @@ public final class ScryfallCardImages {
             for (JsonElement element : page.getAsJsonArray("data")) {
                 JsonObject candidate = element.getAsJsonObject();
                 if (matches(candidate, language, oracle) && imageUrl(candidate, face) != null) {
-                    return candidate;
+                    if (isHighResolution(candidate)) { return candidate; }
+                    if (fallback == null) { fallback = candidate; }
                 }
             }
             boolean more = page.has("has_more") && page.get("has_more").getAsBoolean();
@@ -109,7 +119,15 @@ public final class ScryfallCardImages {
                 throw new IOException("Missing Scryfall next page");
             }
         }
-        return null;
+        return fallback;
+    }
+
+    private static boolean isHighResolution(JsonObject card) {
+        if (card == null || "lowres".equals(string(card, "image_status"))) { return false; }
+        if (card.has("highres_image") && !card.get("highres_image").isJsonNull()) {
+            return card.get("highres_image").getAsBoolean();
+        }
+        return "highres_scan".equals(string(card, "image_status"));
     }
 
     private static boolean matches(JsonObject card, String language, String oracle) {
@@ -133,7 +151,7 @@ public final class ScryfallCardImages {
             images = part.has("image_uris") && part.get("image_uris").isJsonObject()
                     ? part.getAsJsonObject("image_uris") : null;
         }
-        for (String size : new String[] {"large", "normal", "png"}) {
+        for (String size : new String[] {"png", "large", "normal"}) {
             String url = string(images, size);
             if (url != null && url.startsWith("https://cards.scryfall.io/")) {
                 return url;

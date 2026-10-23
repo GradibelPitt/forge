@@ -16,6 +16,8 @@
     "forge-game/src/main/java/forge/game/event/IGameEventVisitor.java",
     "forge-game/src/main/java/forge/game/spellability/StackItemView.java",
     "forge-gui-desktop/src/main/java/forge/GuiDesktop.java",
+    "forge-gui-desktop/src/main/java/forge/ImageCache.java",
+    "forge-gui-desktop/src/main/java/forge/util/OfficialCardImageFetcher.java",
     "forge-gui-desktop/src/main/java/forge/gui/framework/FScreen.java",
     "forge-gui-neo/src/main/java/forge/neo/NeoSettings.java",
     "forge-gui-neo/src/main/java/forge/neo/ascent/AscentRelics.java",
@@ -24,6 +26,7 @@
     "forge-gui-neo/src/main/java/forge/neo/card/CardImages.java",
     "forge-gui-neo/src/main/java/forge/neo/card/UniquePrints.java",
     "forge-gui-neo/src/main/java/forge/neo/diy/DiyCardImages.java",
+    "forge-gui-neo/src/main/java/forge/neo/diy/DiyMatchAppearance.java",
     "forge-gui-neo/src/main/java/forge/neo/diy/DiyMatchControls.java",
     "forge-gui-neo/src/main/java/forge/neo/diy/DiyMatchPreferences.java",
     "forge-gui-neo/src/main/java/forge/neo/diy/DiyNeoMatchUI.java",
@@ -38,8 +41,14 @@
     "forge-gui/src/main/java/forge/gui/download/ScryfallBulkDataSync.java",
     "forge-gui/src/main/java/forge/gui/download/ScryfallSetSync.java",
     "forge-gui/src/main/java/forge/util/ScryfallRateLimiter.java",
+    "forge-gui/src/main/java/forge/util/ScryfallCardImages.java",
+    "forge-gui/src/main/java/forge/util/CardImagePolicy.java",
     "forge-gui-neo/src/main/java/forge/gamemodes/match/input/NeoPaymentPeek.java",
     "forge-gui-neo/src/main/java/forge/game/cost/NeoCostRelease.java"
+  ],
+  "guiOverlayClasses": [
+    "forge/util/CardImagePolicy",
+    "forge/util/ScryfallCardImages"
   ],
   "retiredDesktopClasses": [
     "forge/screens/match/NeoBoardLayout",
