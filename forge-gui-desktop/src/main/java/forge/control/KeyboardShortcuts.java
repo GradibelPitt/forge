@@ -307,6 +307,7 @@ public class KeyboardShortcuts {
                                 return;
                             }
                             if (Singletons.getControl().getCurrentScreen().getController() != matchUI) return;
+                            if (forge.toolbox.FOverlay.SINGLETON_INSTANCE.getPanel().isVisible()) return;
                             if (java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner()
                                     instanceof javax.swing.text.JTextComponent) return;
                             forge.gamemodes.match.PriorityShortcuts.perform(matchUI.getGameController(),
