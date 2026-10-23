@@ -53,6 +53,7 @@ public enum CHomeUI implements ICDoc, IMenuProvider {
         id0.getDoc().getLayoutControl().update();
         lblSelected = VHomeUI.SINGLETON_INSTANCE.getAllSubmenuLabels().get(id0);
         lblSelected.setSelected(true);
+        VHomeUI.SINGLETON_INSTANCE.showSubmenu(id0);
 
         prefs.setPref(FPref.SUBMENU_CURRENTMENU, id0.toString());
         prefs.save();
@@ -85,7 +86,9 @@ public enum CHomeUI implements ICDoc, IMenuProvider {
     public void initialize() {
         Singletons.getControl().getForgeMenu().setProvider(this);
 
-        selectPrevious();
+        if (!VHomeUI.SINGLETON_INSTANCE.isMainMenuVisible()) {
+            selectPrevious();
+        }
     }
 
     /* (non-Javadoc)

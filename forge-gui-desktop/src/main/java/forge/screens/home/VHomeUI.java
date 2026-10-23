@@ -18,6 +18,9 @@
 package forge.screens.home;
 
 import java.awt.Dimension;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
@@ -28,6 +31,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import javax.swing.JLabel;
+import javax.swing.JButton;
+import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
@@ -81,6 +86,11 @@ public enum VHomeUI implements IVTopLevelUI {
     private final PnlMenu pnlMenu = new PnlMenu();
     private final PnlDisplay pnlDisplay = new PnlDisplay();
     private final FScrollPanel pnlSubmenus;
+
+    private final JPanel pageShell = new JPanel(new BorderLayout());
+    private final JPanel pageNavigation = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 6));
+    private JPanel mainMenu;
+    private boolean mainMenuVisible = true;
 
     private JLabel lblLogo = new FLabel.Builder()
         .icon(FSkin.getIcon(FSkinProp.ICO_LOGO))
@@ -151,6 +161,15 @@ public enum VHomeUI implements IVTopLevelUI {
 
         pnlMenu.add(pnlSubmenus, "w 100%!, h 100% - " + pnlMainMenuHeight + "px!");
         pnlDisplay.setBackground(l00.alphaColor(100));
+        pageShell.setOpaque(false);
+        pageNavigation.setBackground(new Color(35, 23, 15));
+        pageNavigation.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(145, 105, 53)));
+        pageShell.add(pageNavigation, BorderLayout.NORTH);
+        pageShell.add(pnlDisplay, BorderLayout.CENTER);
+        final boolean chinese = FModel.getPreferences().getPref(FPref.UI_LANGUAGE).startsWith("zh");
+        mainMenu = createMainMenu(chinese
+                ? new String[]{"单人游戏", "多人联机", "套牌编辑", "游戏设置"}
+                : new String[]{"Single Player", "Multiplayer", "Deck Editor", "Settings"});
     }
 
     /** @return {@link javax.swing.JPanel} */
@@ -189,12 +208,109 @@ public enum VHomeUI implements IVTopLevelUI {
      */
     @Override
     public void populate() {
-        JPanel pnl = FView.SINGLETON_INSTANCE.getPnlInsets();
+        final JPanel pnl = FView.SINGLETON_INSTANCE.getPnlInsets();
+        pnl.removeAll();
         pnl.setBorder(null);
-        pnl.setLayout(new MigLayout("insets 0, gap 0"));
+        pnl.setLayout(new BorderLayout());
+        pnl.add(mainMenuVisible ? mainMenu : pageShell, BorderLayout.CENTER);
+        pnl.revalidate();
+        pnl.repaint();
+    }
 
-        pnl.add(pnlMenu, "w 205px!, h 100%!");
-        pnl.add(pnlDisplay, "w 100% - 205px!, h 100%!");
+    public boolean isMainMenuVisible() {
+        return mainMenuVisible;
+    }
+
+    public void showMainMenu() {
+        mainMenuVisible = true;
+        forge.toolbox.FAbsolutePositioner.SINGLETON_INSTANCE.hideAll();
+        forge.menus.MenuUtil.setMenuProvider(CHomeUI.SINGLETON_INSTANCE);
+        populate();
+    }
+
+    private static void playMenuSound() {
+        forge.sound.SoundSystem.instance.play(forge.sound.SoundEffectType.ButtonPress, false);
+    }
+
+    private JPanel createMainMenu(final String[] labels) {
+        if (System.getProperty("os.name", "").startsWith("Windows")) {
+            try {
+                return (JPanel) Class.forName("forge.screens.home.HearthHomePanel")
+                        .getConstructor(String[].class, java.util.function.IntConsumer.class, Runnable.class)
+                        .newInstance(labels, (java.util.function.IntConsumer) this::openMainMenuItem,
+                                (Runnable) VHomeUI::playMenuSound);
+            } catch (ClassNotFoundException | NoClassDefFoundError e) {
+                // Builds without the optional JavaFX payload keep the existing destinations available.
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalStateException("Cannot initialize the 3D home menu", e);
+            }
+        }
+        JPanel fallback = new JPanel(new java.awt.GridBagLayout());
+        fallback.setOpaque(false);
+        JPanel buttons = new JPanel(new java.awt.GridLayout(0, 1, 0, 16));
+        buttons.setOpaque(false);
+        for (int i = 0; i < labels.length; i++) {
+            final int index = i;
+            JButton button = navigationButton(labels[i], false);
+            button.addActionListener(e -> { playMenuSound(); openMainMenuItem(index); });
+            buttons.add(button);
+        }
+        fallback.add(buttons);
+        return fallback;
+    }
+
+    private void openMainMenuItem(final int index) {
+        switch (index) {
+        case 0:
+            CHomeUI.SINGLETON_INSTANCE.itemClick(EDocID.HOME_CONSTRUCTED);
+            break;
+        case 1:
+            CHomeUI.SINGLETON_INSTANCE.itemClick(EDocID.HOME_NETWORK);
+            break;
+        case 2:
+            Singletons.getControl().setCurrentScreen(FScreen.DECK_EDITOR_CONSTRUCTED);
+            break;
+        case 3:
+            CHomeUI.SINGLETON_INSTANCE.itemClick(EDocID.HOME_PREFERENCES);
+            break;
+        default:
+            throw new IllegalArgumentException("Unknown home menu item: " + index);
+        }
+    }
+
+    public void showSubmenu(final EDocID selected) {
+        mainMenuVisible = false;
+        pageNavigation.removeAll();
+        final boolean chinese = FModel.getPreferences().getPref(FPref.UI_LANGUAGE).startsWith("zh");
+        JButton back = navigationButton(chinese ? "← 返回主菜单" : "← Main Menu", false);
+        back.addActionListener(e -> { playMenuSound(); showMainMenu(); });
+        pageNavigation.add(back);
+        EMenuGroup group = null;
+        for (IVSubmenu<? extends ICDoc> item : allSubmenus) {
+            if (item.getItemEnum() == selected) { group = item.getGroupEnum(); break; }
+        }
+        for (IVSubmenu<? extends ICDoc> item : allSubmenus) {
+            if (item.getGroupEnum() != group) { continue; }
+            JButton tab = navigationButton(item.getMenuTitle(), item.getItemEnum() == selected);
+            tab.addActionListener(e -> {
+                playMenuSound();
+                CHomeUI.SINGLETON_INSTANCE.itemClick(item.getItemEnum());
+            });
+            pageNavigation.add(tab);
+        }
+        populate();
+    }
+
+    private JButton navigationButton(final String title, final boolean selected) {
+        JButton button = new JButton(title);
+        button.setFont(FSkin.getRelativeFont(14).getBaseFont());
+        button.setForeground(new Color(239, 214, 168));
+        button.setBackground(selected ? new Color(108, 74, 39) : new Color(58, 40, 25));
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(selected ? 193 : 117, selected ? 146 : 83, selected ? 75 : 44)),
+                BorderFactory.createEmptyBorder(6, 14, 6, 14)));
+        button.setFocusPainted(true);
+        return button;
     }
 
     /** */
