@@ -3,29 +3,29 @@ $ErrorActionPreference='Stop'
 $BuildRoot=[IO.Path]::GetFullPath($BuildRoot)
 $app=Join-Path $RuntimeRoot 'app'
 $aggregate=@(Get-ChildItem -LiteralPath $app -Filter '*-jar-with-dependencies.jar')[0].FullName
-$env:LOCALAPPDATA=Join-Path $BuildRoot 'test-local'
-$env:APPDATA=Join-Path $BuildRoot 'test-roaming'
-$cp="$BuildRoot/tests;$BuildRoot/overlays/*;$app/overlays/*;$aggregate"
-if($RuntimeOnly){$cp="$BuildRoot/tests;$app/overlays/*;$aggregate"}
-& javac '-J-Duser.language=en' --release 17 -encoding UTF-8 -cp $cp -d "$BuildRoot/tests" "$PSScriptRoot/src/test/java/ArenaSceneProbe.java" "$PSScriptRoot/src/test/java/ArenaBridgeCheck.java" "$PSScriptRoot/src/test/java/ArenaPerformanceCheck.java" 2> "$BuildRoot/test-compile.log"
-if($LASTEXITCODE -ne 0){Get-Content "$BuildRoot/test-compile.log";throw 'Test compile failed'}
-& java '-Djava.awt.headless=true' '-Dprism.order=d3d,sw' '-Duser.language=en' "-Duser.home=$BuildRoot/test-home" "-Dforge.test.app=$app" -cp $cp ArenaSceneProbe "$BuildRoot/tests" *> "$BuildRoot/scene.log"
-Get-Content "$BuildRoot/scene.log" -Tail 35
-if($LASTEXITCODE -ne 0){throw 'Arena scene test failed'}
-
-& java '-Dprism.order=d3d,sw' '-Dprism.verbose=true' '-Dforge.test.embedded=true' '-Duser.language=en' "-Duser.home=$BuildRoot/test-home" "-Dforge.test.app=$app" -cp $cp ArenaSceneProbe "$BuildRoot/tests" *> "$BuildRoot/embedded.log"
-Get-Content "$BuildRoot/embedded.log" -Tail 8
-if($LASTEXITCODE -ne 0){throw 'Embedded renderer test failed'}
-Select-String -LiteralPath "$BuildRoot/embedded.log" -Pattern 'Initialized prism pipeline' | ForEach-Object { $_.Line }
-& java '-Dprism.order=d3d,sw' '-Dforge.test.embedded=true' '-Dforge.test.performance=true' '-Duser.language=en' "-Duser.home=$BuildRoot/test-home" "-Dforge.test.app=$app" -cp $cp ArenaSceneProbe "$BuildRoot/tests" *> "$BuildRoot/performance.log"
-Select-String -LiteralPath "$BuildRoot/performance.log" -Pattern 'ARENA_PERF' | ForEach-Object { $_.Line }
-if($LASTEXITCODE -ne 0){Get-Content "$BuildRoot/performance.log" -Tail 30;throw 'Arena performance check failed'}
-foreach($log in @('scene.log','embedded.log','performance.log')){
-    if(Select-String -LiteralPath "$BuildRoot/$log" -Pattern 'java\.lang\.NullPointerException|com\.sun\.javafx\.tk\.RenderJob\.run|RenderJob error|RenderJob.run: internal exception|Texture must be non-null|Operation requires resource lock|Register not found for:'){
-        throw "Graphics error in $log"
-    }
+$savedLocal=$env:LOCALAPPDATA
+$savedRoaming=$env:APPDATA
+try {
+    $env:LOCALAPPDATA=Join-Path $BuildRoot 'test-local'
+    $env:APPDATA=Join-Path $BuildRoot 'test-roaming'
+    New-Item -ItemType Directory -Force -Path "$BuildRoot/tests" | Out-Null
+    $cp="$BuildRoot/tests;$BuildRoot/overlays/*;$app/overlays/*;$aggregate"
+    if($RuntimeOnly){$cp="$BuildRoot/tests;$app/overlays/*;$aggregate"}
+    $sources=@("$PSScriptRoot/src/test/java/ArenaSceneProbe.java","$PSScriptRoot/src/test/java/ArenaBridgeCheck.java","$PSScriptRoot/src/test/java/ArenaPerformanceCheck.java","$PSScriptRoot/../forge-gui-neo/src/test/java/forge/neo/diy/NativeMatchHostCheck.java")
+    & javac '-J-Duser.language=en' --release 17 -encoding UTF-8 -cp $cp -d "$BuildRoot/tests" @sources 2> "$BuildRoot/test-compile.log"
+    if($LASTEXITCODE -ne 0){Get-Content "$BuildRoot/test-compile.log";throw 'Test compile failed'}
+    $javaArgs=@('-Dforge.arena.noLaunch=true','-Dprism.order=sw','-Duser.language=en',"-Duser.home=$BuildRoot/test-home","-Dforge.test.app=$app",'-cp',$cp)
+    & java @javaArgs forge.neo.diy.NativeMatchHostCheck *> "$BuildRoot/native-host.log"
+    Get-Content "$BuildRoot/native-host.log" -Tail 8
+    if($LASTEXITCODE -ne 0){throw 'Native host separation check failed'}
+    & java @javaArgs '-Dforge.test.performance=true' ArenaSceneProbe "$BuildRoot/tests" *> "$BuildRoot/bridge.log"
+    Get-Content "$BuildRoot/bridge.log" -Tail 30
+    if($LASTEXITCODE -ne 0){throw 'Arena bridge regression failed'}
+    & java @javaArgs '-Djava.awt.headless=true' ArenaSceneProbe "$BuildRoot/tests" --match *> "$BuildRoot/match.log"
+    Get-Content "$BuildRoot/match.log" -Tail 10
+    if($LASTEXITCODE -ne 0){throw 'Real hosted match failed'}
+    Write-Output 'ARENA_NATIVE_AND_PROTOCOL_VERIFIED; Chromium visible-frame acceptance is a separate check.'
+} finally {
+    $env:LOCALAPPDATA=$savedLocal
+    $env:APPDATA=$savedRoaming
 }
-
-& java '-Djava.awt.headless=true' '-Dprism.order=sw' '-Duser.language=en' "-Duser.home=$BuildRoot/test-home" "-Dforge.test.app=$app" -cp $cp ArenaSceneProbe "$BuildRoot/tests" --match *> "$BuildRoot/match.log"
-Get-Content "$BuildRoot/match.log" -Tail 8
-if($LASTEXITCODE -ne 0){throw 'Real match test failed'}

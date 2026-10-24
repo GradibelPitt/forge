@@ -61,6 +61,8 @@ public class TableScreen extends Pane {
 
     private final double cardWidth;
     private final double sideWidth;
+    private final boolean nativeOnly;
+    private Region nativeStackDialog;
 
     private final OpponentTabs opponentTabs = new OpponentTabs();
     private final PlayerBar opponentBar = new PlayerBar(true);
@@ -326,6 +328,12 @@ public class TableScreen extends Pane {
     private Consumer<String> gestureSpy;
 
     public TableScreen(final double cardWidth, final double sideWidth) {
+        this(cardWidth, sideWidth, false);
+    }
+
+    /** Keeps engine dialogs and controls without attaching the legacy board. */
+    public TableScreen(final double cardWidth, final double sideWidth, final boolean nativeOnly) {
+        this.nativeOnly = nativeOnly;
         // Arabe (de derecha a izquierda): la MESA no se espeja, es geometria
         // de juego. Ver Rtl.
         Rtl.keepLtr(this);
@@ -469,8 +477,10 @@ public class TableScreen extends Pane {
         playmat.setMouseTransparent(true);
         playmatVeil.setMouseTransparent(true);
         playmatVeil.setFill(javafx.scene.paint.Color.web("#0B0E13", 0.62));
-        getChildren().addAll(arenaBackdrop, playmat, playmatVeil);
-        applyPlaymat();
+        if (!nativeOnly) {
+            getChildren().addAll(arenaBackdrop, playmat, playmatVeil);
+            applyPlaymat();
+        }
 
         // El area de juego va dentro de un visor que se puede acercar y
         // arrastrar. Son DOS nodos y hacen falta los dos: el recorte tiene que
@@ -491,10 +501,15 @@ public class TableScreen extends Pane {
         spotlight.setArcHeight(14);
         spotlight.setFill(javafx.scene.paint.Color.TRANSPARENT);
 
-        getChildren().addAll(opponentTabs, opponentBar, viewport,
+        if (nativeOnly) {
+            side.getChildren().remove(stackBox);
+            getChildren().addAll(promptBanner, coinFlip, diceRoll, overlay, menuOverlay, zoomOverlay, curtain);
+        } else {
+            getChildren().addAll(opponentTabs, opponentBar, viewport,
                 selfBar, hand, commandZone, phaseRail, side, combatOverlay, impactLayer, logButton, turnButton, menuButton, chatButton, macroRecordButton, macroPlayButton, cooldownBadge,
                 stackChip, promptBanner, notices, turnBanner, coinFlip, diceRoll, playerDetails, zoomBadge, macroBadge, spotlight,
                 handPeek, overlay, menuOverlay, zoomOverlay, curtain);
+        }
         curtain.getStyleClass().add("hotseat-curtain");
 
         // Se cierra con un click en cualquier sitio, como en Arena.
@@ -523,8 +538,10 @@ public class TableScreen extends Pane {
         menuOverlay.visibleProperty().addListener(watchPause);
         // Los dialogos de la partida se pueden apartar para mirar la mesa: lo
         // que eliges con un tutor depende de lo que hay en ella. Ver Overlay.
-        overlay.setPeekable(forge.neo.NeoText.get("overlay.peek"),
-                forge.neo.NeoText.get("overlay.back"));
+        if (!nativeOnly) {
+            overlay.setPeekable(forge.neo.NeoText.get("overlay.peek"),
+                    forge.neo.NeoText.get("overlay.back"));
+        }
         // Mirar, no jugar: mientras el dialogo esta apartado, el click
         // izquierdo sobre una carta, un jugador o el boton de OK le llegaria
         // al motor como respuesta, y el motor espera la del dialogo. Solo
@@ -604,8 +621,17 @@ public class TableScreen extends Pane {
         selfField.setOnZoneClicked(this::showZone);
         // Antes que los gestos de carta: un arrastre de mesa se traga el
         // evento, y asi no empieza ademas a arrastrar la carta de debajo.
-        installBoardZoom();
-        installDragGestures();
+        if (!nativeOnly) {
+            installBoardZoom();
+            installDragGestures();
+        }
+    }
+
+    public boolean isNativeOnly() { return nativeOnly; }
+
+    public boolean isNativeDialogShowing() {
+        return isModalShowing() || isCurtainUp() || promptBanner.isAlerting()
+                || coinFlip.isVisible() || diceRoll.isVisible();
     }
 
     // ---------------------------------------------------------------
@@ -675,6 +701,18 @@ public class TableScreen extends Pane {
 
     @Override
     protected void layoutChildren() {
+        if (nativeOnly) {
+            final double w = getWidth(), h = getHeight();
+            for (final Overlay layer : List.of(overlay, menuOverlay, zoomOverlay, curtain)) {
+                layer.resizeRelocate(0, 0, w, h);
+            }
+            for (final Region banner : List.of(promptBanner, coinFlip, diceRoll)) {
+                final double bw = Math.min(Math.max(0, w - PAD * 2), banner.prefWidth(-1));
+                final double bh = Math.min(Math.max(0, h - PAD * 2), banner.prefHeight(bw));
+                banner.resizeRelocate((w - bw) / 2, (h - bh) / 2, bw, bh);
+            }
+            return;
+        }
         syncSpaceSettings();
         final double w = getWidth();
         final double h = getHeight();
@@ -1353,6 +1391,7 @@ public class TableScreen extends Pane {
 
     /** Los permanentes del rival que se sienta en ese asiento. */
     public void setOpponentBattlefield(final int seat, final List<CardView> cards) {
+        if (nativeOnly) return;
         while (oppCards.size() < oppFields.size()) {
             oppCards.add(List.of());
         }
@@ -1364,6 +1403,7 @@ public class TableScreen extends Pane {
     }
 
     public void setSelfBattlefield(final List<CardView> cards) {
+        if (nativeOnly) return;
         selfCards = cards == null ? List.of() : cards;
         repaintFields();
     }
@@ -1412,6 +1452,7 @@ public class TableScreen extends Pane {
 
     /** La zona de mando de ese rival, en su campo. Ver {@code PlayerField.setCommand}. */
     public void setOpponentCommand(final int seat, final List<CardView> cards) {
+        if (nativeOnly) return;
         if (seat < 0 || seat >= oppFields.size()) {
             return;
         }
@@ -1456,6 +1497,7 @@ public class TableScreen extends Pane {
      * {@code run.cmd topcheck}.
      */
     public void setSelfLibraryPile(final int size, final CardView top) {
+        if (nativeOnly) return;
         selfField.setLibrary(size, top != null && mayView.test(top) ? top : null);
     }
 
@@ -1499,6 +1541,7 @@ public class TableScreen extends Pane {
      * de las notas de diseño: no reconstruir nodos en cada actualizacion.
      */
     public void setHand(final List<CardView> cards) {
+        if (nativeOnly) return;
         lastHand = cards == null ? List.of() : List.copyOf(cards);
         final List<CardView> order = forge.neo.NeoSettings.orderHand() ? orderedHand(lastHand) : lastHand;
         // Las mismas cartas en el mismo orden: solo se repintan, sin tocar el
@@ -1784,12 +1827,14 @@ public class TableScreen extends Pane {
     /** Cartas en la zona de mando (el comandante). */
     public void setCommandZone(final List<CardView> command,
                                final PlayerView owner) {
+        if (nativeOnly) return;
         commandZone.setCards(command, owner);
         reindex();
     }
 
     /** Muestra una carta en el panel de detalle sin necesidad de hover. */
     public void showDetail(final CardView card) {
+        if (nativeOnly) return;
         applyDetailSetting();
         detail.show(card);
     }
@@ -1800,6 +1845,7 @@ public class TableScreen extends Pane {
     }
 
     private void hovered(final CardNode n) {
+        if (nativeOnly) return;
         applyDetailSetting();
         detail.show(n.getCard());
         showBigCard(n);
@@ -2013,9 +2059,6 @@ public class TableScreen extends Pane {
     }
 
     public void setStack(final Iterable<StackItemView> items, final PlayerView me) {
-        stackBox.getChildren().clear();
-        stackRows.clear();
-
         final List<StackItemView> list = new ArrayList<>();
         if (items != null) {
             for (final StackItemView item : items) {
@@ -2025,6 +2068,14 @@ public class TableScreen extends Pane {
         stackSize = list.size();
         lastStack = list;
         lastStackMe = me;
+        if (nativeOnly && (nativeStackDialog == null || menuOverlay.getContent() != nativeStackDialog)) {
+            stackBox.getChildren().clear();
+            stackRows.clear();
+            stackArt.clear();
+            return;
+        }
+        stackBox.getChildren().clear();
+        stackRows.clear();
         refreshStackChip();
         applyStackTargets();
 
@@ -2143,6 +2194,15 @@ public class TableScreen extends Pane {
         final boolean allOpen = allStackOpen(lastStack);
         for (final StackItemView item : lastStack) {
             stackOpen.put(item.getId(), !allOpen);
+        }
+        if (nativeOnly && (nativeStackDialog == null || menuOverlay.getContent() != nativeStackDialog)) {
+            final Button close = new Button(NeoText.get("common.close"));
+            close.setOnAction(e -> menuOverlay.hide());
+            final VBox dialog = new VBox(12, stackBox, close);
+            dialog.setPadding(new Insets(20));
+            dialog.setMaxWidth(UiScale.px(720));
+            nativeStackDialog = dialog;
+            menuOverlay.show(dialog);
         }
         // Copia: setStack se queda la lista que le pasan como la nueva lastStack.
         setStack(new ArrayList<>(lastStack), lastStackMe);
@@ -3450,7 +3510,7 @@ public class TableScreen extends Pane {
     }
 
     private void kickAiThinking() {
-        if (getScene() == null) {
+        if (nativeOnly || getScene() == null) {
             return;
         }
         if (refreshAiThinking()) {
@@ -3747,6 +3807,7 @@ public class TableScreen extends Pane {
 
     /** Igual, con la ronda al lado (0 = no ensenyarla). Ver {@code RoundCounter}. */
     public void announceTurn(final boolean yours, final String who, final int turn, final int round) {
+        if (nativeOnly) return;
         turnBanner.announce(yours, who, turn, round);
         requestLayout();
     }
@@ -3961,6 +4022,7 @@ public class TableScreen extends Pane {
 
     /** Ver {@link #noteAttachmentsBefore}. */
     public void attachmentsMoved() {
+        if (nativeOnly) return;
         final java.util.Map<Integer, Integer> now = new java.util.HashMap<>();
         final java.util.Map<Integer, javafx.geometry.Bounds> moved = new java.util.HashMap<>();
         for (final CardNode n : everyNode()) {
@@ -4244,6 +4306,13 @@ public class TableScreen extends Pane {
 
     /** Refresca todo lo pintado. Se llama cuando llegan imagenes nuevas. */
     public void refreshAll() {
+        if (nativeOnly) {
+            for (final Overlay layer : List.of(overlay, menuOverlay, zoomOverlay, curtain)) {
+                if (layer.isShowing()) CardNode.refreshAllIn(layer);
+            }
+            if (promptBanner.isAlerting()) CardNode.refreshAllIn(promptBanner);
+            return;
+        }
         // Tambien lo que haya en los dialogos: una carta ampliada o el reparto
         // de dano se quedaban con el marcador hasta cerrarlos y volver a abrir.
         CardNode.refreshAllIn(overlay);
@@ -4450,6 +4519,7 @@ public class TableScreen extends Pane {
      * Solo en el hilo de interfaz.
      */
     public void impactHit(final Object entity, final List<javafx.scene.paint.Color> colors, final Object source) {
+        if (nativeOnly) return;
         // Que la carta espere entera a que le llegue (GhostHold).
         if (entity instanceof CardView cv && ImpactLayer.isEnabled()) {
             GhostHold.hold(cv.getId());
@@ -4468,6 +4538,7 @@ public class TableScreen extends Pane {
      * se quedan quietos). Solo en el hilo de interfaz.
      */
     public void spellBlast(final forge.neo.match.SpellSignature signature, final Object target) {
+        if (nativeOnly) return;
         final Bounds b = signature.atTarget && target != null ? impactBoundsOf(target) : null;
         if (signature.atTarget && b == null) {
             return;
@@ -4505,6 +4576,7 @@ public class TableScreen extends Pane {
     /** La entrada de tu comandante ({@link CommanderEntrance}). Solo en el hilo de interfaz. */
     public void commanderEntrance(final CardView card, final List<javafx.scene.paint.Color> colors,
             final String subtitle, final forge.neo.match.CommanderSignature signature) {
+        if (nativeOnly) return;
         impactLayer.commander(card, colors, subtitle, signature);
     }
 
@@ -4536,6 +4608,7 @@ public class TableScreen extends Pane {
      * golpea ({@link Anim#strike}). Solo en el hilo de interfaz.
      */
     public void strike(final CardView source, final Object target) {
+        if (nativeOnly) return;
         final CardNode n = nodeOf(source);
         final Bounds to = impactBoundsOf(target);
         if (Boolean.getBoolean("neo.impact.log")) {
@@ -4558,6 +4631,7 @@ public class TableScreen extends Pane {
      * destello de siempre y punto (lo hace NeoMatchUI).
      */
     public void damagePop(final Object entity, final int amount, final boolean combat, final boolean poison) {
+        if (nativeOnly) return;
         if (entity instanceof CardView cv) {
             GhostHold.hold(cv.getId());
             selfField.holdGhost(cv);
@@ -4592,6 +4666,7 @@ public class TableScreen extends Pane {
 
     /** Remolino bajo un permanente que acaba de entrar lanzado. */
     public void impactArrive(final Object entity, final List<javafx.scene.paint.Color> colors) {
+        if (nativeOnly) return;
         impactLayer.arrive(entity, colors);
     }
 
@@ -4740,6 +4815,7 @@ public class TableScreen extends Pane {
      * @param links tripletas {origen, destino, CombatOverlay.Kind}
      */
     public void setCombatLinks(final List<Object[]> links) {
+        if (nativeOnly) return;
         combatOverlay.setLinks(links);
     }
 

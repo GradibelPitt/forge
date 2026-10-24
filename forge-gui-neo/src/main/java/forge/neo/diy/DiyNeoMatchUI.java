@@ -25,7 +25,7 @@ import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Scene;
 
-/** Hosts NeoForge's match scene inside Forge's existing Swing match tab. */
+/** Hosts native match dialogs inside Forge's existing Swing match tab. */
 public final class DiyNeoMatchUI extends NeoMatchUI implements ICDoc, IVTopLevelUI {
     private JFXPanel panel;
     private FScreen screen;
@@ -69,9 +69,9 @@ public final class DiyNeoMatchUI extends NeoMatchUI implements ICDoc, IVTopLevel
         forge.neo.ui.ImpactLayer.setEnabled(NeoSettings.getBool(NeoSettings.IMPACT_EFFECTS, true));
         forge.neo.ui.ImpactLayer.setEntranceEnabled(NeoSettings.getBool(NeoSettings.COMMANDER_ENTRANCE, true));
         forge.neo.ui.HandFan.setFanned(NeoSettings.handFan());
-        table = new TableScreen(150, 300);
+        table = new TableScreen(150, 300, true);
         table.getDetailPanel().setTextZoom(NeoSettings.getDouble(NeoSettings.TEXT_ZOOM, 1.15));
-        binder = new TableBinder(table);
+        binder = new NativeMatchBinder(table);
         binder.setMatchUi(this);
         setBinder(binder);
         setTable(table);
@@ -86,9 +86,9 @@ public final class DiyNeoMatchUI extends NeoMatchUI implements ICDoc, IVTopLevel
                     .getMethod("install", TableScreen.class, NeoMatchUI.class, Scene.class)
                     .invoke(null, table, this, scene);
         } catch (ClassNotFoundException e) {
-            // The optional browser payload is absent; retain the original match scene.
+            throw new IllegalStateException("The match renderer is not installed", e);
         } catch (ReflectiveOperationException | LinkageError e) {
-            System.err.println("[arena] Browser unavailable; using NeoForge: " + e);
+            throw new IllegalStateException("The match renderer could not start", e);
         }
         CardImages.addListener(artListener);
         panel.setScene(scene);

@@ -11,7 +11,10 @@ class PushSource {
   close(){this.closed=true;}
 }
 Object.defineProperty(globalThis,'location',{configurable:true,value:{search:'?embedded',hash:'#test-token'}});
-Object.defineProperty(globalThis,'document',{configurable:true,value:{documentElement:{dataset:{}}}});
+const windowTarget=new EventTarget();
+const documentTarget=Object.assign(new EventTarget(),{documentElement:{dataset:{}},visibilityState:'visible',title:''});
+Object.defineProperty(globalThis,'window',{configurable:true,value:windowTarget});
+Object.defineProperty(globalThis,'document',{configurable:true,value:documentTarget});
 Object.defineProperty(globalThis,'EventSource',{configurable:true,value:PushSource});
 const {createArenaSocket}=await import('../src/client/embeddedTransport');
 
@@ -59,4 +62,36 @@ test('a broken push connection closes once for the existing reconnect path',()=>
   source.onerror?.();source.onerror?.();socket.close();
   assert.equal(errors,1);assert.equal(closed,1);assert.equal(cleaned,1);
   assert.equal(source.closed,true);assert.equal(socket.readyState,3);
+});
+
+test('focus and visibility restoration fetch one fresh state and detach on close',async()=>{
+  let requests=0,release:((response:Response)=>void)|undefined;
+  globalThis.fetch=async()=>{requests++;return await new Promise<Response>(resolve=>{release=resolve;});};
+  const socket=createArenaSocket('unused'),received:unknown[]=[];
+  socket.onmessage=e=>received.push(JSON.parse(e.data));
+  windowTarget.dispatchEvent(new Event('focus'));
+  documentTarget.dispatchEvent(new Event('visibilitychange'));
+  socket.send(JSON.stringify({type:'resync'}));
+  assert.equal(requests,1,'concurrent restore events must share one state request');
+  release!(new Response('[{"type":"view","room":{"revision":21}}]'));
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(received,[{type:'view',room:{revision:21}}]);
+  documentTarget.visibilityState='hidden';
+  documentTarget.dispatchEvent(new Event('visibilitychange'));
+  assert.equal(requests,1);
+  socket.close();documentTarget.visibilityState='visible';
+  windowTarget.dispatchEvent(new Event('focus'));
+  assert.equal(requests,1);
+});
+
+test('closing a socket cancels outstanding requests and ignores late responses',async()=>{
+  let signal:AbortSignal|undefined,release:((response:Response)=>void)|undefined;
+  globalThis.fetch=async(_url,options)=>{signal=options?.signal??undefined;return await new Promise<Response>(resolve=>{release=resolve;});};
+  const socket=createArenaSocket('unused');let delivered=0;
+  socket.onmessage=()=>delivered++;
+  socket.send(JSON.stringify({type:'resync'}));
+  socket.close();assert.equal(signal?.aborted,true);
+  release!(new Response('[{"type":"view","room":{"revision":99}}]'));
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(delivered,0);
 });

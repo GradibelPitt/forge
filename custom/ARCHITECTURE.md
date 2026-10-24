@@ -1,27 +1,42 @@
 # Forge DIY Architecture
 
-Windows match presentation additionally uses the optional `forge-gui-neo` payload:
-`GuiDesktop.getNewGuiGame` → `DiyNeoMatchUI` → `JFXPanel` → original NeoForge
-`TableScreen`/`TableBinder`. The Swing lobby still owns `HostedMatch` and navigation.
+Windows match presentation uses `forge-gui-arena` in a private installed Chrome
+or Edge app window. `GuiDesktop.getNewGuiGame` → `DiyNeoMatchUI` → `JFXPanel`
+retains a native-only `TableScreen` and `NativeMatchBinder` for dialogs and input.
+The old battlefield is not attached or updated, and there is no old-board switch.
+The existing lobby still owns `HostedMatch` and navigation.
 DIY card images are read through desktop `ImageCache` on the Swing EDT; JavaFX
 scene mutations stay on the JavaFX thread. Build inputs, pinned upstream sources
-and offscreen verification are maintained in `forge-gui-neo/`.
+are maintained in `forge-gui-neo/`. Native-host checks do not certify screen rendering.
 
 Neo card download completion resolves through the same desktop `ImageCache` bridge
 as the initial lookup, then notifies the JavaFX scene with the full-resolution image.
 `DiyMatchAppearance` preserves the user's scale override, keeps automatic text at
 least the 1080-height baseline and chooses an installed CJK font for Chinese UI.
 
-The optional `forge-gui-arena` surface hosts the pinned MTGAPRO React board in
-JavaFX WebView over the same native match controller. Its authenticated loopback
+The `forge-gui-arena` surface hosts the pinned MTGAPRO React board in Chromium
+over the same native match controller. Its authenticated loopback
 service pushes changed snapshots through SSE, with idle heartbeats and explicit
 resync; unchanged revisions do not update React. Image URLs have per-card versions
 based on the native original image, so scaled-image notifications cannot reload
 the entire board. Two dedicated image workers resize/encode cacheable 320-pixel
 board images and up-to-1000-pixel inspection images; desktop `ImageCache` access
 still runs on Swing EDT. The encoded LRU is bounded by 32 MiB and 256 variants.
-Embedded ambient motes are static, while input and game-event animations remain.
-Native dialogs, the tools menu and manual Neo fallback continue to share the scene.
+SSE streams use separate workers from commands. A private browser profile and
+loopback CDP connection control only the owned match window; the match token is
+passed by navigation, not the process command line. Native dialogs temporarily
+minimize the browser; closing them restores its previous window state. Browser
+close or renderer crash leaves the engine intact and offers reopening from Forge.
+Native settings, developer tools and customized shortcuts use the same controller.
+Hotseat curtains publish an empty projection and revoke image lookup until the
+next seat is revealed. Chromium lifecycle tests and native/bridge tests are separate
+from visible interactive acceptance.
+
+The React board owns one `MatchEffects` subtree per match. Flight and particle
+effects have separate error boundaries and monotonic event cursors. Native dialogs
+pause effects without remounting their renderer or replaying consumed history.
+Animation failures cannot remove the card board; the native host also offers an
+explicit page reload that leaves the Java match running.
 
 本文件是项目路径和数据流的权威说明。当前状态见 [PROJECT.md](PROJECT.md)，机制入口见 [KEYWORDS.md](KEYWORDS.md)。
 

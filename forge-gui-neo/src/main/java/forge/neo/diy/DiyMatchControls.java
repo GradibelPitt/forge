@@ -17,6 +17,9 @@ import java.util.Set;
 /** NeoForge's original match menu and shortcuts, scoped to one embedded scene. */
 public final class DiyMatchControls {
 
+    public static final String FULLSCREEN_GET_PROPERTY = "forge.arena.fullscreen.get";
+    public static final String FULLSCREEN_SET_PROPERTY = "forge.arena.fullscreen.set";
+
     private DiyMatchControls() {
     }
 
@@ -115,11 +118,23 @@ public final class DiyMatchControls {
 
             @Override
             public boolean isFullScreen() {
+                final Scene scene = table.getScene();
+                final Object bridge = scene == null ? null : scene.getProperties().get(FULLSCREEN_GET_PROPERTY);
+                if (bridge instanceof java.util.function.BooleanSupplier query) {
+                    return query.getAsBoolean();
+                }
                 return forge.Singletons.getView().getFrame().isFullScreen();
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             public void setFullScreen(final boolean on) {
+                final Scene scene = table.getScene();
+                final Object bridge = scene == null ? null : scene.getProperties().get(FULLSCREEN_SET_PROPERTY);
+                if (bridge instanceof java.util.function.Consumer<?> request) {
+                    ((java.util.function.Consumer<Boolean>) request).accept(on);
+                    return;
+                }
                 javax.swing.SwingUtilities.invokeLater(() ->
                         forge.Singletons.getView().getFrame().setFullScreen(on));
             }

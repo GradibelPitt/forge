@@ -4,18 +4,17 @@ import './stackPanel.css';
 import {ChineseCardText,LocalizedCardImage,LocalizedName} from './LocalizedCard';
 
 
-export function StackPanel({cards,history,players,onInspect,onDismiss,onSelect}:{cards:ArenaCard[];history:ArenaEvent[];players:ArenaPlayer[];onInspect:(card:ArenaCard)=>void;onDismiss:()=>void;onSelect:(card:ArenaCard)=>void}){
-  const [open,setOpen]=useState(false);
+export function StackPanel({cards,history,players,onInspect,onDismiss,onSelect,open,onOpenChange}:{cards:ArenaCard[];history:ArenaEvent[];players:ArenaPlayer[];onInspect:(card:ArenaCard)=>void;onDismiss:()=>void;onSelect:(card:ArenaCard)=>void;open:boolean;onOpenChange:(open:boolean)=>void}){
   const [expanded,setExpanded]=useState(false);
   const prevCount=useRef(0);
   useEffect(()=>{
-    if(cards.length>0&&prevCount.current===0)setOpen(true);
-    else if(cards.length===0&&prevCount.current>0)setOpen(false);
+    if(cards.length>0&&prevCount.current===0)onOpenChange(true);
+    else if(cards.length===0&&prevCount.current>0)onOpenChange(false);
     prevCount.current=cards.length;
-  },[cards.length]);
+  },[cards.length,onOpenChange]);
   const recent=[...history].reverse();
   return <>
-    <button type="button" className={`arena-stack-tab${open?' is-open':''}`} aria-expanded={open} aria-controls="arena-stack-panel" aria-label={open?'收起堆叠与结算记录':`打开堆叠与结算记录，当前堆叠 ${cards.length} 项`} onClick={()=>{onDismiss();setOpen(value=>!value);}}>
+    <button type="button" className={`arena-stack-tab${open?' is-open':''}`} aria-expanded={open} aria-controls="arena-stack-panel" aria-label={open?'收起堆叠与结算记录':`打开堆叠与结算记录，当前堆叠 ${cards.length} 项`} onClick={()=>{onDismiss();onOpenChange(!open);}}>
       <span className="arena-stack-tab-arrow" aria-hidden="true">{open?'›':'‹'}</span>
       {cards.length>0&&<b className="arena-stack-tab-count">{cards.length}</b>}
     </button>

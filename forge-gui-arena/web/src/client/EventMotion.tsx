@@ -1,18 +1,20 @@
 import {useEffect,useRef,useState,type CSSProperties} from 'react';
 import type {ArenaEvent,ArenaSnapshot} from '../shared/arenaProtocol';
 import {LocalizedCardImage} from './LocalizedCard';
+import {EventCursor} from './eventCursor';
 type Cue={id:string;kind:'flight'|'attack'|'impact';x:number;y:number;dx:number;dy:number;name?:string;image?:string;until:number};
-export function EventMotion({events,ownPlayerId,baseline}:{events:ArenaEvent[];ownPlayerId:string;baseline:number}){
- const last=useRef(baseline),combat=useRef(new Map<string,string>()),[cues,setCues]=useState<Cue[]>([]);
+export function EventMotion({events,ownPlayerId,baseline,active=true}:{events:ArenaEvent[];ownPlayerId:string;baseline:number;active?:boolean}){
+  const cursor=useRef(new EventCursor(baseline)),combat=useRef(new Map<string,string>()),[cues,setCues]=useState<Cue[]>([]);
  useEffect(()=>{
+    cursor.current.advance(baseline);
   const anchor=(card?:string,player?:string,zone?:string)=>{
    const selector=card?`[data-card-id="${CSS.escape(card)}"]`:zone?`[data-zone="${zone}"][data-zone-player="${CSS.escape(player||'')}"]`:`[data-player-id="${CSS.escape(player||'')}"]`;
    const element=document.querySelector(selector),rect=element?.getBoundingClientRect();
    return {x:rect?rect.x+rect.width/2:innerWidth*.5,y:rect?rect.y+rect.height/2:innerHeight*(player===ownPlayerId?.78:.18),image:element?.querySelector('img')?.src};
   };
-  const next:Cue[]=[],now=performance.now(),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches||document.hidden;
-  for(const event of events){
-   if(event.sequence<=last.current)continue;last.current=event.sequence;
+    const next:Cue[]=[],now=performance.now(),reduced=!active||matchMedia('(prefers-reduced-motion: reduce)').matches||document.hidden;
+    if(reduced){setCues([]);combat.current.clear();}
+    for(const event of cursor.current.take(events)){
    if(reduced)continue;
    const d=event.data;
    if(event.kind==='combat'){
@@ -23,7 +25,7 @@ export function EventMotion({events,ownPlayerId,baseline}:{events:ArenaEvent[];o
      const from=anchor(attack.attackerId),to=anchor(attack.blockerIds[0]||attack.defenderCardId,attack.defenderPlayerId);
      next.push({id:`${event.sequence}:${attack.attackerId}`,kind:'attack',...from,dx:(to.x-from.x)*.3,dy:(to.y-from.y)*.3,until:now+620});
     }combat.current=current;
-   }else if(event.kind==='zone'&&['Hand','Battlefield','Graveyard','Exile'].includes(d.to||'')){
+      }else if(event.kind==='zone'&&['Hand','Battlefield','Graveyard','Exile'].includes(d.to||'')){
     const from=anchor(undefined,d.playerId,d.from),to=anchor(d.cardId,d.playerId,d.to);
     next.push({id:String(event.sequence),kind:'flight',...from,image:undefined,dx:to.x-from.x,dy:to.y-from.y,name:d.name,until:now+650});
    }else if(event.kind==='cast'){
@@ -34,14 +36,14 @@ export function EventMotion({events,ownPlayerId,baseline}:{events:ArenaEvent[];o
    }
   }
   if(next.length)setCues(old=>[...old.filter(c=>c.until>now),...next].slice(-24));
- },[events,ownPlayerId]);
+  },[events,ownPlayerId,baseline,active]);
  useEffect(()=>{
   if(!cues.length)return;
   const timer=setTimeout(()=>setCues(old=>old.filter(c=>c.until>performance.now())),Math.max(0,Math.min(...cues.map(c=>c.until))-performance.now())+20);
   return()=>clearTimeout(timer);
  },[cues]);
  useEffect(()=>{const hide=()=>{if(document.hidden)setCues([]);};document.addEventListener('visibilitychange',hide);return()=>document.removeEventListener('visibilitychange',hide);},[]);
- return <div className="event-motion" aria-hidden="true">{cues.map(c=><div key={c.id} className={`event-cue event-${c.kind}`} style={{left:c.x,top:c.y,'--dx':`${c.dx}px`,'--dy':`${c.dy}px`} as CSSProperties}>{c.kind==='impact'?<i/>:c.image?<img src={c.image} alt=""/>:<LocalizedCardImage name={c.name}/>}</div>)}</div>;
+  return <div className="event-motion" aria-hidden="true">{active&&cues.map(c=><div key={c.id} data-event-sequence={c.id} className={`event-cue event-${c.kind}`} onAnimationEnd={()=>setCues(old=>old.filter(cue=>cue.id!==c.id))} style={{left:c.x,top:c.y,'--dx':`${c.dx}px`,'--dy':`${c.dy}px`} as CSSProperties}>{c.kind==='impact'?<i/>:c.image?<img src={c.image} alt=""/>:<LocalizedCardImage name={c.name}/>}</div>)}</div>;
 }
 export function GameResult({state,playerId}:{state:ArenaSnapshot;playerId:string}){
  const [dismissed,setDismissed]=useState('');

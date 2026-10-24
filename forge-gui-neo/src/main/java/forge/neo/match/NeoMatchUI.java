@@ -2816,7 +2816,7 @@ public class NeoMatchUI extends NetworkGuiGame implements OverlookedSink {
      */
     private void animateEvent(final GameEvent event) {
         final forge.neo.ui.TableScreen t = table;
-        if (t == null || !forge.neo.card.CardNode.areAnimationsEnabled()) {
+        if (t == null || t.isNativeOnly() || !forge.neo.card.CardNode.areAnimationsEnabled()) {
             return;
         }
         // Juntas, nunca una tarea por aviso: ver CardPulses (una cascada de

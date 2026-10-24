@@ -6,7 +6,7 @@ import forge.gui.GuiBase;
 import forge.gui.interfaces.IGuiBase;
 import forge.neo.ui.TableScreen;
 import forge.neo.match.NeoMatchUI;
-import forge.neo.match.TableBinder;
+import forge.neo.diy.NativeMatchBinder;
 import forge.game.card.Card;
 import forge.game.zone.ZoneType;
 import javafx.application.Platform;
@@ -18,7 +18,7 @@ import forge.localinstance.properties.ForgeConstants;
 public class ArenaSceneProbe {
     static final String APP = System.getProperty("forge.test.app") + "/";
     static forge.util.ImageFetcher imageFetcher;
-    static boolean failProjection;
+    static volatile boolean failProjection;
     public static void main(String[] args) throws Exception {
         GuiBase.setInterface((IGuiBase) Proxy.newProxyInstance(IGuiBase.class.getClassLoader(), new Class[]{IGuiBase.class}, (p,m,a) -> {
             if (m.getName().equals("getAssetsDir")) return APP;
@@ -48,8 +48,9 @@ public class ArenaSceneProbe {
         var symbols=forge.toolbox.CardFaceSymbols.class.getDeclaredField("MANA_IMAGES"); symbols.setAccessible(true);
         ((Map)symbols.get(null)).put("W",forge.toolbox.FSkin.getImage(white));
         forge.model.FModel.getPreferences().setPref(forge.localinstance.properties.ForgePreferences.FPref.UI_ENABLE_ONLINE_IMAGE_FETCHER, false);
-        System.out.println("CARD_CACHE="+ForgeConstants.CACHE_CARD_PICS_DIR);
-        forge.ImageKeys.initializeDirs(ForgeConstants.CACHE_CARD_PICS_DIR, ForgeConstants.CACHE_CARD_PICS_SUBDIR,
+        Path fixtureCache = Path.of(args[0], "image-cache").toAbsolutePath();
+        Files.createDirectories(fixtureCache);
+        forge.ImageKeys.initializeDirs(fixtureCache.toString() + "/", ForgeConstants.CACHE_CARD_PICS_SUBDIR,
                 ForgeConstants.CACHE_TOKEN_PICS_DIR, ForgeConstants.CACHE_ICON_PICS_DIR,
                 ForgeConstants.CACHE_BOOSTER_PICS_DIR, ForgeConstants.CACHE_FATPACK_PICS_DIR,
                 ForgeConstants.CACHE_BOOSTERBOX_PICS_DIR, ForgeConstants.CACHE_PRECON_PICS_DIR,
@@ -66,6 +67,13 @@ public class ArenaSceneProbe {
         var unsafe = (sun.misc.Unsafe)uf.get(null);
         var db = forge.model.FModel.class.getDeclaredField("magicDb");
         unsafe.putObject(unsafe.staticFieldBase(db), unsafe.staticFieldOffset(db), (com.google.common.base.Supplier<forge.StaticData>)() -> data);
+        // A private bitmap fixture keeps the image-service check independent of user caches.
+        var imagePath = fixtureCache.resolve("arena-test/LightningBolt.full.jpg");
+        Files.createDirectories(imagePath.getParent());
+        var bitmap = new java.awt.image.BufferedImage(1000, 1400, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        var graphics = bitmap.createGraphics();
+        graphics.setColor(new java.awt.Color(75, 35, 25)); graphics.fillRect(0, 0, 1000, 1400); graphics.dispose();
+        ImageIO.write(bitmap, "jpg", imagePath.toFile());
         if (args.length > 1 && args[1].equals("--images")) {
             try { throw new UnsupportedOperationException(); }
             catch (Throwable e) { e.printStackTrace(); Platform.exit(); System.exit(1); }
@@ -85,6 +93,7 @@ public class ArenaSceneProbe {
         for (String name : List.of("Drakuseth, Maw of Flames", "Golgari Guildgate", "Drakuseth, Maw of Flames", "Golgari Guildgate", "Lightning Bolt", "巨龙之魂")) {
             var paper = name.startsWith("Drakuseth") ? data.getCommonCards().getCard(name,"FDN",2) : name.equals("Lightning Bolt") ? data.getCommonCards().getCard(name,"PF25",1) : name.equals("Golgari Guildgate") ? data.getCommonCards().getCard(name,"FDN",1) : data.getCommonCards().getCard(name);
             Card c = Card.fromPaperCard(paper, game.getPlayers().get(i < 2 || i > 3 ? 0 : 1));
+            if (name.equals("Lightning Bolt")) c.setImageKey("arena-test/LightningBolt.full");
             c.getOwner().getZone(i > 3 ? ZoneType.Hand : ZoneType.Battlefield).add(c);
             cards.add(c.getView()); i++;
         }
@@ -96,22 +105,10 @@ public class ArenaSceneProbe {
             }
         }
         var error = new java.util.concurrent.atomic.AtomicReference<Throwable>();
-        var embeddedPanel = new javafx.embed.swing.JFXPanel[1];
-        var embeddedFrame = new javax.swing.JFrame[1];
-        if (Boolean.getBoolean("forge.test.embedded")) {
-            javax.swing.SwingUtilities.invokeAndWait(() -> {
-                embeddedPanel[0] = new javafx.embed.swing.JFXPanel();
-                embeddedFrame[0] = new javax.swing.JFrame("Arena rendering probe");
-                embeddedFrame[0].setUndecorated(true);
-                embeddedFrame[0].add(embeddedPanel[0]);
-                embeddedFrame[0].setBounds(-12000, 0, 2560, 1440);
-                embeddedFrame[0].setVisible(true);
-            });
-        }
         Runnable createScene = () -> {
             try {
                 Platform.setImplicitExit(false);
-                var table = new TableScreen(150, 300);
+                var table = new TableScreen(150, 300, true);
                 var scene = new Scene(table, 1440, 900);
                 scene.getStylesheets().add(TableScreen.class.getResource("/forge/neo/neo.css").toExternalForm());
                 forge.neo.platform.NeoFonts.apply(scene);
@@ -121,7 +118,8 @@ public class ArenaSceneProbe {
                         return super.actionableStrength(card);
                     }
                 };
-                var binder = new TableBinder(table); binder.setMatchUi(ui); ui.setBinder(binder); ui.setTable(table);
+                var binder = new NativeMatchBinder(table); binder.setMatchUi(ui); ui.setBinder(binder); ui.setTable(table);
+                forge.neo.diy.DiyMatchControls.install(scene, table, ui);
                 ui.setGameView(game.getView());
                 table.setSelfBattlefield(cards.subList(0, 2)); table.setOpponentBattlefield(cards.subList(2, 4)); table.setHand(cards.subList(4, 6));
                 var local = new forge.trackable.TrackableCollection<forge.game.player.PlayerView>();
@@ -136,67 +134,37 @@ public class ArenaSceneProbe {
                 ui.setCurrentPlayer(local.get(0));
                 ui.openView(local);
                 var loaded = forge.neo.diy.DiyCardImages.read(cards.get(4).getCurrentState().getImageKey());
-                if (loaded == null) throw new AssertionError("Existing Lightning Bolt card art was not loaded");
-                System.out.println("LOCAL_CARD_ART_OK " + loaded.getWidth() + "x" + loaded.getHeight());
-                forge.neo.diy.DiyCardImages.read(cards.get(5).getCurrentState().getImageKey());
-                table.setPrompt("NeoForge original match UI — actual card scripts");
-                var stage=embeddedPanel[0]==null?new javafx.stage.Stage(javafx.stage.StageStyle.UTILITY):null;
-                if(stage!=null){stage.setScene(scene);stage.setX(-12000);stage.setY(0);stage.show();}
-                else embeddedPanel[0].setScene(scene);
+                if (loaded == null) throw new AssertionError("Private image fixture was not loaded: " + imagePath);
+                System.out.println("IMAGE_SERVICE_FIXTURE_OK " + loaded.getWidth() + "x" + loaded.getHeight());
+                table.setPrompt("Native controller fixture — actual card scripts");
+                // A native owner is required for ContextMenu; this is not a rendering test.
+                var stage = new javafx.stage.Stage(javafx.stage.StageStyle.UTILITY);
+                stage.setScene(scene);stage.setX(-12000);stage.setY(0);stage.show();
                 var surface = (forge.arena.ArenaSurface) forge.arena.ArenaSurface.install(table,ui,scene);
                 table.applyCss();table.layout();
-                var bridgeChecks=Boolean.getBoolean("forge.test.performance") ? ArenaPerformanceCheck.run(surface,table) : ArenaBridgeCheck.run(surface,ui,table);
-                var effects = new javafx.animation.Timeline(new javafx.animation.KeyFrame(javafx.util.Duration.millis(250), event -> {
-                    table.strike(cards.get(0), cards.get(2));
-                    table.damagePop(cards.get(2), 3, true, false);
-                }));
-                effects.setCycleCount(javafx.animation.Timeline.INDEFINITE);
-                if(embeddedPanel[0]!=null)effects.play();
-                var delay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(embeddedPanel[0]==null?9:30));
-                delay.setOnFinished(ev -> {
+                var checks = ArenaBridgeCheck.run(surface,ui,table);
+                if (Boolean.getBoolean("forge.test.performance")) {
+                    checks = checks.thenCompose(ignored -> ArenaPerformanceCheck.run(surface, table));
+                }
+                checks.whenComplete((ignored, failure) -> Platform.runLater(() -> {
                     try {
-                        table.refreshAll(); table.applyCss(); table.layout();
-                        for (var c : cards) {
-                            String key=c.getCurrentState().getImageKey();
-                            if (!forge.neo.card.CardImages.isCached(key)) throw new AssertionError("Missing rendered card art: "+key);
-                        }
-                        if (table.selfFieldNodes().size() != 2 || table.oppFieldNodes().size() != 2 || table.handNodes().size() != 2)
-                            throw new AssertionError("Real player zones not bound: " + table.selfFieldNodes().size()+"/"+table.oppFieldNodes().size()+"/"+table.handNodes().size());
-                        table.setCombatLinks(List.of(
-                            new Object[]{cards.get(0), cards.get(2), forge.neo.ui.CombatOverlay.Kind.ATTACK},
-                            new Object[]{cards.get(2), cards.get(0), forge.neo.ui.CombatOverlay.Kind.BLOCK},
-                            new Object[]{cards.get(4), cards.get(2), forge.neo.ui.CombatOverlay.Kind.TARGET}));
-                        if (table.combatLinkCount() != 3) throw new AssertionError("Missing combat links");
+                        if (failure != null) throw new AssertionError("Bridge checks failed", failure);
+                        table.refreshAll();
                         table.strike(cards.get(0), cards.get(2));
                         table.damagePop(cards.get(2), 3, true, false);
-                        var impact = TableScreen.class.getDeclaredField("impactLayer"); impact.setAccessible(true);
-                        if (((forge.neo.ui.ImpactLayer)impact.get(table)).liveCount() == 0) throw new AssertionError("No impact animation");
-                        if (javafx.stage.Window.getWindows().size()!=1) throw new AssertionError("Unexpected window");
-                        table.redrawCombat();
-                        if(!surface.webView().isVisible()||surface.webView().getWidth()<1000)throw new AssertionError("Browser surface hidden or not sized: "+surface.webView().isVisible()+" "+surface.webView().getWidth());
-                        String text = String.valueOf(surface.webView().getEngine().executeScript("document.body.innerText"));
-                        System.out.println("WEB_TEXT="+text);
-                        if (!text.contains("Forge DIY") || !text.contains("巨龙之魂")) throw new AssertionError("React board not bound: "+text);
-                        Object images = surface.webView().getEngine().executeScript("Array.from(document.querySelectorAll('.forge-hand img')).every(i=>i.complete&&i.naturalWidth>0)");
-                        if (!Boolean.TRUE.equals(images)) throw new AssertionError("Local card images did not render");
-                        bridgeChecks.join();
-                        System.out.println("REACT_DOM_AND_DIY_IMAGES_OK");
-                        ImageIO.write(SwingFXUtils.fromFXImage(scene.snapshot(null), null), "png", Path.of(args[0], "mtgapro-scene.png").toFile());
-                        System.out.println("ORIGINAL_NEO_SCENE_OK cards=" + cards.size() + " arrows=3 impacts=active");
+                        ArenaBridgeCheck.assertNoLegacyBoard(table);
+                        System.out.println("ARENA_NATIVE_BRIDGE_OK legacyCards=0 rendererNotTested=true");
                     } catch (Throwable e) { error.set(e); e.printStackTrace(); }
                     finally {
-                        effects.stop();
-                        if(stage!=null)stage.close();
-                        else { embeddedPanel[0].setScene(null);javax.swing.SwingUtilities.invokeLater(embeddedFrame[0]::dispose); }
+                        stage.close();
                         surface.close();ui.shutdown();scene.setRoot(new javafx.scene.layout.Pane());done.countDown();
                     }
-                });
-                delay.play();
+                }));
             } catch (Throwable e) { error.set(e); e.printStackTrace(); }
             finally { if (error.get() != null) done.countDown(); }
         };
-        if(embeddedPanel[0]==null)Platform.startup(createScene);else Platform.runLater(createScene);
-        if (!done.await(45, TimeUnit.SECONDS)) throw new AssertionError("Scene check timed out");
+        Platform.startup(createScene);
+        if (!done.await(60, TimeUnit.SECONDS)) throw new AssertionError("Native bridge check timed out");
         Platform.exit();
         System.exit(error.get() == null ? 0 : 1);
     }
@@ -208,13 +176,13 @@ public class ArenaSceneProbe {
         Platform.startup(() -> {
             try {
                 Platform.setImplicitExit(false);
-                var table = new TableScreen(150,300);
+                var table = new TableScreen(150,300,true);
                 var scene = new Scene(table,1440,900);
                 scene.getStylesheets().add(TableScreen.class.getResource("/forge/neo/neo.css").toExternalForm());
                 var ui = new NeoMatchUI(NeoMatchUI.Mode.AUTO_PLAY,true) {
                     @Override public void afterGameFailure(String message) { failure.set(new AssertionError(message)); }
                 };
-                var binder = new TableBinder(table); binder.setMatchUi(ui); ui.setBinder(binder); ui.setTable(table);
+                var binder = new NativeMatchBinder(table); binder.setMatchUi(ui); ui.setBinder(binder); ui.setTable(table);
                 forge.arena.ArenaSurface.install(table,ui,scene);
                 created.complete(ui);
             } catch(Throwable e) { created.completeExceptionally(e); }

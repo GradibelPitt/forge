@@ -6,7 +6,8 @@ export type ArenaPlayer = {id:string;name:string;life:number;libraryCount:number
 export type ArenaCombat = {attackerId:string;blockerIds:string[];defenderPlayerId?:string;defenderCardId?:string};
 export type ArenaSnapshot = {players:ArenaPlayer[];stack:ArenaCard[];combat:ArenaCombat[];phase:string;activePlayerId:string|null;gameOver:boolean;winnerPlayerIds?:string[];lastEventSequence:number;gameNumber?:number;bestOf?:1|3;scores?:number[];matchOver?:boolean;};
 export type ArenaEvent = {sequence:number;kind:string;data:{playerId?:string;cardId?:string;name?:string;description?:string;ability?:boolean;from?:string;to?:string;phase?:string;amount?:number;before?:number;after?:number;tapped?:boolean;fizzled?:boolean;targetPlayerIds?:string[];targetCardIds?:string[];combat?:ArenaCombat[];winnerPlayerIds?:string[];gameNumber?:number}};
-export type ArenaRoomView = {matchId:string;code:string;playerId:string;seat:number;revision:number;status:'waiting'|'starting'|'playing'|'failed';snapshot:ArenaSnapshot|null;prompt:ForgePrompt|null;fullControl:boolean;error?:string;imageVersions?:Record<string,number>;recentStackEvents?:ArenaEvent[]};
+export type DesktopShortcut = {action:string;key:string|null;ctrl:boolean;shift:boolean;alt:boolean;repeats:boolean};
+export type ArenaRoomView = {matchId:string;code:string;playerId:string;seat:number;revision:number;status:'waiting'|'starting'|'playing'|'failed';snapshot:ArenaSnapshot|null;prompt:ForgePrompt|null;fullControl:boolean;error?:string;imageVersions?:Record<string,number>;recentStackEvents?:ArenaEvent[];nativeDialog?:boolean;shortcuts?:DesktopShortcut[]};
 export type ArenaCredential = {code:string;playerId:string;token:string};
 export type ArenaRoomListing = {code:string;hostName:string;seats:number;bestOf:1|3;status:ArenaRoomView['status']};
 export type ArenaClientMessage =
@@ -18,7 +19,7 @@ export type ArenaClientMessage =
  | {type:'command';command:Command}
  | {type:'resync'};
 export type ArenaServerMessage =
- | {type:'heartbeat'}
+ | {type:'heartbeat';revision?:number;matchId?:string}
  | {type:'roomClosed';message:string}
  | {type:'rooms';rooms:ArenaRoomListing[]}
  | {type:'credential';credential:ArenaCredential}

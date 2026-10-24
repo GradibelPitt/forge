@@ -15,8 +15,10 @@ import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.web.WebView;
-import javafx.concurrent.Worker;
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.util.Duration;
 import java.io.*;
 import java.net.*;
@@ -25,18 +27,27 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.lang.reflect.*;
 
-/** A loopback service renders the upstream React board over the existing match controller. */
+/** Seat-scoped game bridge and native dialog host for the Chromium match window. */
 public final class ArenaSurface implements AutoCloseable {
     private static final Gson JSON=new Gson();
     private final NeoMatchUI ui;
     private final TableScreen table;
-    private final WebView web=new WebView();
+    private final Scene scene;
     private final HttpServer server;
     private final ExecutorService http=Executors.newFixedThreadPool(4,r->{Thread t=new Thread(r,"Forge arena HTTP");t.setDaemon(true);return t;});
+    private final ExecutorService streams=new ThreadPoolExecutor(0,2,30,TimeUnit.SECONDS,new SynchronousQueue<>(),r->{Thread t=new Thread(r,"Forge arena stream");t.setDaemon(true);return t;});
     private final String token=UUID.randomUUID().toString()+UUID.randomUUID();
     private final Timeline clock;
     private final MatchTools tools;
-    private final BoardLayers layers;
+    private final ArenaDesktopHost desktop;
+    private final java.util.function.BooleanSupplier fullscreenQuery;
+    private final java.util.function.Consumer<Boolean> fullscreenRequest;
+    private final VBox placeholder = new VBox(18);
+    private final Label rendererStatus = new Label("Forge DIY · 对局");
+    private volatile byte[] desktopState="{}".getBytes(StandardCharsets.UTF_8);
+    private long desktopSequence,focusSequence;
+    private boolean nativeDialog,rendererReady;
+    private String desktopSignature="";
     private final Map<String,CardView> cards=new HashMap<>();
     private Map<String,CardView> nextCards=new HashMap<>();
     private volatile Map<String,ArenaImages.Reference> images=Map.of();
@@ -55,51 +66,75 @@ public final class ArenaSurface implements AutoCloseable {
     private int gameId=-1;
     private String lastView="",lastPrompt="";
     private String lastPublishFailure="";
-    private boolean old,loaded,fullControl;
+    private boolean fullControl;
     private volatile boolean closed;
 
     public static AutoCloseable install(TableScreen table,NeoMatchUI ui,Scene scene) throws Exception {return new ArenaSurface(table,ui,scene);}
     private ArenaSurface(TableScreen table,NeoMatchUI ui,Scene scene) throws Exception {
-        this.table=table;this.ui=ui;
+        this.table=table;this.ui=ui;this.scene=scene;
         cardClick=NeoMatchUI.class.getDeclaredMethod("onCardClicked",CardView.class);cardClick.setAccessible(true);
         playerClick=NeoMatchUI.class.getDeclaredMethod("onPlayerClicked",PlayerView.class);playerClick.setAccessible(true);
         server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);server.setExecutor(http);server.createContext("/",this::handle);server.start();
-        web.setManaged(false);web.setContextMenuEnabled(false);
-        web.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED,e->{
-            boolean editing=loaded&&Boolean.TRUE.equals(web.getEngine().executeScript("!!document.activeElement?.closest('input,textarea,select,[contenteditable]')"));
-            if(!editing&&scene.getOnKeyPressed()!=null)scene.getOnKeyPressed().handle(e);
-        });
-        web.addEventFilter(javafx.scene.input.KeyEvent.KEY_RELEASED,e->{if(scene.getOnKeyReleased()!=null)scene.getOnKeyReleased().handle(e);});
-        web.prefWidthProperty().bind(table.widthProperty());web.prefHeightProperty().bind(table.heightProperty());
-        web.minWidthProperty().bind(table.widthProperty());web.maxWidthProperty().bind(table.widthProperty());
-        web.minHeightProperty().bind(table.heightProperty());web.maxHeightProperty().bind(table.heightProperty());
-        table.widthProperty().addListener((o,a,b)->web.resize(table.getWidth(),table.getHeight()));
-        table.heightProperty().addListener((o,a,b)->web.resize(table.getWidth(),table.getHeight()));
-        web.resize(table.getWidth(),table.getHeight());
-        table.getChildren().add(table.getChildren().indexOf(table.getPromptBanner()),web);
-        tools=new MatchTools(table,ui,this::toggle);
-        layers=new BoardLayers(table,web,tools.button());
-        old="neo".equalsIgnoreCase(System.getProperty("forge.match.ui"))||forge.neo.NeoSettings.getBool("diy.arena.legacy",false);
-        web.setVisible(false);
-        layers.setActive(!old);
-        web.getEngine().getLoadWorker().stateProperty().addListener((o,a,b)->{
-            if(b==Worker.State.SUCCEEDED){loaded=true;refresh();}
-            if(b==Worker.State.FAILED){loaded=false;old=true;refresh();table.showInfo("局内界面","网页界面加载失败，已保留旧界面。可从工具菜单重试。");}
-        });
-        web.getEngine().load("http://127.0.0.1:"+server.getAddress().getPort()+"/?embedded#"+token);
+        tools=new MatchTools(table,ui,this::activateNative);
+        desktop=new ArenaDesktopHost(url(),this::rendererStopped);
+        fullscreenQuery=desktop::isFullscreen;fullscreenRequest=desktop::setFullscreen;
+        scene.getProperties().put(forge.neo.diy.DiyMatchControls.FULLSCREEN_GET_PROPERTY,fullscreenQuery);
+        scene.getProperties().put(forge.neo.diy.DiyMatchControls.FULLSCREEN_SET_PROPERTY,fullscreenRequest);
+        var returnButton=new Button("打开对局窗口");returnButton.setOnAction(e->openDesktop());
+        var reloadButton=new Button("重新载入对局画面");reloadButton.setOnAction(e->{desktop.reload();focusSequence++;refresh();});
+        placeholder.getChildren().addAll(rendererStatus,returnButton,reloadButton);
+        placeholder.setAlignment(javafx.geometry.Pos.CENTER);placeholder.setManaged(false);
+        placeholder.setStyle("-fx-background-color:#101719;-fx-text-fill:#f1d8a0;");
+        placeholder.prefWidthProperty().bind(table.widthProperty());placeholder.prefHeightProperty().bind(table.heightProperty());
+        table.widthProperty().addListener((o,a,b)->placeholder.resize(table.getWidth(),table.getHeight()));
+        table.heightProperty().addListener((o,a,b)->placeholder.resize(table.getWidth(),table.getHeight()));
+        table.getChildren().add(0,placeholder);
         ui.setEventSpy(this::event);
         clock=new Timeline(new KeyFrame(Duration.millis(100),e->refresh()));clock.setCycleCount(Timeline.INDEFINITE);clock.play();
+        refresh();
+        if(!Boolean.getBoolean("forge.arena.noLaunch"))Platform.runLater(this::openDesktop);
     }
     public String url(){return "http://127.0.0.1:"+server.getAddress().getPort()+"/?embedded#"+token;}
-    public WebView webView(){return web;}
-    private void toggle(){old=!old;forge.neo.NeoSettings.setBool("diy.arena.legacy",old);if(!loaded&&!old)web.getEngine().reload();refresh();}
+    private void rendererStopped(){
+        Platform.runLater(()->{if(closed)return;rendererReady=false;rendererStatus.setText(desktop.failure().isBlank()?"对局仍在进行，可重新打开窗口":desktop.failure());activateNative();refresh();});
+    }
+    private void openDesktop(){
+        if(closed)return;
+        focusSequence++;
+        desktop.open();
+        refresh();
+    }
+    private void activateNative(){
+        javax.swing.SwingUtilities.invokeLater(()->{
+            for(java.awt.Window w:java.awt.Window.getWindows())if(w instanceof javax.swing.JFrame&&w.isVisible()){
+                if(w instanceof java.awt.Frame f)f.setExtendedState(f.getExtendedState()&~java.awt.Frame.ICONIFIED);
+                w.toFront();w.requestFocus();break;
+            }
+        });
+    }
+    private void desktopEvent(JsonObject message){
+        switch(message.get("type").getAsString()){
+            case "ready" -> rendererReady=true;
+            case "close-request" -> {forge.neo.diy.DiyMatchControls.askQuit(table,ui);activateNative();}
+            case "renderer-failed", "unresponsive" -> {rendererReady=false;activateNative();}
+            case "responsive" -> rendererReady=true;
+            default -> { }
+        }
+        refresh();
+    }
     private void refresh(){
         if(closed)return;
-        // Renderer selection is independent of transient snapshots and native notices.
-        boolean supported=ui.getGameView()==null||ui.getGameView().getPlayers().size()<=2;
-        boolean active=!old&&supported;
-        layers.setActive(active);
-        web.setVisible(loaded&&active&&!table.isCurtainUp());
+        boolean nextNative=table.isNativeDialogShowing()||tools.isBusy();
+        if(nextNative!=nativeDialog)System.err.println("[arena] Native dialog="+nextNative);
+        if(nextNative&&!nativeDialog)activateNative();
+        if(!nextNative&&nativeDialog)focusSequence++;
+        nativeDialog=nextNative;
+        desktop.update(nativeDialog,focusSequence);
+        placeholder.setVisible(!nativeDialog);
+        placeholder.resize(table.getWidth(),table.getHeight());
+        String signature=nativeDialog+"|"+focusSequence+"|"+rendererReady;
+        if(!signature.equals(desktopSignature)){desktopSignature=signature;desktopSequence++;}
+        desktopState=JSON.toJson(obj("sequence",desktopSequence,"visible",true,"nativeDialog",nativeDialog,"focus",focusSequence,"closed",false)).getBytes(StandardCharsets.UTF_8);
         tools.toFront();
         try{
             publish();lastPublishFailure="";
@@ -127,7 +162,18 @@ public final class ArenaSurface implements AutoCloseable {
     }
     private void publish(){
         GameView game=ui.getGameView();PlayerView me=ui.localPlayerView();
-        if(game==null||me==null||ui.getGameController()==null||table.isCurtainUp())return;
+        if(game==null)return;
+        if(table.isCurtainUp()){
+            cards.clear();images=Map.of();imageSources.clear();events.clear();history.clear();
+            Map<String,Object> room=obj("matchId",Integer.toString(game.getId()),"code","DIY","playerId","","seat",0,"status","starting","snapshot",null,"prompt",null,"fullControl",false,"nativeDialog",true);
+            String canonical=JSON.toJson(room);
+            if(lastView.equals(canonical))return;
+            revision++;lastView=canonical;room.put("revision",revision);
+            state=JSON.toJson(List.of(obj("type","view","room",room))).getBytes(StandardCharsets.UTF_8);
+            synchronized(changes){published=new Published("\""+revision+"\"",state);changes.notifyAll();}
+            return;
+        }
+        if(me==null||ui.getGameController()==null)return;
         if(gameId!=game.getId()){gameId=game.getId();events.clear();history.clear();commands.clear();eventSequence=0;lastView="";}
         nextCards=new HashMap<>();nextImages=new HashMap<>();List<Object> players=new ArrayList<>();
         for(PlayerView p:game.getPlayers()){
@@ -161,7 +207,7 @@ public final class ArenaSurface implements AutoCloseable {
             if(changed&&source!=null)imageSources.put(image.getKey(),new java.lang.ref.WeakReference<>(source));
         }
         imageSources.keySet().retainAll(nextArt.keySet());
-        Map<String,Object> room=obj("matchId",Integer.toString(game.getId()),"code","DIY","playerId",id(me),"seat",0,"status","playing","snapshot",snapshot,"prompt",prompt,"fullControl",fullControl,"recentStackEvents",history,"imageVersions",versions);
+        Map<String,Object> room=obj("matchId",Integer.toString(game.getId()),"code","DIY","playerId",id(me),"seat",0,"status","playing","snapshot",snapshot,"prompt",prompt,"fullControl",fullControl,"recentStackEvents",history,"imageVersions",versions,"nativeDialog",nativeDialog,"shortcuts",shortcuts());
         String canonical=JSON.toJson(room);
         images=Map.copyOf(nextArt);cards.clear();cards.putAll(nextCards);
         if(lastView.equals(canonical))return;
@@ -194,10 +240,13 @@ public final class ArenaSurface implements AutoCloseable {
         Map<String,Object> receipt=obj("commandId",key,"status","rejected","revision",revision);
         if(commands.contains(key)){receipt.put("status","accepted");return obj("type","receipt","receipt",receipt);}
         if(ui.getGameView()==null||!Integer.toString(ui.getGameView().getId()).equals(c.get("matchId").getAsString())||!Objects.equals(id(ui.localPlayerView()),c.get("playerId").getAsString()))return obj("type","receipt","receipt",receipt);
-        if(c.get("expectedRevision").getAsLong()!=revision){receipt.put("status","resync");return obj("type","receipt","receipt",receipt);}
-        if(table.isModalShowing()||table.isCurtainUp()||table.getPromptBanner().isAlerting())return obj("type","receipt","receipt",receipt);
-        String op=c.get("operation").getAsString();JsonObject p=c.getAsJsonObject("parameters");boolean accepted=true;
+        String op=c.get("operation").getAsString();
+        if(!Set.of("shortcut","tools").contains(op)&&c.get("expectedRevision").getAsLong()!=revision){receipt.put("status","resync");return obj("type","receipt","receipt",receipt);}
+        if(table.isNativeDialogShowing()||tools.isBusy())return obj("type","receipt","receipt",receipt);
+        JsonObject p=c.getAsJsonObject("parameters");boolean accepted=true;
         switch(op){
+            case "tools" -> tools.show();
+            case "shortcut" -> accepted=shortcut(p);
             case "ok" -> accepted=table.getActionBar().pressPrimary();
             case "cancel" -> accepted=table.getActionBar().pressSecondary();
             case "control" -> {Boolean value=ui.toggleFullControl();if(value!=null)fullControl=value;else accepted=false;}
@@ -209,15 +258,52 @@ public final class ArenaSurface implements AutoCloseable {
         if(accepted){commands.add(key);while(commands.size()>512)commands.remove(commands.iterator().next());receipt.put("status","accepted");}
         return obj("type","receipt","receipt",receipt);
     }
+
+    private List<Object> shortcuts(){
+        List<Object> list=new ArrayList<>();
+        for(var action:forge.neo.NeoShortcuts.Action.values())for(var chord:forge.neo.NeoShortcuts.bindings(action))
+            list.add(obj("action",action.name(),"key",chord.key()==null?null:chord.key().name(),"ctrl",chord.ctrl(),"shift",chord.shift(),"alt",chord.alt(),"repeats",action.repeats()));
+        return list;
+    }
+
+    private boolean shortcut(JsonObject parameters){
+        KeyCode code;
+        try{code=KeyCode.valueOf(parameters.get("code").getAsString());}catch(Exception invalid){return false;}
+        boolean shift=parameters.has("shift")&&parameters.get("shift").getAsBoolean();
+        boolean ctrl=parameters.has("ctrl")&&parameters.get("ctrl").getAsBoolean();
+        boolean alt=parameters.has("alt")&&parameters.get("alt").getAsBoolean();
+        var event=new KeyEvent(KeyEvent.KEY_PRESSED,"","",code,shift,ctrl,alt,false);
+        var action=forge.neo.NeoShortcuts.actionFor(event);
+        if(code!=KeyCode.ESCAPE&&action==null)return false;
+        if(action==forge.neo.NeoShortcuts.Action.FULL_CONTROL){Boolean value=ui.toggleFullControl();if(value==null)return false;fullControl=value;return true;}
+        if(action==forge.neo.NeoShortcuts.Action.ZOOM_CARD){
+            CardView card=parameters.has("cardId")?cards.get(parameters.get("cardId").getAsString()):null;
+            if(card==null||!ui.mayView(card))return false;
+            table.showZoom(card);return true;
+        }
+        table.requestFocus();
+        if(scene.getOnKeyPressed()!=null)scene.getOnKeyPressed().handle(event);
+        if(scene.getOnKeyReleased()!=null)scene.getOnKeyReleased().handle(new KeyEvent(KeyEvent.KEY_RELEASED,"","",code,shift,ctrl,alt,false));
+        return true;
+    }
     private void handle(HttpExchange exchange) throws IOException {
         boolean imageRequest=false;
         try{
             String path=exchange.getRequestURI().getPath();Map<String,String> query=new HashMap<>();String raw=exchange.getRequestURI().getRawQuery();if(raw!=null)for(String part:raw.split("&")){String[] pair=part.split("=",2);query.put(URLDecoder.decode(pair[0],StandardCharsets.UTF_8),pair.length<2?"":URLDecoder.decode(pair[1],StandardCharsets.UTF_8));}
             String origin=exchange.getRequestHeaders().getFirst("Origin");String local="http://127.0.0.1:"+server.getAddress().getPort();
             if(origin!=null&&!origin.equals(local)){reply(exchange,403,"text/plain",new byte[0]);return;}
-            if(path.equals("/state")||path.equals("/events")||path.equals("/command")||path.equals("/image")){
+            if(path.equals("/desktop/blank")&&exchange.getRequestMethod().equals("GET")){
+                reply(exchange,200,"text/html","<!doctype html><meta charset=utf-8><title>Forge DIY · 对局</title><body style='background:#101719'></body>".getBytes(StandardCharsets.UTF_8));return;
+            }
+            if(path.equals("/state")||path.equals("/events")||path.equals("/command")||path.equals("/image")||path.startsWith("/desktop/")){
                 String supplied=exchange.getRequestHeaders().getFirst("X-Forge-Token");if(supplied==null)supplied=query.get("token");
                 if(!token.equals(supplied)){reply(exchange,403,"text/plain",new byte[0]);return;}
+            }
+            if(path.equals("/desktop/state")&&exchange.getRequestMethod().equals("GET")){reply(exchange,200,"application/json",desktopState);return;}
+            if(path.equals("/desktop/event")&&exchange.getRequestMethod().equals("POST")){
+                byte[] body=exchange.getRequestBody().readNBytes(4097);if(body.length>4096){reply(exchange,413,"text/plain",new byte[0]);return;}
+                JsonObject message=JSON.fromJson(new String(body,StandardCharsets.UTF_8),JsonObject.class);
+                Platform.runLater(()->desktopEvent(message));reply(exchange,200,"application/json","{}".getBytes(StandardCharsets.UTF_8));return;
             }
             if(path.equals("/state")&&exchange.getRequestMethod().equals("GET")){
                 var current=published;exchange.getResponseHeaders().set("ETag",current.etag());
@@ -225,7 +311,10 @@ public final class ArenaSurface implements AutoCloseable {
                 reply(exchange,200,"application/json",current.body());return;
             }
             if(path.equals("/events")&&exchange.getRequestMethod().equals("GET")){
-                try{stream(exchange);}catch(IOException disconnected){}catch(InterruptedException interrupted){Thread.currentThread().interrupt();}
+                try{
+                    streams.execute(()->{try{stream(exchange);}catch(IOException disconnected){}catch(InterruptedException interrupted){Thread.currentThread().interrupt();}finally{exchange.close();}});
+                    imageRequest=true;
+                }catch(RejectedExecutionException full){reply(exchange,503,"text/plain",new byte[0]);}
                 return;
             }
             if(path.equals("/command")&&exchange.getRequestMethod().equals("POST")){
@@ -254,11 +343,11 @@ public final class ArenaSurface implements AutoCloseable {
                 current=published;
             }
             if(closed)return;
-            byte[] body=current.etag().equals(previous)?"[{\"type\":\"heartbeat\"}]".getBytes(StandardCharsets.UTF_8):current.body();
+            byte[] body=current.etag().equals(previous)?("[{\"type\":\"heartbeat\",\"revision\":"+current.etag().replace("\"","")+"}]").getBytes(StandardCharsets.UTF_8):current.body();
             output.write("data: ".getBytes(StandardCharsets.UTF_8));output.write(body);output.write('\n');output.write('\n');output.flush();
             previous=current.etag();
         }
     }
     private static void reply(HttpExchange x,int status,String type,byte[] data)throws IOException{x.getResponseHeaders().set("Content-Type",type+((type.startsWith("text/")||type.equals("application/json"))?"; charset=utf-8":""));x.getResponseHeaders().set("Cache-Control","no-store");x.getResponseHeaders().set("X-Content-Type-Options","nosniff");x.sendResponseHeaders(status,data.length);x.getResponseBody().write(data);}
-    public void close(){closed=true;clock.stop();ui.setEventSpy(null);synchronized(changes){changes.notifyAll();}layers.close();tools.close();web.getEngine().load(null);table.getChildren().remove(web);server.stop(0);http.shutdownNow();imageService.close();imageSources.clear();}
+    public void close(){closed=true;clock.stop();ui.setEventSpy(null);synchronized(changes){changes.notifyAll();}scene.getProperties().remove(forge.neo.diy.DiyMatchControls.FULLSCREEN_GET_PROPERTY,fullscreenQuery);scene.getProperties().remove(forge.neo.diy.DiyMatchControls.FULLSCREEN_SET_PROPERTY,fullscreenRequest);desktop.close();tools.close();table.getChildren().remove(placeholder);server.stop(0);streams.shutdownNow();http.shutdownNow();imageService.close();imageSources.clear();}
 }

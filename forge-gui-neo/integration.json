@@ -30,6 +30,7 @@
     "forge-gui-neo/src/main/java/forge/neo/diy/DiyMatchControls.java",
     "forge-gui-neo/src/main/java/forge/neo/diy/DiyMatchPreferences.java",
     "forge-gui-neo/src/main/java/forge/neo/diy/DiyNeoMatchUI.java",
+    "forge-gui-neo/src/main/java/forge/neo/diy/NativeMatchBinder.java",
     "forge-gui-neo/src/main/java/forge/neo/match/DetailLog.java",
     "forge-gui-neo/src/main/java/forge/neo/match/NeoMatchUI.java",
     "forge-gui-neo/src/main/java/forge/neo/match/PickGuard.java",
